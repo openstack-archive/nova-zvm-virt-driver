@@ -1,0 +1,8 @@
+Verified+2: Jenkins
+Code-Review+2: Huang Rui <bjhuangr@cn.ibm.com>
+Workflow+1: Huang Rui <bjhuangr@cn.ibm.com>
+Submitted-by: Jenkins
+Submitted-at: Mon, 30 Mar 2015 08:49:33 +0000
+Reviewed-on: https://review.openstack.org/168815
+Project: stackforge/nova-zvm-virt-driver
+Branch: refs/heads/master
