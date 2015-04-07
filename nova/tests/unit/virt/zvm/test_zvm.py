@@ -1,5 +1,3 @@
-# vim: tabstop=4 shiftwidth=4 softtabstop=4
-
 # Copyright 2013 IBM Corp.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -23,6 +21,10 @@ import socket
 
 import mock
 import mox
+from oslo_concurrency import processutils
+from oslo_config import cfg
+from oslo_serialization import jsonutils
+
 from nova import context
 from nova import db
 from nova import exception as nova_exception
@@ -33,17 +35,14 @@ from nova.openstack.common import fileutils
 from nova import test
 from nova.tests.unit import fake_instance
 from nova.virt import fake
-from oslo_config import cfg
-from oslo_serialization import jsonutils
-
-from nova_zvm.virt.zvm import configdrive
-from nova_zvm.virt.zvm import driver
-from nova_zvm.virt.zvm import exception
-from nova_zvm.virt.zvm import imageop
-from nova_zvm.virt.zvm import instance
-from nova_zvm.virt.zvm import networkop
-from nova_zvm.virt.zvm import utils as zvmutils
-from nova_zvm.virt.zvm import volumeop
+from nova.virt.zvm import configdrive
+from nova.virt.zvm import driver
+from nova.virt.zvm import exception
+from nova.virt.zvm import imageop
+from nova.virt.zvm import instance
+from nova.virt.zvm import networkop
+from nova.virt.zvm import utils as zvmutils
+from nova.virt.zvm import volumeop
 
 
 CONF = cfg.CONF
@@ -257,11 +256,11 @@ class ZVMDriverTestCases(ZVMTestCase):
         self.mox.UnsetStubs()
 
     def test_init_driver(self):
-        self.assertTrue(isinstance(self.driver._xcat_url, zvmutils.XCATUrl))
-        self.assertTrue(isinstance(self.driver._zvm_images, imageop.ZVMImages))
-        self.assertTrue(isinstance(self.driver._pathutils, zvmutils.PathUtils))
-        self.assertTrue(isinstance(self.driver._networkop,
-                                   networkop.NetworkOperator))
+        self.assertIsInstance(self.driver._xcat_url, zvmutils.XCATUrl)
+        self.assertIsInstance(self.driver._zvm_images, imageop.ZVMImages)
+        self.assertIsInstance(self.driver._pathutils, zvmutils.PathUtils)
+        self.assertIsInstance(self.driver._networkop,
+                              networkop.NetworkOperator)
 
     def test_update_host_info(self):
         self._set_fake_xcat_responses([self._fake_host_rinv_info(),
@@ -3225,3 +3224,27 @@ class ZVMImageOPTestCases(ZVMTestCase):
         self.assertRaises(exception.ZVMImageError,
                           self.imageop.get_image_file_name, '/fake')
         self.mox.VerifyAll()
+
+    @mock.patch('nova.utils.execute')
+    def test_get_root_disk_units(self, mk_exec):
+        mk_exec.return_value = (''.join(['CKD', '1' * 160]), None)
+        self.assertEqual(111111111111,
+                         self.imageop.get_root_disk_units('/fake'))
+
+    @mock.patch('nova.utils.execute')
+    def test_get_root_disk_units_cmd_err(self, mk_exec):
+        mk_exec.side_effect = processutils.ProcessExecutionError
+        self.assertRaises(exception.ZVMImageError,
+                         self.imageop.get_root_disk_units, '/fake')
+
+    @mock.patch('nova.utils.execute')
+    def test_get_root_disk_units_value_err(self, mk_exec):
+        mk_exec.return_value = (''.join(['CKD', 's' * 160]), None)
+        self.assertRaises(exception.ZVMImageError,
+                         self.imageop.get_root_disk_units, '/fake')
+
+    @mock.patch('nova.utils.execute')
+    def test_get_root_disk_units_invalid_type(self, mk_exec):
+        mk_exec.return_value = ('1' * 160, None)
+        self.assertRaises(exception.ZVMImageError,
+                         self.imageop.get_root_disk_units, '/fake')

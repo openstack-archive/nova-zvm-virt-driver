@@ -1,5 +1,3 @@
-# vim: tabstop=4 shiftwidth=4 softtabstop=4
-
 # Copyright 2013 IBM Corp.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -17,10 +15,11 @@
 import os
 import tarfile
 
+from oslo_config import cfg
+
 from nova import exception
 from nova import utils
 from nova.virt import configdrive
-from oslo_config import cfg
 
 
 CONF = cfg.CONF

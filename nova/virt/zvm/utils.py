@@ -1,5 +1,3 @@
-# vim: tabstop=4 shiftwidth=4 softtabstop=4
-
 # Copyright 2013 IBM Corp.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -22,19 +20,19 @@ import shutil
 import socket
 import time
 
+from oslo_config import cfg
+from oslo_log import log as logging
+from oslo_serialization import jsonutils
+from oslo_utils import excutils
+
 from nova import block_device
 from nova.compute import power_state
 from nova import exception as nova_exception
 from nova.i18n import _
 from nova.i18n import _LE
 from nova.virt import driver
-from oslo_config import cfg
-from oslo_log import log as logging
-from oslo_serialization import jsonutils
-from oslo_utils import excutils
-
-from nova_zvm.virt.zvm import const
-from nova_zvm.virt.zvm import exception
+from nova.virt.zvm import const
+from nova.virt.zvm import exception
 
 
 LOG = logging.getLogger(__name__)

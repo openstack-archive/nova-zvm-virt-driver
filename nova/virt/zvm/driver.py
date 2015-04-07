@@ -1,5 +1,3 @@
-# vim: tabstop=4 shiftwidth=4 softtabstop=4
-
 # Copyright 2013 IBM Corp.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -20,6 +18,13 @@ import os
 import time
 import uuid
 
+from oslo_config import cfg
+from oslo_log import log as logging
+from oslo_serialization import jsonutils
+from oslo_utils import excutils
+from oslo_utils import timeutils
+from oslo_utils import units
+
 from nova.api.metadata import base as instance_metadata
 from nova.compute import power_state
 from nova.compute import task_states
@@ -31,22 +36,15 @@ from nova.openstack.common import loopingcall
 from nova import utils
 from nova.virt import configdrive
 from nova.virt import driver
+from nova.virt.zvm import configdrive as zvmconfigdrive
+from nova.virt.zvm import const
+from nova.virt.zvm import exception
+from nova.virt.zvm import imageop
+from nova.virt.zvm import instance as zvminstance
+from nova.virt.zvm import networkop
+from nova.virt.zvm import utils as zvmutils
+from nova.virt.zvm import volumeop
 from nova import volume
-from oslo_config import cfg
-from oslo_log import log as logging
-from oslo_serialization import jsonutils
-from oslo_utils import excutils
-from oslo_utils import timeutils
-from oslo_utils import units
-
-from nova_zvm.virt.zvm import configdrive as zvmconfigdrive
-from nova_zvm.virt.zvm import const
-from nova_zvm.virt.zvm import exception
-from nova_zvm.virt.zvm import imageop
-from nova_zvm.virt.zvm import instance as zvminstance
-from nova_zvm.virt.zvm import networkop
-from nova_zvm.virt.zvm import utils as zvmutils
-from nova_zvm.virt.zvm import volumeop
 
 
 LOG = logging.getLogger(__name__)

@@ -1,5 +1,3 @@
-# vim: tabstop=4 shiftwidth=4 softtabstop=4
-
 # Copyright 2013 IBM Corp.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -15,12 +13,12 @@
 #    under the License.
 
 
-from nova.i18n import _
 from oslo_config import cfg
 from oslo_log import log as logging
 
-from nova_zvm.virt.zvm import exception
-from nova_zvm.virt.zvm import utils as zvmutils
+from nova.i18n import _
+from nova.virt.zvm import exception
+from nova.virt.zvm import utils as zvmutils
 
 
 LOG = logging.getLogger(__name__)

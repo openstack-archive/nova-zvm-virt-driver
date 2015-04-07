@@ -16,18 +16,18 @@ import contextlib
 import re
 import time
 
-import nova.context
-from nova.i18n import _
-from nova.objects import block_device as block_device_obj
-from nova.objects import instance as instance_obj
-from nova import volume
 from oslo_config import cfg
 from oslo_log import log as logging
 from oslo_serialization import jsonutils
 
-from nova_zvm.virt.zvm import const
-from nova_zvm.virt.zvm import exception
-from nova_zvm.virt.zvm import utils as zvmutils
+import nova.context
+from nova.i18n import _
+from nova.objects import block_device as block_device_obj
+from nova.objects import instance as instance_obj
+from nova.virt.zvm import const
+from nova.virt.zvm import exception
+from nova.virt.zvm import utils as zvmutils
+from nova import volume
 
 
 LOG = logging.getLogger(__name__)

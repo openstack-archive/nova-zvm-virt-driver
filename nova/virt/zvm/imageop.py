@@ -1,5 +1,3 @@
-# vim: tabstop=4 shiftwidth=4 softtabstop=4
-
 # Copyright 2013 IBM Corp.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -22,19 +20,19 @@ import shutil
 import tarfile
 import xml.dom.minidom as Dom
 
-from nova import exception as nova_exception
-from nova.i18n import _
-from nova.image import glance
-from nova import utils
-from nova.virt import images
 from oslo_concurrency import processutils
 from oslo_config import cfg
 from oslo_log import log as logging
 from oslo_utils import excutils
 
-from nova_zvm.virt.zvm import const
-from nova_zvm.virt.zvm import exception
-from nova_zvm.virt.zvm import utils as zvmutils
+from nova import exception as nova_exception
+from nova.i18n import _
+from nova.image import glance
+from nova import utils
+from nova.virt import images
+from nova.virt.zvm import const
+from nova.virt.zvm import exception
+from nova.virt.zvm import utils as zvmutils
 
 LOG = logging.getLogger(__name__)
 CONF = cfg.CONF
@@ -770,7 +768,7 @@ class ZVMImages(object):
         """use 'hexdump' to get the root_disk_units."""
         cmd = "hexdump -n 48 -C %s" % image_file_path
         try:
-            (output, _) = utils.execute(cmd, shell=True)
+            (output, _toss) = utils.execute(cmd, shell=True)
         except processutils.ProcessExecutionError:
             msg = (_("Get image property failed,"
                     " please check whether the image file exists!"))

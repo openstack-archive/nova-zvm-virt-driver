@@ -1,5 +1,3 @@
-# vim: tabstop=4 shiftwidth=4 softtabstop=4
-
 # Copyright 2013 IBM Corp.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -18,18 +16,18 @@
 import binascii
 import datetime
 
-from nova.compute import power_state
-from nova import exception as nova_exception
-from nova.i18n import _
-from nova.openstack.common import loopingcall
 from oslo_config import cfg
 from oslo_log import log as logging
 from oslo_utils import timeutils
 
-from nova_zvm.virt.zvm import const
-from nova_zvm.virt.zvm import exception
-from nova_zvm.virt.zvm import utils as zvmutils
-from nova_zvm.virt.zvm import volumeop
+from nova.compute import power_state
+from nova import exception as nova_exception
+from nova.i18n import _
+from nova.openstack.common import loopingcall
+from nova.virt.zvm import const
+from nova.virt.zvm import exception
+from nova.virt.zvm import utils as zvmutils
+from nova.virt.zvm import volumeop
 
 LOG = logging.getLogger(__name__)
 CONF = cfg.CONF
