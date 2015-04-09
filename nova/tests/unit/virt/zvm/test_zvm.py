@@ -38,6 +38,7 @@ from nova.tests.unit import fake_instance
 from nova.virt import fake
 from nova.virt import hardware
 from nova.virt.zvm import configdrive
+from nova.virt.zvm import dist
 from nova.virt.zvm import driver
 from nova.virt.zvm import exception
 from nova.virt.zvm import imageop
@@ -3339,3 +3340,102 @@ class ZVMImageOPTestCases(ZVMTestCase):
         mk_exec.return_value = ('1' * 160, None)
         self.assertRaises(exception.ZVMImageError,
                          self.imageop.get_root_disk_units, '/fake')
+
+
+class ZVMDistTestCases(test.TestCase):
+    def setUp(self):
+        super(ZVMDistTestCases, self).setUp()
+
+        self.rhel6 = dist.rhel6()
+        self.rhel7 = dist.rhel7()
+        self.sles11 = dist.sles11()
+        self.sles12 = dist.sles12()
+        self.support_list = [self.rhel6, self.rhel7,
+                             self.sles11, self.sles12]
+
+    def test_get_znetconfig_contents(self):
+        for v in self.support_list:
+            contents = v.get_znetconfig_contents()
+            self.assertTrue(contents > 0)
+
+    def test_get_dns_filename(self):
+        for v in self.support_list:
+            v._get_dns_filename()
+
+    def test_get_cmd_str(self):
+        for v in self.support_list:
+            v._get_cmd_str('0', '0', '0')
+
+    def test_get_route_str(self):
+        for v in self.support_list:
+            v._get_route_str(0)
+
+    def test_get_network_file_path(self):
+        for v in self.support_list:
+            contents = v._get_network_file_path()
+            self.assertTrue(contents > 0)
+
+    def test_get_change_passwd_command(self):
+        for v in self.support_list:
+            contents = v.get_change_passwd_command('0')
+            self.assertTrue(contents > 0)
+
+    def test_get_device_name(self):
+        for v in self.support_list:
+            contents = v._get_device_name(0)
+            self.assertTrue(contents > 0)
+
+    def test_get_cfg_str(self):
+        for v in self.support_list:
+            v._get_cfg_str('0', '0', '0', '0', '0', '0', '0')
+
+    def test_get_device_filename(self):
+        for v in self.support_list:
+            contents = v._get_device_filename(0)
+            self.assertTrue(contents > 0)
+
+    def test_get_udev_configuration(self):
+        for v in self.support_list:
+            v._get_udev_configuration('0', '0')
+
+    def test_append_udev_info(self):
+        for v in self.support_list:
+            v._append_udev_info([], '0', '0', '0')
+
+
+class ZVMDistManagerTestCases(test.TestCase):
+    def setUp(self):
+        super(ZVMDistManagerTestCases, self).setUp()
+        self.dist_manager = dist.ListDistManager()
+
+    def test_rhel6(self):
+        os_versions = ['rhel6.5', 'rhel6', 'redhat6.4', 'redhat6'
+                       'red hat6', 'red hat6.5']
+        for v in os_versions:
+            d = self.dist_manager.get_linux_dist(v)()
+            self.assertTrue(isinstance(d, dist.rhel6))
+
+    def test_rhel7(self):
+        os_versions = ['rhel7.1', 'red hat7.1', 'redhat7.1']
+        for v in os_versions:
+            d = self.dist_manager.get_linux_dist(v)()
+            self.assertTrue(isinstance(d, dist.rhel7))
+
+    def test_sles11(self):
+        os_versions = ['sles11sp2', 'sles11sp3', 'sles11.2', 'sles11.3']
+        for v in os_versions:
+            d = self.dist_manager.get_linux_dist(v)()
+            self.assertTrue(isinstance(d, dist.sles11))
+
+    def test_sles12(self):
+        os_versions = ['sles12', 'sles12.0']
+        for v in os_versions:
+            d = self.dist_manager.get_linux_dist(v)()
+            self.assertTrue(isinstance(d, dist.sles12))
+
+    def test_invalid(self):
+        os_versions = ['', 'sles 11.0', 'sles13.0', 'sles10', 'rhel8',
+                       'rhel 6', 'fake']
+        for v in os_versions:
+            self.assertRaises(exception.ZVMImageError,
+                              self.dist_manager.get_linux_dist, v)
