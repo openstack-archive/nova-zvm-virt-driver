@@ -24,6 +24,7 @@ from nova.compute import power_state
 from nova import exception as nova_exception
 from nova.i18n import _
 from nova.openstack.common import loopingcall
+from nova.virt import hardware
 from nova.virt.zvm import const
 from nova.virt.zvm import exception
 from nova.virt.zvm import utils as zvmutils
@@ -121,17 +122,9 @@ class ZVMInstance(object):
                                              is_active, rollback)
 
     def get_info(self):
-        """Get the current status of an z/VM instance.
+        """Get the current status of an z/VM instance."""
+        _instance_info = hardware.InstanceInfo()
 
-        Returns a dict containing:
-
-        :state:           the running state, one of the power_state codes
-        :max_mem:         (int) the maximum memory in KBytes allowed
-        :mem:             (int) the memory in KBytes used by the domain
-        :num_cpu:         (int) the number of virtual CPUs for the domain
-        :cpu_time:        (int) the CPU time used in nanoseconds
-
-        """
         power_stat = self._get_power_stat()
         is_reachable = self.is_reachable()
 
@@ -146,19 +139,19 @@ class ZVMInstance(object):
                 mem = self._get_current_memory(rec_list)
                 num_cpu = self._get_cpu_count(rec_list)
                 cpu_time = self._get_cpu_used_time(rec_list)
-                _instance_info = {'state': power_stat,
-                                  'max_mem': max_mem_kb,
-                                  'mem': mem,
-                                  'num_cpu': num_cpu,
-                                  'cpu_time': cpu_time, }
+                _instance_info.state = power_stat
+                _instance_info.max_mem_kb = max_mem_kb
+                _instance_info.mem_kb = mem
+                _instance_info.num_cpu = num_cpu
+                _instance_info.cpu_time_ns = cpu_time
 
             except exception.ZVMInvalidXCATResponseDataError:
                 LOG.warn(_("Failed to get inventory info for %s") % self._name)
-                _instance_info = {'state': power_stat,
-                                  'max_mem': max_mem_kb,
-                                  'mem': max_mem_kb,
-                                  'num_cpu': self._instance['vcpus'],
-                                  'cpu_time': 0, }
+                _instance_info.state = power_stat
+                _instance_info.max_mem_kb = max_mem_kb
+                _instance_info.mem_kb = max_mem_kb
+                _instance_info.num_cpu = self._instance['vcpus']
+                _instance_info.cpu_time_ns = 0
 
         else:
             # Since xCAT rinv can't get info from a server that in power state
@@ -166,18 +159,18 @@ class ZVMInstance(object):
             if ((power_stat == power_state.RUNNING) and
                     (self._instance['power_state'] == power_state.PAUSED)):
                 # return paused state only previous power state is paused
-                _instance_info = {'state': power_state.PAUSED,
-                                  'max_mem': max_mem_kb,
-                                  'mem': max_mem_kb,
-                                  'num_cpu': self._instance['vcpus'],
-                                  'cpu_time': 0, }
+                _instance_info.state = power_state.PAUSED
+                _instance_info.max_mem_kb = max_mem_kb
+                _instance_info.mem_kb = max_mem_kb
+                _instance_info.num_cpu = self._instance['vcpus']
+                _instance_info.cpu_time_ns = 0
             else:
                 # otherwise return xcat returned state
-                _instance_info = {'state': power_stat,
-                              'max_mem': max_mem_kb,
-                              'mem': 0,
-                              'num_cpu': self._instance['vcpus'],
-                              'cpu_time': 0, }
+                _instance_info.state = power_stat
+                _instance_info.max_mem_kb = max_mem_kb
+                _instance_info.mem_kb = 0
+                _instance_info.num_cpu = self._instance['vcpus']
+                _instance_info.cpu_time_ns = 0
         return _instance_info
 
     def create_xcat_node(self, zhcp, userid=None):
@@ -666,9 +659,8 @@ class ZVMInstance(object):
 
         body = []
         for info in res_info:
-            if ("=" in info and ("postbootscripts" not in info)
-                    and ("postscripts" not in info)
-                    and ("hostnames" not in info)):
+            if ("=" in info and ("postbootscripts" not in info) and
+                    ("postscripts" not in info) and ("hostnames" not in info)):
                 body.append(info.lstrip())
 
         url = self._xcat_url.mkdef('/' + self._name)
