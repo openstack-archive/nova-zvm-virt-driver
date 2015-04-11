@@ -38,6 +38,7 @@ from nova.virt import configdrive
 from nova.virt import driver
 from nova.virt.zvm import configdrive as zvmconfigdrive
 from nova.virt.zvm import const
+from nova.virt.zvm import dist
 from nova.virt.zvm import exception
 from nova.virt.zvm import imageop
 from nova.virt.zvm import instance as zvminstance
@@ -206,6 +207,7 @@ class ZVMDriver(driver.ComputeDriver):
         self._networkutils = zvmutils.NetworkUtils()
         self._volumeop = volumeop.VolumeOperator()
         self._volume_api = volume.API()
+        self._dist_manager = dist.ListDistManager()
 
     def init_host(self, host):
         """Initialize anything that is necessary for the driver to function,
@@ -327,17 +329,23 @@ class ZVMDriver(driver.ComputeDriver):
 
         if not boot_from_volume:
             os_version = image_meta['properties']['os_version']
-            # Check the OS type
-            os_type = zvmutils.parse_os_version(os_version)[0]
         else:
             volume_id = self._extract_volume_id(bdm, root_mount_device)
             volume_meta = self._volume_api.get_volume_metadata(context,
                                                                 volume_id)
             os_type = volume_meta['os_type']
+            # FIXME (jichenjc), woraround now need more effort here
+            # os_type is sles or rhel before, we need to know
+            # they are rhel6 or 7 , sles11 or 12, but not considered before
+            os_version = ''
+            if os_type == 'rhel':
+                os_version == 'rhel6'
+            if os_type == 'sles':
+                os_version == 'sles11'
 
-        files_and_cmds = self._networkutils.create_network_configuration_files(
-                             instance_path, network_info, base_nic_vdev,
-                             os_type)
+        linuxdist = self._dist_manager.get_linux_dist(os_version)()
+        files_and_cmds = linuxdist.create_network_configuration_files(
+                             instance_path, network_info, base_nic_vdev)
         (net_conf_files, net_conf_cmds) = files_and_cmds
         # Add network configure files to inject_files
         if len(net_conf_files) > 0:
