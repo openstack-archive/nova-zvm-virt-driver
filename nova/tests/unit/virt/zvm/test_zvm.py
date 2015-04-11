@@ -587,7 +587,8 @@ class ZVMDriverTestCases(ZVMTestCase):
                                                                     'fakeimg')
         instance.ZVMInstance.deploy_node('fakeimg',
                                          '/temp/os000001/configdrive.tgz')
-        zvmutils.punch_adminpass_file(mox.IgnoreArg(), 'os000001', 'pass')
+        zvmutils.punch_adminpass_file(mox.IgnoreArg(), 'os000001', 'pass',
+                                      mox.IgnoreArg())
         zvmutils.punch_xcat_auth_file(mox.IgnoreArg(), 'os000001')
         zvmutils.process_eph_disk('os000001', mox.IgnoreArg(), mox.IgnoreArg(),
                                   mox.IgnoreArg())

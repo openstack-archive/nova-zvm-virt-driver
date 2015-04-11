@@ -418,7 +418,7 @@ class ZVMDriver(driver.ComputeDriver):
 
             # Change vm's admin password during spawn
             zvmutils.punch_adminpass_file(instance_path, zvm_inst._name,
-                                          admin_password)
+                                          admin_password, linuxdist)
 
             # Unlock the instance
             zvmutils.punch_xcat_auth_file(instance_path, zvm_inst._name)
