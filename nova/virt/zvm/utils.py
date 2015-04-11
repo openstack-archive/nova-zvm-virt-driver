@@ -518,9 +518,10 @@ def punch_file(node, fn, fclass):
         os.remove(fn)
 
 
-def punch_adminpass_file(instance_path, instance_name, admin_password):
+def punch_adminpass_file(instance_path, instance_name, admin_password,
+                         linuxdist):
     adminpass_fn = ''.join([instance_path, '/adminpwd.sh'])
-    _generate_adminpass_file(adminpass_fn, admin_password)
+    _generate_adminpass_file(adminpass_fn, admin_password, linuxdist)
     punch_file(instance_name, adminpass_fn, 'X')
 
 
@@ -613,9 +614,9 @@ def _generate_auth_file(fn, pub_key):
         f.writelines(lines)
 
 
-def _generate_adminpass_file(fn, admin_password):
-    lines = ['#! /bin/bash\n',
-    'echo %s|passwd --stdin root' % admin_password]
+def _generate_adminpass_file(fn, admin_password, linuxdist):
+    pwd_str = linuxdist.get_change_passwd_command(admin_password)
+    lines = ['#! /bin/sh\n', pwd_str]
     with open(fn, 'w') as f:
         f.writelines(lines)
 
