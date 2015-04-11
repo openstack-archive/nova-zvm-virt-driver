@@ -357,7 +357,8 @@ class ZVMDriver(driver.ComputeDriver):
         transportfiles = None
         if configdrive.required_by(instance):
             transportfiles = self._create_config_drive(instance_path,
-                instance, injected_files, admin_password, net_conf_cmds)
+                instance, injected_files, admin_password, net_conf_cmds,
+                linuxdist)
 
         LOG.info(_LI("The instance %(name)s is spawning at %(node)s") %
                  {'name': zvm_inst._name, 'node': compute_node},
@@ -498,7 +499,7 @@ class ZVMDriver(driver.ComputeDriver):
             self._zvm_images.update_last_use_date(deploy_image_name)
 
     def _create_config_drive(self, instance_path, instance, injected_files,
-                             admin_password, commands):
+                             admin_password, commands, linuxdist):
         if CONF.config_drive_format != 'tgz':
             msg = (_("Invalid config drive format %s") %
                    CONF.config_drive_format)
@@ -510,27 +511,11 @@ class ZVMDriver(driver.ComputeDriver):
         if CONF.zvm_config_drive_inject_password:
             extra_md['admin_pass'] = admin_password
 
-        # Append commands which are used to configure network devices
-        udev_settle_sles = '\n'.join(('cio_ignore -R',
-                                      'udevadm trigger',
-                                      'udevadm settle', 'sleep 2',
-                                      'service network restart',
-                                      'cio_ignore -u'))
-
-        udev_settle_rhel = '\n'.join(('cio_ignore -R',
-                                      'znetconf -R <<EOF',
-                                      'y',
-                                      'EOF',
-                                      'udevadm trigger',
-                                      'udevadm settle', 'sleep 2',
-                                      'znetconf -A',
-                                      'service network restart',
-                                      'cio_ignore -u'))
-        znetconfig = ''
+        udev_settle = linuxdist.get_znetconfig_contents()
         if len(commands) == 0:
-            znetconfig = '\n'.join(('# !/bin/sh', udev_settle_rhel))
+            znetconfig = '\n'.join(('# !/bin/sh', udev_settle))
         else:
-            znetconfig = '\n'.join(('# !/bin/sh', commands, udev_settle_sles))
+            znetconfig = '\n'.join(('# !/bin/sh', commands, udev_settle))
         znetconfig += '\nrm -rf /tmp/znetconfig.sh\n'
         # Create a temp file in instance to execute above commands
         net_cmd_file = []
