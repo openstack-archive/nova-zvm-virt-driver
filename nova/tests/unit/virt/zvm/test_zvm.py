@@ -573,8 +573,8 @@ class ZVMDriverTestCases(ZVMTestCase):
             mox.IgnoreArg(), network_info, mox.IgnoreArg()
             ).AndReturn(('/tmp/fakefile', 'fakecmd'))
         self.driver._create_config_drive('/temp/os000001', self.instance,
-            mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg()).AndReturn(
-            '/temp/os000001/configdrive.tgz')
+            mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(),
+            mox.IgnoreArg()).AndReturn('/temp/os000001/configdrive.tgz')
         instance.ZVMInstance.create_xcat_node('fakehcp.fake.com')
         self.driver._preset_instance_network('os000001', network_info)
         self.driver._zvm_images.image_exist_xcat(mox.IgnoreArg()).AndReturn(
@@ -1507,8 +1507,10 @@ class ZVMDriverTestCases(ZVMTestCase):
 
     def test_create_config_drive_non_tgz(self):
         self.flags(config_drive_format='nontgz')
+        linuxdist = dist.ListDistManager().get_linux_dist('rhel6')
         self.assertRaises(exception.ZVMConfigDriveError,
-            self.driver._create_config_drive, '', self.instance, '', '', '')
+            self.driver._create_config_drive, '', self.instance, '', '', '',
+            linuxdist)
 
     def test_get_hcp_info(self):
         hcp_info = self.driver._get_hcp_info()
