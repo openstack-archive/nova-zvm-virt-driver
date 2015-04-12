@@ -18,6 +18,7 @@ from oslo_log import log as logging
 import six
 
 from nova.i18n import _
+from nova.virt.zvm import const
 from nova.virt.zvm import exception
 
 
@@ -184,9 +185,6 @@ class rhel(LinuxDist):
         cfg_str += 'SUBCHANNELS=\"' + subchannels + '\"\n'
         return cfg_str
 
-    def _get_device_filename(self, device_num):
-        return 'ifcfg-eth' + str(device_num)
-
     def _get_route_str(self, gateway_v4):
         return ''
 
@@ -220,6 +218,12 @@ class rhel6(rhel):
                           'service network restart',
                           'cio_ignore -u'))
 
+    def _get_device_filename(self, device_num):
+        return 'ifcfg-eth' + str(device_num)
+
+    def _get_device_name(self, device_num):
+        return 'eth' + str(device_num)
+
 
 class rhel7(rhel):
     def get_znetconfig_contents(self):
@@ -232,6 +236,16 @@ class rhel7(rhel):
                           'sleep 2',
                           'znetconf -A',
                           'cio_ignore -u'))
+
+    def _get_device_filename(self, device_num):
+        # Construct a device like ifcfg-enccw0.0.1000, ifcfg-enccw0.0.1003
+        device = const.ZVM_DEFAULT_NIC_VDEV + str(device_num * 3)
+        return 'ifcfg-enccw0.0.' + device
+
+    def _get_device_name(self, device_num):
+        # Construct a device like enccw0.0.1000, enccw0.0.1003
+        device = const.ZVM_DEFAULT_NIC_VDEV + str(device_num * 3)
+        return 'enccw0.0.' + device
 
 
 class sles(LinuxDist):
