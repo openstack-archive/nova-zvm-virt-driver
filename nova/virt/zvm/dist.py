@@ -291,9 +291,13 @@ class sles(LinuxDist):
 class sles11(sles):
     def get_znetconfig_contents(self):
         return '\n'.join(('cio_ignore -R',
+                          'znetconf -R <<EOF',
+                          'y',
+                          'EOF',
                           'udevadm trigger',
                           'udevadm settle',
                           'sleep 2',
+                          'znetconf -A',
                           'service network restart',
                           'cio_ignore -u'))
 
@@ -308,9 +312,13 @@ class sles11(sles):
 class sles12(sles):
     def get_znetconfig_contents(self):
         return '\n'.join(('cio_ignore -R',
+                          'znetconf -R <<EOF',
+                          'y',
+                          'EOF',
                           'udevadm trigger',
                           'udevadm settle',
                           'sleep 2',
+                          'znetconf -A',
                           'cio_ignore -u'))
 
     def _get_udev_configuration(self, device, dev_channel):
