@@ -238,9 +238,6 @@ class sles(LinuxDist):
     def _get_network_file_path(self):
         return '/etc/sysconfig/network/'
 
-    def get_change_passwd_command(self, admin_password):
-        return 'echo %s|passwd --stdin root' % admin_password
-
     def _get_cidr_from_ip_netmask(self, ip, netmask):
         netmask_fields = netmask.split('.')
         bin_str = ''
@@ -287,6 +284,13 @@ class sles(LinuxDist):
         if len(route_cfg_str) > 0:
             cfg_files.append((file_name_route, route_cfg_str))
 
+    def _get_udev_configuration(self, device, dev_channel):
+        cfg_str = 'SUBSYSTEM==\"net\", ACTION==\"add\", DRIVERS==\"qeth\",'
+        cfg_str += ' KERNELS==\"%s\", ATTR{type}==\"1\",' % dev_channel
+        cfg_str += ' KERNEL==\"eth*\", NAME=\"eth%s\"\n' % device
+
+        return cfg_str
+
 
 class sles11(sles):
     def get_znetconfig_contents(self):
@@ -297,24 +301,24 @@ class sles11(sles):
                           'service network restart',
                           'cio_ignore -u'))
 
-    def _get_udev_configuration(self, device, dev_channel):
-        cfg_str = 'SUBSYSTEM==\"net\", ACTION==\"add\", DRIVERS==\"qeth\",'
-        cfg_str += ' KERNELS==\"%s\", ATTR{type}==\"1\",' % dev_channel
-        cfg_str += ' KERNEL==\"eth*\", NAME=\"eth%s\"\n' % device
-
-        return cfg_str
+    def get_change_passwd_command(self, admin_password):
+        return 'echo %s|passwd --stdin root' % admin_password
 
 
 class sles12(sles):
     def get_znetconfig_contents(self):
         return '\n'.join(('cio_ignore -R',
+                          'znetconf -R <<EOF',
+                          'y',
+                          'EOF',
                           'udevadm trigger',
                           'udevadm settle',
                           'sleep 2',
+                          'znetconf -A',
                           'cio_ignore -u'))
 
-    def _get_udev_configuration(self, device, dev_channel):
-        return ''
+    def get_change_passwd_command(self, admin_password):
+        return "echo 'root:%s' | chpasswd" % admin_password
 
 
 class ListDistManager():
