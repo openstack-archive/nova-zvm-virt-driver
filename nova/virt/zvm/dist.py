@@ -210,9 +210,7 @@ class rhel(LinuxDist):
 class rhel6(rhel):
     def get_znetconfig_contents(self):
         return '\n'.join(('cio_ignore -R',
-                          'znetconf -R <<EOF',
-                          'y',
-                          'EOF',
+                          'znetconf -n',
                           'udevadm trigger',
                           'udevadm settle',
                           'sleep 2',
@@ -224,9 +222,7 @@ class rhel6(rhel):
 class rhel7(rhel):
     def get_znetconfig_contents(self):
         return '\n'.join(('cio_ignore -R',
-                          'znetconf -R <<EOF',
-                          'y',
-                          'EOF',
+                          'znetconf -n',
                           'udevadm trigger',
                           'udevadm settle',
                           'sleep 2',
