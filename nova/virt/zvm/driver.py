@@ -331,8 +331,8 @@ class ZVMDriver(driver.ComputeDriver):
             os_type = zvmutils.parse_os_version(os_version)[0]
         else:
             volume_id = self._extract_volume_id(bdm, root_mount_device)
-            volume_meta = self._volume_api.get_volume_metadata(context,
-                                                                volume_id)
+            volume_summery = self._volume_api.get(context, volume_id)
+            volume_meta = volume_summery['volume_metadata']
             os_type = volume_meta['os_type']
 
         files_and_cmds = self._networkutils.create_network_configuration_files(
