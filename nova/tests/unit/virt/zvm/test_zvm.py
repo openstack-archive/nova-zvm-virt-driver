@@ -3410,32 +3410,34 @@ class ZVMDistManagerTestCases(test.TestCase):
 
     def test_rhel6(self):
         os_versions = ['rhel6.5', 'rhel6', 'redhat6.4', 'redhat6'
-                       'red hat6', 'red hat6.5']
+                       'red hat6', 'red hat6.5', 'RhEl6', 'RedHat6.5',
+                       'REDHAT6.4']
         for v in os_versions:
             d = self.dist_manager.get_linux_dist(v)()
             self.assertTrue(isinstance(d, dist.rhel6))
 
     def test_rhel7(self):
-        os_versions = ['rhel7.1', 'red hat7.1', 'redhat7.1']
+        os_versions = ['rhel7.1', 'red hat7.1', 'redhat7.1', 'RHEL7.1']
         for v in os_versions:
             d = self.dist_manager.get_linux_dist(v)()
             self.assertTrue(isinstance(d, dist.rhel7))
 
     def test_sles11(self):
-        os_versions = ['sles11sp2', 'sles11sp3', 'sles11.2', 'sles11.3']
+        os_versions = ['sles11sp2', 'sles11sp3', 'sles11.2', 'sles11.3',
+                       'Sles11sp3', 'SLES11.2']
         for v in os_versions:
             d = self.dist_manager.get_linux_dist(v)()
             self.assertTrue(isinstance(d, dist.sles11))
 
     def test_sles12(self):
-        os_versions = ['sles12', 'sles12.0']
+        os_versions = ['sles12', 'sles12.0', 'Sles12', 'SLES12.0']
         for v in os_versions:
             d = self.dist_manager.get_linux_dist(v)()
             self.assertTrue(isinstance(d, dist.sles12))
 
     def test_invalid(self):
         os_versions = ['', 'sles 11.0', 'sles13.0', 'sles10', 'rhel8',
-                       'rhel 6', 'fake']
+                       'rhel 6', 'fake', 'SELS12.0']
         for v in os_versions:
             self.assertRaises(exception.ZVMImageError,
                               self.dist_manager.get_linux_dist, v)
