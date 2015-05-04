@@ -456,9 +456,6 @@ class ZVMDriverTestCases(ZVMTestCase):
                        self._fake_fun('/temp/os000001'))
         self.stubs.Set(self.driver, '_create_config_drive',
                        self._fake_fun('/temp/os000001/configdrive.tgz'))
-        self.stubs.Set(self.driver._networkutils,
-                       "create_network_configuration_files",
-                       self._fake_fun(('/tmp/fakefile', 'fakecmd')))
         self.stubs.Set(instance.ZVMInstance, 'create_xcat_node',
                        self._fake_fun())
         self.stubs.Set(self.driver, '_preset_instance_network',
@@ -471,7 +468,7 @@ class ZVMDriverTestCases(ZVMTestCase):
                        self._fake_fun())
         self.stubs.Set(self.driver._zvm_images, 'get_imgname_xcat',
                        self._fake_fun('fakeimg'))
-        self.stubs.Set(self.driver._networkutils,
+        self.stubs.Set(dist.LinuxDist,
                        "create_network_configuration_files",
                        self._fake_fun((['fakefile', 'fakecmd'])))
         self.stubs.Set(instance.ZVMInstance, 'deploy_node', self._fake_fun())
@@ -494,9 +491,6 @@ class ZVMDriverTestCases(ZVMTestCase):
                        self._fake_fun('/temp/os000001'))
         self.stubs.Set(self.driver, '_create_config_drive',
                        self._fake_fun('/temp/os000001/configdrive.tgz'))
-        self.stubs.Set(self.driver._networkutils,
-                       "create_network_configuration_files",
-                       self._fake_fun(('/tmp/fakefile', 'fakecmd')))
         self.stubs.Set(instance.ZVMInstance, 'create_xcat_node',
                        self._fake_fun())
         self.stubs.Set(self.driver, '_preset_instance_network',
@@ -509,7 +503,7 @@ class ZVMDriverTestCases(ZVMTestCase):
                        self._fake_fun())
         self.stubs.Set(self.driver._zvm_images, 'get_imgname_xcat',
                        self._fake_fun('fakeimg'))
-        self.stubs.Set(self.driver._networkutils,
+        self.stubs.Set(dist.LinuxDist,
                        "create_network_configuration_files",
                        self._fake_fun((['fakefile', 'fakecmd'])))
         self.stubs.Set(instance.ZVMInstance, 'deploy_node', self._fake_fun())
@@ -551,7 +545,7 @@ class ZVMDriverTestCases(ZVMTestCase):
              'size': 1}]}
 
         self.mox.StubOutWithMock(self.driver._pathutils, 'get_instance_path')
-        self.mox.StubOutWithMock(self.driver._networkutils,
+        self.mox.StubOutWithMock(dist.LinuxDist,
             "create_network_configuration_files")
         self.mox.StubOutWithMock(self.driver, '_create_config_drive')
         self.mox.StubOutWithMock(instance.ZVMInstance, 'create_xcat_node')
@@ -574,9 +568,9 @@ class ZVMDriverTestCases(ZVMTestCase):
 
         self.driver._pathutils.get_instance_path('fakenode',
             'os000001').AndReturn('/temp/os000001')
-        self.driver._networkutils.create_network_configuration_files(
-            mox.IgnoreArg(), network_info, mox.IgnoreArg(),
-            mox.IgnoreArg()).AndReturn(('/tmp/fakefile', 'fakecmd'))
+        dist.LinuxDist.create_network_configuration_files(
+            mox.IgnoreArg(), network_info, mox.IgnoreArg()
+            ).AndReturn(('/tmp/fakefile', 'fakecmd'))
         self.driver._create_config_drive('/temp/os000001', self.instance,
             mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg()).AndReturn(
             '/temp/os000001/configdrive.tgz')
@@ -619,7 +613,7 @@ class ZVMDriverTestCases(ZVMTestCase):
                        self._fake_fun())
         self.stubs.Set(self.driver, '_preset_instance_network',
                        self._fake_fun())
-        self.stubs.Set(self.driver._networkutils,
+        self.stubs.Set(dist.LinuxDist,
                        "create_network_configuration_files",
                        self._fake_fun(('/tmp/fakefile', 'fakecmd')))
         self.mox.StubOutWithMock(self.driver._zvm_images, 'image_exist_xcat')
@@ -642,7 +636,7 @@ class ZVMDriverTestCases(ZVMTestCase):
                        self._fake_fun())
         self.stubs.Set(self.driver._zvm_images, 'image_exist_xcat',
                        self._fake_fun(False))
-        self.stubs.Set(self.driver._networkutils,
+        self.stubs.Set(dist.LinuxDist,
                        "create_network_configuration_files",
                        self._fake_fun(("/tmp/fakefile", "fakecmd")))
         self.stubs.Set(self.driver, '_import_image_to_xcat', self._fake_fun())
