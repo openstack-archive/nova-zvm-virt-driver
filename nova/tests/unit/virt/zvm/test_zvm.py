@@ -38,6 +38,7 @@ from nova.tests.unit import fake_instance
 from nova.virt import fake
 from nova.virt import hardware
 from nova.virt.zvm import configdrive
+from nova.virt.zvm import const
 from nova.virt.zvm import dist
 from nova.virt.zvm import driver
 from nova.virt.zvm import exception
@@ -3395,6 +3396,49 @@ class ZVMDistTestCases(test.TestCase):
     def test_append_udev_info(self):
         for v in self.support_list:
             v._append_udev_info([], '0', '0', '0')
+
+
+class ZVMDistRhel7TestCases(test.TestCase):
+    def setUp(self):
+        super(ZVMDistRhel7TestCases, self).setUp()
+
+        self.rhel7 = dist.rhel7()
+
+    def test_get_device_name(self):
+        result = ['enccw0.0.1000', 'enccw0.0.1003', 'enccw0.0.100c']
+        devices = [0, 1, 4]
+        for (index, s) in enumerate(devices):
+            contents = self.rhel7._get_device_name(s)
+            self.assertEqual(result[index], contents)
+
+        result = ['enccw0.0.0800', 'enccw0.0.0803', 'enccw0.0.080c']
+        temp = const.ZVM_DEFAULT_NIC_VDEV
+        const.ZVM_DEFAULT_NIC_VDEV = '800'
+        devices = [0, 1, 4]
+        for (index, s) in enumerate(devices):
+            contents = self.rhel7._get_device_name(s)
+            self.assertEqual(result[index], contents)
+        const.ZVM_DEFAULT_NIC_VDEV = temp
+
+    def test_get_device_filename(self):
+        result = ['ifcfg-enccw0.0.1000',
+                  'ifcfg-enccw0.0.1003',
+                  'ifcfg-enccw0.0.100c']
+        devices = [0, 1, 4]
+        for (index, s) in enumerate(devices):
+            contents = self.rhel7._get_device_filename(s)
+            self.assertEqual(result[index], contents)
+
+        result = ['ifcfg-enccw0.0.0800',
+                  'ifcfg-enccw0.0.0803',
+                  'ifcfg-enccw0.0.080c']
+        temp = const.ZVM_DEFAULT_NIC_VDEV
+        const.ZVM_DEFAULT_NIC_VDEV = '800'
+        devices = [0, 1, 4]
+        for (index, s) in enumerate(devices):
+            contents = self.rhel7._get_device_filename(s)
+            self.assertEqual(result[index], contents)
+        const.ZVM_DEFAULT_NIC_VDEV = temp
 
 
 class ZVMDistManagerTestCases(test.TestCase):
