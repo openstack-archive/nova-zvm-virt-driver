@@ -1729,12 +1729,19 @@ class ZVMInstanceTestCases(ZVMTestCase):
         self._set_fake_xcat_responses([self._generate_xcat_resp(info)])
         self._instance.update_node_info(image_meta)
 
-    def test_deploy_node(self):
-        self._set_fake_xcat_responses([self._generate_xcat_resp(['fake'])])
+    @mock.patch('nova.virt.zvm.utils.xcat_request')
+    @mock.patch('nova.virt.zvm.utils.get_host')
+    def test_deploy_node(self, get_host, xcat_req):
+        get_host.return_value = 'fake@fakehost'
+        xcat_req.return_value = 'fake'
         self._instance.deploy_node('fakeimg', '/fake/file', '0100')
 
-    def test_deploy_node_failed(self):
-        self._set_fake_xcat_responses([{'data': [{'error': ['fake']}]}])
+    @mock.patch('nova.virt.zvm.utils.xcat_request')
+    @mock.patch('nova.virt.zvm.utils.get_host')
+    def test_deploy_node_failed(self, get_host, xcat_req):
+        get_host.return_value = 'fake@fakehost'
+        xcat_req.side_effect = exception.ZVMXCATDeployNodeFailed(node="fake",
+                                                                 msg='msg')
         self.assertRaises(exception.ZVMXCATDeployNodeFailed,
                           self._instance.deploy_node, 'fakeimg', '/fake/file')
 

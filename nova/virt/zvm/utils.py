@@ -199,6 +199,18 @@ class XCATConnection():
             headers = {'content-type': 'text/plain',
                        'content-length': len(body)}
 
+        _rep_ptn = ''.join(('&password=', CONF.zvm_xcat_password))
+        LOG.debug("Sending request to xCAT. xCAT-Server:%(xcat_server)s "
+                  "Request-method:%(method)s "
+                  "URL:%(url)s "
+                  "Headers:%(headers)s "
+                  "Body:%(body)s" %
+                  {'xcat_server': CONF.zvm_xcat_server,
+                   'method': method,
+                   'url': url.replace(_rep_ptn, ''),  # hide password in log
+                   'headers': str(headers),
+                   'body': body})
+
         try:
             self.conn.request(method, url, body, headers)
         except socket.gaierror as err:
@@ -219,6 +231,8 @@ class XCATConnection():
             'status': res.status,
             'reason': res.reason,
             'message': msg}
+
+        LOG.debug("xCAT response: %s" % str(resp))
 
         # Only "200" or "201" returned from xCAT can be considered
         # as good status
