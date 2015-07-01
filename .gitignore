@@ -17,3 +17,4 @@ covhtml
 dist/
 doc/build/
 nova_zvm_virt_driver.egg-info/
+.python-version
