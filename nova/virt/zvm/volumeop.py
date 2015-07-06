@@ -19,6 +19,7 @@ import time
 from oslo_config import cfg
 from oslo_log import log as logging
 from oslo_serialization import jsonutils
+from oslo_utils import excutils
 
 import nova.context
 from nova.i18n import _
@@ -500,20 +501,21 @@ class SVCDriver(DriverAPI):
                 exception.ZVMInvalidXCATResponseDataError,
                 exception.ZVMXCATInternalError,
                 exception.ZVMVolumeError):
-            self._update_instance_fcp_map_if_unlocked(instance['name'], fcp,
-                                                      self._DECREASE)
-            do_detach = not self._is_fcp_in_use(instance, fcp)
-            if rollback:
-                with zvmutils.ignore_errors():
-                    self._remove_mountpoint(instance, mountpoint)
-                with zvmutils.ignore_errors():
-                    self._remove_zfcp(instance, fcp, wwpn, lun)
-                with zvmutils.ignore_errors():
-                    self._remove_zfcp_from_pool(wwpn, lun)
-                with zvmutils.ignore_errors():
-                    if do_detach:
-                        self._detach_device(instance['name'], fcp)
-            raise
+            with excutils.save_and_reraise_exception():
+                self._update_instance_fcp_map_if_unlocked(instance['name'],
+                                                          fcp,
+                                                          self._DECREASE)
+                do_detach = not self._is_fcp_in_use(instance, fcp)
+                if rollback:
+                    with zvmutils.ignore_errors():
+                        self._remove_mountpoint(instance, mountpoint)
+                    with zvmutils.ignore_errors():
+                        self._remove_zfcp(instance, fcp, wwpn, lun)
+                    with zvmutils.ignore_errors():
+                        self._remove_zfcp_from_pool(wwpn, lun)
+                    with zvmutils.ignore_errors():
+                        if do_detach:
+                            self._detach_device(instance['name'], fcp)
 
     def detach_volume_active(self, connection_info, instance, mountpoint,
                              rollback=True):
@@ -537,18 +539,19 @@ class SVCDriver(DriverAPI):
                 exception.ZVMInvalidXCATResponseDataError,
                 exception.ZVMXCATInternalError,
                 exception.ZVMVolumeError):
-            self._update_instance_fcp_map_if_unlocked(instance['name'], fcp,
-                                                      self._INCREASE)
-            if rollback:
-                with zvmutils.ignore_errors():
-                    self._add_zfcp_to_pool(fcp, wwpn, lun, size)
-                with zvmutils.ignore_errors():
-                    self._add_zfcp(instance, fcp, wwpn, lun, size)
-                if mountpoint:
+            with excutils.save_and_reraise_exception():
+                self._update_instance_fcp_map_if_unlocked(instance['name'],
+                                                          fcp,
+                                                          self._INCREASE)
+                if rollback:
                     with zvmutils.ignore_errors():
-                        self._create_mountpoint(instance, fcp, wwpn, lun,
-                                                mountpoint)
-            raise
+                        self._add_zfcp_to_pool(fcp, wwpn, lun, size)
+                    with zvmutils.ignore_errors():
+                        self._add_zfcp(instance, fcp, wwpn, lun, size)
+                    if mountpoint:
+                        with zvmutils.ignore_errors():
+                            self._create_mountpoint(instance, fcp, wwpn, lun,
+                                                    mountpoint)
 
     def attach_volume_inactive(self, context, connection_info, instance,
                                mountpoint, rollback=True):
@@ -569,20 +572,22 @@ class SVCDriver(DriverAPI):
                 exception.ZVMInvalidXCATResponseDataError,
                 exception.ZVMXCATInternalError,
                 exception.ZVMVolumeError):
-            self._update_instance_fcp_map_if_unlocked(instance['name'], fcp,
-                                                      self._DECREASE)
-            do_detach = not self._is_fcp_in_use(instance, fcp)
-            if rollback:
-                with zvmutils.ignore_errors():
-                    self._notice_detach(instance, fcp, wwpn, lun, mountpoint)
-                with zvmutils.ignore_errors():
-                    self._remove_zfcp_from_pool(wwpn, lun)
-                with zvmutils.ignore_errors():
-                    if do_detach:
-                        self._detach_device(instance['name'], fcp)
-                        self._update_instance_fcp_map_if_unlocked(
-                                instance['name'], fcp, self._REMOVE)
-            raise
+            with excutils.save_and_reraise_exception():
+                self._update_instance_fcp_map_if_unlocked(instance['name'],
+                                                          fcp,
+                                                          self._DECREASE)
+                do_detach = not self._is_fcp_in_use(instance, fcp)
+                if rollback:
+                    with zvmutils.ignore_errors():
+                        self._notice_detach(instance, fcp, wwpn, lun,
+                                            mountpoint)
+                    with zvmutils.ignore_errors():
+                        self._remove_zfcp_from_pool(wwpn, lun)
+                    with zvmutils.ignore_errors():
+                        if do_detach:
+                            self._detach_device(instance['name'], fcp)
+                            self._update_instance_fcp_map_if_unlocked(
+                                    instance['name'], fcp, self._REMOVE)
 
     def detach_volume_inactive(self, connection_info, instance, mountpoint,
                                rollback=True):
@@ -605,18 +610,20 @@ class SVCDriver(DriverAPI):
                 exception.ZVMInvalidXCATResponseDataError,
                 exception.ZVMXCATInternalError,
                 exception.ZVMVolumeError):
-            self._update_instance_fcp_map_if_unlocked(instance['name'], fcp,
-                                                      self._INCREASE)
-            if rollback:
-                with zvmutils.ignore_errors():
-                    self._attach_device(instance['name'], fcp)
-                with zvmutils.ignore_errors():
-                    self._notice_attach(instance, fcp, wwpn, lun, mountpoint)
-                with zvmutils.ignore_errors():
-                    self._add_zfcp_to_pool(fcp, wwpn, lun, size)
-                with zvmutils.ignore_errors():
-                    self._allocate_zfcp(instance, fcp, size, wwpn, lun)
-            raise
+            with excutils.save_and_reraise_exception():
+                self._update_instance_fcp_map_if_unlocked(instance['name'],
+                                                          fcp,
+                                                          self._INCREASE)
+                if rollback:
+                    with zvmutils.ignore_errors():
+                        self._attach_device(instance['name'], fcp)
+                    with zvmutils.ignore_errors():
+                        self._notice_attach(instance, fcp, wwpn, lun,
+                                            mountpoint)
+                    with zvmutils.ignore_errors():
+                        self._add_zfcp_to_pool(fcp, wwpn, lun, size)
+                    with zvmutils.ignore_errors():
+                        self._allocate_zfcp(instance, fcp, size, wwpn, lun)
 
     def volume_boot_init(self, instance, fcp):
         self._update_instance_fcp_map_if_unlocked(instance['name'], fcp,
