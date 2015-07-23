@@ -21,6 +21,7 @@ import uuid
 from oslo_config import cfg
 from oslo_log import log as logging
 from oslo_serialization import jsonutils
+from oslo_service import loopingcall
 from oslo_utils import excutils
 from oslo_utils import timeutils
 from oslo_utils import units
@@ -32,7 +33,6 @@ from nova.compute import vm_mode
 from nova import exception as nova_exception
 from nova.i18n import _, _LI
 from nova.image import glance
-from nova.openstack.common import loopingcall
 from nova import utils
 from nova.virt import configdrive
 from nova.virt import driver

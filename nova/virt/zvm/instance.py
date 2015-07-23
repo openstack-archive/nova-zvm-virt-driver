@@ -18,12 +18,12 @@ import datetime
 
 from oslo_config import cfg
 from oslo_log import log as logging
+from oslo_service import loopingcall
 from oslo_utils import timeutils
 
 from nova.compute import power_state
 from nova import exception as nova_exception
 from nova.i18n import _
-from nova.openstack.common import loopingcall
 from nova.virt import hardware
 from nova.virt.zvm import const
 from nova.virt.zvm import exception
