@@ -171,6 +171,120 @@ class DriverAPI(object):
 class SVCDriver(DriverAPI):
     """SVC volume operator on IBM z/VM platform."""
 
+    class FCP(object):
+        """FCP adapter class."""
+
+        _DEV_NO_PATTERN = '[0-9a-f]{1,4}'
+        _WWPN_PATTERN = '[0-9a-f]{16}'
+        _CHPID_PATTERN = '[0-9A-F]{2}'
+
+        def __init__(self, init_info):
+            """Initialize a FCP device object from several lines of string
+               describing properties of the FCP device.
+               Here is a sample:
+                   opnstk1: FCP device number: B83D
+                   opnstk1:   Status: Free
+                   opnstk1:   NPIV world wide port number: NONE
+                   opnstk1:   Channel path ID: 59
+                   opnstk1:   Physical world wide port number: 20076D8500005181
+               The format comes from the response of xCAT, do not support
+               arbitrary format.
+
+            """
+
+            self._dev_no = None
+            self._npiv_port = None
+            self._chpid = None
+            self._physical_port = None
+
+            self._is_valid = True
+            # Sometimes nova issues get_volume_connector() for some reasons,
+            # which requires a FCP device being assigned to the instance. But
+            # nova will not attach any volume to the instance later. In this
+            # case we need to release the FCP device in later time. So a FCP
+            # device which is assigned to an instance doesn't means it's
+            # actually used by the instance.
+            self._is_reserved = False
+            self._is_in_use = False
+            self._reserve_time = 0
+
+            if isinstance(init_info, list) and (len(init_info) == 5):
+                self._dev_no = self._get_dev_number_from_line(init_info[0])
+                self._npiv_port = self._get_wwpn_from_line(init_info[2])
+                self._chpid = self._get_chpid_from_line(init_info[3])
+                self._physical_port = self._get_wwpn_from_line(init_info[4])
+            self._validate_device()
+
+        def _get_wwpn_from_line(self, info_line):
+            wwpn = info_line.split(':')[-1].strip().lower()
+            return wwpn if (wwpn and wwpn.upper() != 'NONE') else None
+
+        def _get_dev_number_from_line(self, info_line):
+            dev_no = info_line.split(':')[-1].strip().lower()
+            return dev_no if dev_no else None
+
+        def _get_chpid_from_line(self, info_line):
+            chpid = info_line.split(':')[-1].strip().upper()
+            return chpid if chpid else None
+
+        def _validate_device(self):
+            if not (self._dev_no and self._chpid):
+                self._is_valid = False
+                return
+            if not (self._npiv_port or self._physical_port):
+                self._is_valid = False
+                return
+            if not (re.match(self._DEV_NO_PATTERN, self._dev_no) and
+                    re.match(self._CHPID_PATTERN, self._chpid)):
+                self._is_valid = False
+                return
+            if self._npiv_port and not re.match(self._WWPN_PATTERN,
+                                                self._npiv_port):
+                self._is_valid = False
+                return
+            if self._physical_port and not re.match(self._WWPN_PATTERN,
+                                                    self._physical_port):
+                self._is_valid = False
+                return
+
+        def is_valid(self):
+            return self._is_valid
+
+        def get_dev_no(self):
+            return self._dev_no
+
+        def get_npiv_port(self):
+            return self._npiv_port
+
+        def get_chpid(self):
+            return self._chpid
+
+        def get_physical_port(self):
+            return self._physical_port
+
+        def reserve_device(self):
+            self._is_reserved = True
+            self._is_in_use = False
+            self._reserve_time = time.time()
+
+        def is_reserved(self):
+            return self._is_reserved
+
+        def set_in_use(self):
+            self._is_reserved = True
+            self._is_in_use = True
+
+        def is_in_use(self):
+            return self._is_in_use
+
+        def release_device(self):
+            self._is_reserved = False
+            self._is_in_use = False
+            self._reserve_time = 0
+
+        def get_reserve_time(self):
+            return self._reserve_time
+
     def __init__(self):
         self._xcat_url = zvmutils.XCATUrl()
         self._path_utils = zvmutils.PathUtils()
