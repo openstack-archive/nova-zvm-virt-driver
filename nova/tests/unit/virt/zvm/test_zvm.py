@@ -24,6 +24,7 @@ import mox
 from oslo_concurrency import processutils
 from oslo_config import cfg
 from oslo_serialization import jsonutils
+from oslo_utils import fileutils
 
 from nova.compute import power_state
 from nova import context
@@ -32,7 +33,6 @@ from nova import exception as nova_exception
 from nova.i18n import _
 from nova.image import glance
 from nova.network import model
-from nova.openstack.common import fileutils
 from nova import test
 from nova.tests.unit import fake_instance
 from nova.virt import fake
@@ -2251,6 +2251,162 @@ class ZVMVolumeOperatorTestCase(ZVMTestCase):
     def test_get_volume_connector_check_args(self):
         self.assertRaises(exception.ZVMDriverError,
                           self.volumeop.get_volume_connector, None)
+
+
+class FCPTestCase(ZVMTestCase):
+
+    def setUp(self):
+        super(FCPTestCase, self).setUp()
+        fcp_info = ['opnstk1: FCP device number: B83D',
+                    'opnstk1:   Status: Free',
+                    'opnstk1:   NPIV world wide port number: NONE',
+                    'opnstk1:   Channel path ID: 5A',
+                    'opnstk1:   Physical world wide port number: '
+                                '20076D8500005181']
+        self.fcp = volumeop.SVCDriver.FCP(fcp_info)
+        self.mox.UnsetStubs()
+
+    def test_init(self):
+        self.assertEqual('b83d', self.fcp.get_dev_no())
+        self.assertEqual(None, self.fcp.get_npiv_port())
+        self.assertEqual('5A', self.fcp.get_chpid())
+        self.assertEqual('20076d8500005181', self.fcp.get_physical_port())
+        self.assertTrue(self.fcp.is_valid())
+
+    def test_get_wwpn_from_line(self):
+        info_line = 'opnstk1:   NPIV world wide port number: NONE'
+        self.assertIsNone(self.fcp._get_wwpn_from_line(info_line))
+        info_line = 'opnstk1:   NPIV world wide port number: 20076D8500005181'
+        self.assertEqual('20076d8500005181',
+                         self.fcp._get_wwpn_from_line(info_line))
+        info_line = 'opnstk1:   Physical world wide port number:'
+        self.assertIsNone(self.fcp._get_wwpn_from_line(info_line))
+        info_line = ' '.join(['opnstk1:   Physical world wide port number:',
+                              '20076D8500005182'])
+        self.assertEqual('20076d8500005182',
+                         self.fcp._get_wwpn_from_line(info_line))
+
+    def test_get_dev_number_from_line(self):
+        info_line = 'opnstk1: FCP device number: B83D'
+        self.assertEqual('b83d', self.fcp._get_dev_number_from_line(info_line))
+        info_line = 'opnstk1: FCP device number: '
+        self.assertIsNone(self.fcp._get_dev_number_from_line(info_line))
+
+    def test_get_chpid_from_line(self):
+        info_line = 'opnstk1:   Channel path ID: 5A'
+        self.assertEqual('5A', self.fcp._get_chpid_from_line(info_line))
+        info_line = 'opnstk1:   Channel path ID: '
+        self.assertIsNone(self.fcp._get_chpid_from_line(info_line))
+
+    def test_validate_device(self):
+        dev_line = 'opnstk1: FCP device number: B83D'
+        status_line = 'opnstk1:   Status: Free'
+        npiv_line = 'opnstk1:   NPIV world wide port number: NONE'
+        chpid_line = 'opnstk1:   Channel path ID: 5A'
+        physical_port_line = ' '.join(['opnstk1:',
+                                       'Physical world wide port number:',
+                                       '20076D8500005181'])
+
+        fcp_info = ['opnstk1: FCP device number: ', status_line, npiv_line,
+                    chpid_line, physical_port_line]
+        fcp = volumeop.SVCDriver.FCP(fcp_info)
+        self.assertFalse(fcp.is_valid())
+
+        fcp_info = ['opnstk1: FCP device number: help', status_line, npiv_line,
+                    chpid_line, physical_port_line]
+        fcp = volumeop.SVCDriver.FCP(fcp_info)
+        self.assertFalse(fcp.is_valid())
+
+        fcp_info = [dev_line, '', npiv_line, chpid_line, physical_port_line]
+        fcp = volumeop.SVCDriver.FCP(fcp_info)
+        self.assertTrue(fcp.is_valid())
+
+        fcp_info = [dev_line, status_line,
+                    'opnstk1:   NPIV world wide port number: ',
+                    chpid_line, physical_port_line]
+        fcp = volumeop.SVCDriver.FCP(fcp_info)
+        self.assertTrue(fcp.is_valid())
+
+        fcp_info = [dev_line, status_line,
+                    'opnstk1:   NPIV world wide port number: 20076D850000',
+                    chpid_line, physical_port_line]
+        fcp = volumeop.SVCDriver.FCP(fcp_info)
+        self.assertFalse(fcp.is_valid())
+
+        fcp_info = [dev_line, status_line,
+                    'opnstk1:   NPIV world wide port number: 20076D850000help',
+                    chpid_line, physical_port_line]
+        fcp = volumeop.SVCDriver.FCP(fcp_info)
+        self.assertFalse(fcp.is_valid())
+
+        fcp_info = [dev_line, status_line,
+                    'opnstk1:   NPIV world wide port number: 20076D8500005182',
+                    chpid_line, physical_port_line]
+        fcp = volumeop.SVCDriver.FCP(fcp_info)
+        self.assertTrue(fcp.is_valid())
+
+        fcp_info = [dev_line, status_line, npiv_line,
+                    'opnstk1:   Channel path ID: ', physical_port_line]
+        fcp = volumeop.SVCDriver.FCP(fcp_info)
+        self.assertFalse(fcp.is_valid())
+
+        fcp_info = [dev_line, status_line, npiv_line,
+                    'opnstk1:   Channel path ID: help', physical_port_line]
+        fcp = volumeop.SVCDriver.FCP(fcp_info)
+        self.assertFalse(fcp.is_valid())
+
+        fcp_info = [dev_line, status_line, npiv_line,
+                    'opnstk1:   Channel path ID: 5', physical_port_line]
+        fcp = volumeop.SVCDriver.FCP(fcp_info)
+        self.assertFalse(fcp.is_valid())
+
+        fcp_info = [dev_line, status_line, npiv_line, npiv_line,
+                    'opnstk1:   Physical world wide port number: ']
+        fcp = volumeop.SVCDriver.FCP(fcp_info)
+        self.assertFalse(fcp.is_valid())
+
+        fcp_info = [dev_line, status_line, npiv_line, npiv_line,
+                    'opnstk1:   Physical world wide port number: 20076D850000']
+        fcp = volumeop.SVCDriver.FCP(fcp_info)
+        self.assertFalse(fcp.is_valid())
+
+        fcp_info = [dev_line, status_line, npiv_line, npiv_line,
+                    'opnstk1:   Physical world wide port number: '
+                    '20076D850000help']
+        fcp = volumeop.SVCDriver.FCP(fcp_info)
+        self.assertFalse(fcp.is_valid())
+
+        fcp_info = [dev_line, status_line, npiv_line, npiv_line]
+        fcp = volumeop.SVCDriver.FCP(fcp_info)
+        self.assertFalse(fcp.is_valid())
+
+    def test_is_same(self):
+        fcp_info = ['opnstk1: FCP device number: B83D',
+                    'opnstk1:   Status: Free',
+                    'opnstk1:   NPIV world wide port number: NONE',
+                    'opnstk1:   Channel path ID: 5A',
+                    'opnstk1:   Physical world wide port number: '
+                                '20076D8500005181']
+        fcp2 = volumeop.SVCDriver.FCP(fcp_info)
+        fcp_info = ['opnstk1: FCP device number: B83D',
+                    'opnstk1:   Status: Free',
+                    'opnstk1:   NPIV world wide port number: NONE',
+                    'opnstk1:   Channel path ID: 5A',
+                    'opnstk1:   Physical world wide port number: ']
+        fcp3 = volumeop.SVCDriver.FCP(fcp_info)
+        fcp_info = ['opnstk1: FCP device number: B83E',
+                    'opnstk1:   Status: Free',
+                    'opnstk1:   NPIV world wide port number: NONE',
+                    'opnstk1:   Channel path ID: 5A',
+                    'opnstk1:   Physical world wide port number: '
+                                '20076D8500005181']
+        fcp4 = volumeop.SVCDriver.FCP(fcp_info)
+
+        self.assertFalse(self.fcp.is_same(None))
+        self.assertFalse(self.fcp.is_same(fcp_info))
+        self.assertTrue(self.fcp.is_same(fcp2))
+        self.assertFalse(self.fcp.is_same(fcp3))
+        self.assertFalse(self.fcp.is_same(fcp4))
 
 
 class SVCDriverTestCase(ZVMTestCase):
