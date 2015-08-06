@@ -1150,6 +1150,7 @@ class ZVMDriverTestCases(ZVMTestCase):
         disk_info = jsonutils.dumps(disk_info)
 
         self.mox.StubOutWithMock(self.driver, 'get_host_ip_addr')
+        self.mox.StubOutWithMock(self.driver._pathutils, 'get_instance_path')
         self.mox.StubOutWithMock(self.driver._networkop,
                                  'clean_mac_switch_host')
         self.mox.StubOutWithMock(self.driver._pathutils, 'clean_temp_folder')
@@ -1169,6 +1170,7 @@ class ZVMDriverTestCases(ZVMTestCase):
 
         farg = mox.IgnoreArg()
         self.driver.get_host_ip_addr().AndReturn('10.1.1.10')
+        self.driver._pathutils.get_instance_path(farg, farg).AndReturn('/fake')
         self.driver._networkop.clean_mac_switch_host(farg)
         self.driver._pathutils.clean_temp_folder(farg)
         self.driver._copy_instance(farg).AndReturn(self._fake_inst)
@@ -1205,6 +1207,7 @@ class ZVMDriverTestCases(ZVMTestCase):
         disk_info = jsonutils.dumps(disk_info)
 
         self.mox.StubOutWithMock(self.driver, 'get_host_ip_addr')
+        self.mox.StubOutWithMock(self.driver._pathutils, 'get_instance_path')
         self.mox.StubOutWithMock(self.driver._networkop,
                                  'clean_mac_switch_host')
         self.mox.StubOutWithMock(self.driver, '_copy_instance')
@@ -1223,6 +1226,7 @@ class ZVMDriverTestCases(ZVMTestCase):
 
         farg = mox.IgnoreArg()
         self.driver.get_host_ip_addr().AndReturn('10.1.1.10')
+        self.driver._pathutils.get_instance_path(farg, farg).AndReturn('/fake')
         self.driver._networkop.clean_mac_switch_host(farg)
         self.driver._copy_instance(farg).AndReturn(self._fake_inst)
         instance.ZVMInstance.copy_xcat_node(farg)
@@ -1259,6 +1263,7 @@ class ZVMDriverTestCases(ZVMTestCase):
         disk_info = jsonutils.dumps(disk_info)
 
         self.mox.StubOutWithMock(self.driver, 'get_host_ip_addr')
+        self.mox.StubOutWithMock(self.driver._pathutils, 'get_instance_path')
         self.mox.StubOutWithMock(self.driver._networkop,
                                  'clean_mac_switch_host')
         self.mox.StubOutWithMock(self.driver._pathutils, 'clean_temp_folder')
@@ -1267,7 +1272,6 @@ class ZVMDriverTestCases(ZVMTestCase):
         self.mox.StubOutWithMock(instance.ZVMInstance, 'update_node_def')
         self.mox.StubOutWithMock(self.driver, '_preset_instance_network')
         self.mox.StubOutWithMock(instance.ZVMInstance, 'create_userid')
-        self.mox.StubOutWithMock(self.driver._pathutils, 'get_instance_path')
         self.mox.StubOutWithMock(zvmutils, 'process_eph_disk')
         self.mox.StubOutWithMock(self.driver, '_add_nic_to_instance')
         self.mox.StubOutWithMock(self.driver, '_deploy_root_and_ephemeral')
@@ -1279,6 +1283,7 @@ class ZVMDriverTestCases(ZVMTestCase):
 
         farg = mox.IgnoreArg()
         self.driver.get_host_ip_addr().AndReturn('10.1.1.10')
+        self.driver._pathutils.get_instance_path(farg, farg).AndReturn('/fake')
         self.driver._networkop.clean_mac_switch_host(farg)
         self.driver._pathutils.clean_temp_folder(farg)
         self.driver._copy_instance(farg).AndReturn(self._fake_inst)
@@ -1286,7 +1291,6 @@ class ZVMDriverTestCases(ZVMTestCase):
         instance.ZVMInstance.update_node_def(farg, farg)
         self.driver._preset_instance_network('os000001', farg)
         instance.ZVMInstance.create_userid(farg, farg)
-        self.driver._pathutils.get_instance_path(farg, farg).AndReturn('/fp')
         zvmutils.process_eph_disk('os000001')
         self.driver._add_nic_to_instance('os000001', farg, farg)
         self.driver._deploy_root_and_ephemeral(farg, farg)
@@ -1319,6 +1323,7 @@ class ZVMDriverTestCases(ZVMTestCase):
         disk_info = jsonutils.dumps(disk_info)
 
         self.mox.StubOutWithMock(self.driver, 'get_host_ip_addr')
+        self.mox.StubOutWithMock(self.driver._pathutils, 'get_instance_path')
         self.mox.StubOutWithMock(self.driver._networkop,
                                  'clean_mac_switch_host')
         self.mox.StubOutWithMock(self.driver._pathutils, 'clean_temp_folder')
@@ -1339,6 +1344,7 @@ class ZVMDriverTestCases(ZVMTestCase):
 
         farg = mox.IgnoreArg()
         self.driver.get_host_ip_addr().AndReturn('10.1.1.10')
+        self.driver._pathutils.get_instance_path(farg, farg).AndReturn('/fake')
         self.driver._networkop.clean_mac_switch_host(farg)
         self.driver._pathutils.clean_temp_folder(farg)
         self.driver._copy_instance(farg).AndReturn(self._fake_inst)
@@ -1382,6 +1388,7 @@ class ZVMDriverTestCases(ZVMTestCase):
         disk_info = jsonutils.dumps(disk_info)
 
         self.mox.StubOutWithMock(self.driver, 'get_host_ip_addr')
+        self.mox.StubOutWithMock(self.driver._pathutils, 'get_instance_path')
         self.mox.StubOutWithMock(instance.ZVMInstance, 'create_xcat_node')
         self.mox.StubOutWithMock(instance.ZVMInstance, 'update_node_def')
         self.mox.StubOutWithMock(self.driver._zvm_images, 'put_image_to_xcat')
@@ -1399,6 +1406,7 @@ class ZVMDriverTestCases(ZVMTestCase):
 
         farg = mox.IgnoreArg()
         self.driver.get_host_ip_addr().AndReturn('10.1.1.10')
+        self.driver._pathutils.get_instance_path(farg, farg).AndReturn('/fake')
         instance.ZVMInstance.create_xcat_node(farg)
         instance.ZVMInstance.update_node_def(farg, farg)
         self.driver._zvm_images.put_image_to_xcat(farg, farg)
