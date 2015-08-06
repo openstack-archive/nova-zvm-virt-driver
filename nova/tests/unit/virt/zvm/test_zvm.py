@@ -2169,18 +2169,26 @@ class ZVMVolumeOperatorTestCase(ZVMTestCase):
     def test_attach_volume_to_instance_check_args(self):
         fake_connection_info = {'info': 'fake_info'}
         fake_instance = {'name': 'fake_instance'}
-        fake_is_active = True
 
         farg = mox.IgnoreArg()
         self.assertRaises(exception.ZVMDriverError,
                           self.volumeop.attach_volume_to_instance, None,
-                          fake_connection_info, fake_instance, farg, None)
+                          fake_connection_info, None, farg, True)
         self.assertRaises(exception.ZVMDriverError,
                           self.volumeop.attach_volume_to_instance, None,
-                          fake_connection_info, None, farg, fake_is_active)
+                          None, fake_instance, farg, False)
+
+    def test_detach_volume_from_instance_check_args(self):
+        fake_connection_info = {'info': 'fake_info'}
+        fake_instance = {'name': 'fake_instance'}
+
+        farg = mox.IgnoreArg()
         self.assertRaises(exception.ZVMDriverError,
-                          self.volumeop.attach_volume_to_instance, None,
-                          None, fake_instance, farg, fake_is_active)
+                          self.volumeop.detach_volume_from_instance,
+                          fake_connection_info, None, farg, True)
+        self.assertRaises(exception.ZVMDriverError,
+                          self.volumeop.detach_volume_from_instance,
+                          None, fake_instance, farg, False)
 
     def test_attach_volume_to_instance_active(self):
         fake_connection_info = {'info': 'fake_info'}
@@ -2251,6 +2259,72 @@ class ZVMVolumeOperatorTestCase(ZVMTestCase):
     def test_get_volume_connector_check_args(self):
         self.assertRaises(exception.ZVMDriverError,
                           self.volumeop.get_volume_connector, None)
+
+    def test_has_persistent_volume_check_args(self):
+        self.assertRaises(exception.ZVMDriverError,
+                          self.volumeop.has_persistent_volume, None)
+
+    def test_extract_connection_info_check_args(self):
+        self.assertRaises(exception.ZVMDriverError,
+                          self.volumeop.extract_connection_info,
+                          mox.IgnoreArg(), None)
+
+    def test_get_root_volume_connection_info_check_args(self):
+        fake_bdm = {'connection_info': 'fake_info', 'mount_device': '/dev/sda'}
+        fake_root_device = '/dev/sda'
+        self.assertRaises(exception.ZVMDriverError,
+                          self.volumeop.get_root_volume_connection_info,
+                          [fake_bdm], None)
+        self.assertRaises(exception.ZVMDriverError,
+                          self.volumeop.get_root_volume_connection_info,
+                          [], fake_root_device)
+
+    def test_get_root_volume_connection_info_get_none(self):
+        fake_bdm = [{'connection_info': 'fake_info',
+                     'mount_device': '/dev/sda'}]
+        fake_root_device = '/dev/sdb'
+
+        farg = mox.IgnoreArg()
+        self.mox.StubOutWithMock(zvmutils, 'is_volume_root')
+        zvmutils.is_volume_root(farg, farg).AndReturn(False)
+        self.mox.ReplayAll()
+
+        connection_info = self.volumeop.get_root_volume_connection_info(
+                                    fake_bdm, fake_root_device)
+        self.assertIsNone(connection_info)
+        self.mox.VerifyAll()
+
+    def test_get_root_volume_connection_info(self):
+        fake_bdm = [{'connection_info': 'fake_info_a',
+                     'mount_device': '/dev/sda'},
+                    {'connection_info': 'fake_info_b',
+                     'mount_device': '/dev/sdb'}]
+        fake_root_device = '/dev/sdb'
+
+        farg = mox.IgnoreArg()
+        self.mox.StubOutWithMock(zvmutils, 'is_volume_root')
+        zvmutils.is_volume_root(farg, farg).AndReturn(False)
+        zvmutils.is_volume_root(farg, farg).AndReturn(True)
+        self.mox.ReplayAll()
+
+        connection_info = self.volumeop.get_root_volume_connection_info(
+                                    fake_bdm, fake_root_device)
+        self.assertEqual('fake_info_b', connection_info)
+        self.mox.VerifyAll()
+
+    def test_volume_boot_init_check_args(self):
+        self.assertRaises(exception.ZVMDriverError,
+                          self.volumeop.volume_boot_init, None, '1fa0')
+        self.assertRaises(exception.ZVMDriverError,
+                          self.volumeop.volume_boot_init,
+                          {'name': 'fake'}, None)
+
+    def test_volume_boot_cleanup_check_args(self):
+        self.assertRaises(exception.ZVMDriverError,
+                          self.volumeop.volume_boot_cleanup, None, '1fa0')
+        self.assertRaises(exception.ZVMDriverError,
+                          self.volumeop.volume_boot_cleanup,
+                          {'name': 'fake'}, None)
 
 
 class FCPTestCase(ZVMTestCase):
