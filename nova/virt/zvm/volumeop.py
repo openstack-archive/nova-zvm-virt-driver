@@ -52,7 +52,7 @@ class VolumeOperator(object):
                                   mountpoint, is_active, rollback=True):
         """Attach a volume to an instance."""
 
-        if None in [connection_info, instance, is_active]:
+        if not (connection_info and instance):
             errmsg = _("Missing required parameters.")
             raise exception.ZVMDriverError(msg=errmsg)
 
@@ -74,7 +74,7 @@ class VolumeOperator(object):
                                     mountpoint, is_active, rollback=True):
         """Detach a volume from an instance."""
 
-        if None in [connection_info, instance, is_active]:
+        if not (connection_info and instance):
             errmsg = _("Missing required parameters.")
             raise exception.ZVMDriverError(msg=errmsg)
 
@@ -103,21 +103,33 @@ class VolumeOperator(object):
         return self._svc_driver.has_persistent_volume(instance)
 
     def extract_connection_info(self, context, connection_info):
+        if not connection_info:
+            errmsg = _("Connection_info must be provided.")
+            raise exception.ZVMDriverError(msg=errmsg)
         return self._svc_driver._extract_connection_info(context,
                                                          connection_info)
 
-    def get_root_volume_connection_info(self, bdm, root_device):
-        for bd in bdm:
-            if zvmutils.is_volume_root(bd['mount_device'], root_device):
-                return bd['connection_info']
-
-        errmsg = _("Trying to extract volume connection info failed.")
+    def get_root_volume_connection_info(self, bdm_list, root_device):
+        if not (bdm_list and root_device):
+            errmsg = _("Block_device_mappings and root_device "
+                       "must be provided.")
+            raise exception.ZVMDriverError(msg=errmsg)
+        for bdm in bdm_list:
+            if zvmutils.is_volume_root(bdm.mount_device, root_device):
+                return bdm.connection_info
+        errmsg = _("Failed to get connection info of root volume.")
         raise exception.ZVMDriverError(msg=errmsg)
 
     def volume_boot_init(self, instance, fcp):
+        if not (instance and fcp):
+            errmsg = _("instance and fcp must be provided.")
+            raise exception.ZVMDriverError(msg=errmsg)
         self._svc_driver.volume_boot_init(instance, fcp)
 
     def volume_boot_cleanup(self, instance, fcp):
+        if not (instance and fcp):
+            errmsg = _("instance and fcp must be provided.")
+            raise exception.ZVMDriverError(msg=errmsg)
         self._svc_driver.volume_boot_cleanup(instance, fcp)
 
 
