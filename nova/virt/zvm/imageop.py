@@ -372,12 +372,12 @@ class ZVMImages(object):
         """Generate the image bundle which is used to import to xCAT MN's
         image repository.
         """
-        image_bundle_name = image_name + '.tgz'
+        image_bundle_name = image_name + '.tar'
         tar_file = spawn_path + '/' + tmp_file_fn + '_' + image_bundle_name
         LOG.debug("The generate the image bundle file is %s" % tar_file)
 
         os.chdir(spawn_path)
-        tarFile = tarfile.open(tar_file, mode='w:gz')
+        tarFile = tarfile.open(tar_file, mode='w')
 
         try:
             tarFile.add(tmp_file_fn)
@@ -420,7 +420,8 @@ class ZVMImages(object):
         remote_host_info = zvmutils.get_host()
         body = ['osimage=%s' % image_bundle_package,
                 'profile=%s' % image_profile,
-                'remotehost=%s' % remote_host_info]
+                'remotehost=%s' % remote_host_info,
+                'nozip']
         url = self._xcat_url.imgimport()
 
         try:
