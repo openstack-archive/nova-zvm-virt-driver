@@ -440,7 +440,7 @@ class ZVMDriver(driver.ComputeDriver):
             # Wait until network configuration finish
             self._wait_for_addnic(zvm_inst._name)
             if not self._is_nic_granted(zvm_inst._name):
-                msg = _("Failed to bound vswitch")
+                msg = _("Failed to bind vswitch")
                 LOG.error(msg, instance=instance)
                 raise exception.ZVMNetworkError(msg=msg)
 
@@ -1713,7 +1713,7 @@ class ZVMDriver(driver.ComputeDriver):
                                                  old_userid)
 
                     if not self._is_nic_granted(new_inst._name):
-                        msg = _("Failed to bound vswitch")
+                        msg = _("Failed to bind vswitch")
                         LOG.warn(msg, instance=instance)
                     else:
                         if power_on:
@@ -1812,7 +1812,7 @@ class ZVMDriver(driver.ComputeDriver):
             self._reconfigure_networking(instance['name'], network_info)
 
             if not self._is_nic_granted(instance['name']):
-                msg = _("Failed to bound vswitch")
+                msg = _("Failed to bind vswitch")
                 LOG.error(msg, instance=instance)
                 raise nova_exception.MigrationError(reason=msg)
         else:
