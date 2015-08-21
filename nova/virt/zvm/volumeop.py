@@ -298,12 +298,17 @@ class SVCDriver(DriverAPI):
         def get_reserve_time(self):
             return self._reserve_time
 
+    _RESERVE = 0
+    _INCREASE = 1
+    _DECREASE = 2
+    _REMOVE = 3
+
     def __init__(self):
         self._xcat_url = zvmutils.XCATUrl()
         self._path_utils = zvmutils.PathUtils()
         self._host = CONF.zvm_host
         self._pool_name = CONF.zvm_scsi_pool
-        self._fcp_pool = set()
+        self._fcp_pool = {}
         self._instance_fcp_map = {}
         self._is_instance_fcp_map_locked = False
         self._volume_api = volume.API()
@@ -312,11 +317,6 @@ class SVCDriver(DriverAPI):
                         'detach_volume': 'removeScsiVolume',
                         'create_mountpoint': 'createfilesysnode',
                         'remove_mountpoint': 'removefilesysnode'}
-
-        self._RESERVE = 0
-        self._INCREASE = 1
-        self._DECREASE = 2
-        self._REMOVE = 3
 
     def init_host(self, host_stats):
         """Initialize host environment."""
@@ -340,15 +340,63 @@ class SVCDriver(DriverAPI):
             LOG.error(errmsg)
             raise exception.ZVMVolumeError(msg=errmsg)
         self._init_fcp_pool(fcp_list)
+        self._init_instance_fcp_map(fcp_list)
 
     def _init_fcp_pool(self, fcp_list):
-        """Map all instances and their fcp devices, and record all free fcps.
-        One instance should use only one fcp device so far.
+        """The FCP infomation looks like this:
+           host: FCP device number: xxxx
+           host:   Status: Active
+           host:   NPIV world wide port number: xxxxxxxx
+           host:   Channel path ID: xx
+           host:   Physical world wide port number: xxxxxxxx
+           ......
+           host: FCP device number: xxxx
+           host:   Status: Active
+           host:   NPIV world wide port number: xxxxxxxx
+           host:   Channel path ID: xx
+           host:   Physical world wide port number: xxxxxxxx
+
+        """
+        fcp_info = self._get_all_fcp_info()
+        lines_per_item = 5
+        num_fcps = len(fcp_info) / lines_per_item
+        for n in range(0, num_fcps):
+            fcp_init_info = fcp_info[(5 * n):(5 * (n + 1))]
+            fcp = SVCDriver.FCP(fcp_init_info)
+            dev_no = fcp.get_dev_no()
+            if dev_no in fcp_list:
+                if fcp.is_valid():
+                    self._fcp_pool[dev_no] = fcp
+                else:
+                    errmsg = _("Find an invalid FCP device with properties {"
+                               "dev_no: %(dev_no), status: %(status), "
+                               "NPIV_port: %(NPIV_port), CHPID: %(CHPID)"
+                               "physical_port: %(physical_port)} !") % {
+                                'dev_no': fcp.get_dev_no(),
+                                'NPIV_port': fcp.get_npiv_port(),
+                                'CHPID': fcp.get_chpid(),
+                                'physical_port': fcp.get_physical_port()}
+                    LOG.warning(errmsg)
+
+    def _get_all_fcp_info(self):
+        fcp_info = []
+        free_fcp_info = self._list_fcp_details('free')
+        active_fcp_info = self._list_fcp_details('active')
+        if free_fcp_info:
+            fcp_info.extend(free_fcp_info)
+        if active_fcp_info:
+            fcp_info.extend(active_fcp_info)
+        return fcp_info
+
+    def _init_instance_fcp_map(self, fcp_list):
+        """Map all instances and their fcp devices.
+           One instance should use only one fcp device when multipath
+           is not enabled.
+
         """
 
-        self._fcp_pool = self._expand_fcp_list(fcp_list)
-        self._instance_fcp_map = {}
-        # Any other functions should not modify _instance_fcp_map during
+        complete_fcp_list = self._expand_fcp_list(fcp_list)
+        # All other functions should not modify _instance_fcp_map during
         # FCP pool initialization
         self._is_instance_fcp_map_locked = True
 
@@ -359,100 +407,121 @@ class SVCDriver(DriverAPI):
             for _bdm in instance_bdms['instance_bdms']:
                 connection_info = self._build_connection_info(_bdm)
                 try:
-                    _fcp = connection_info['data']['zvm_fcp']
-                    if _fcp and _fcp in self._fcp_pool:
-                        self._update_instance_fcp_map(instance_name, _fcp,
+                    # Remove invalid FCP devices
+                    fcp_list = connection_info['data']['zvm_fcp']
+                    invalid_fcp_list = []
+                    for fcp in fcp_list:
+                        if fcp not in complete_fcp_list:
+                            errmsg = _("FCP device %(dev)s is not configured "
+                                       "but is used by %(inst_name)s.") % {
+                                        'dev': fcp, 'inst_name': instance_name}
+                            LOG.warning(errmsg)
+                            invalid_fcp_list.append(fcp)
+                    for fcp in invalid_fcp_list:
+                        fcp_list.remove(fcp)
+                    # Map valid FCP devices
+                    if fcp_list:
+                        self._update_instance_fcp_map(instance_name, fcp_list,
                                                       self._INCREASE)
-                    if _fcp and _fcp not in self._fcp_pool:
-                        errmsg = _("FCP device %(dev)s is not configured but "
-                                   "is used by %(inst_name)s.") % {'dev': _fcp,
-                                   'inst_name': instance_name}
-                        LOG.warning(errmsg)
                 except (TypeError, KeyError):
                     pass
 
-        for _key in self._instance_fcp_map.keys():
-            fcp = self._instance_fcp_map.get(_key)['fcp']
-            self._fcp_pool.remove(fcp)
         self._is_instance_fcp_map_locked = False
 
-    def _update_instance_fcp_map_if_unlocked(self, instance_name, fcp, action):
+    def _update_instance_fcp_map_if_unlocked(self, instance_name, fcp_list,
+                                             action):
         while self._is_instance_fcp_map_locked:
             time.sleep(1)
-        self._update_instance_fcp_map(instance_name, fcp, action)
+        self._update_instance_fcp_map(instance_name, fcp_list, action)
 
-    def _update_instance_fcp_map(self, instance_name, fcp, action):
-        fcp = fcp.lower()
+    def _update_instance_fcp_map(self, instance_name, fcp_list, action):
         if instance_name in self._instance_fcp_map:
-            # One instance should use only one fcp device so far
-            current_fcp = self._instance_fcp_map.get(instance_name)['fcp']
-            if fcp != current_fcp:
-                errmsg = _("Instance %(ins_name)s has multiple FCP devices "
-                           "attached! FCP1: %(fcp1)s, FCP2: %(fcp2)s"
-                           ) % {'ins_name': instance_name, 'fcp1': fcp,
-                                'fcp2': current_fcp}
-                LOG.warning(errmsg)
-                return
+            current_list = self._instance_fcp_map[instance_name]['fcp_list']
+            if fcp_list != current_list:
+                errmsg = _("FCP conflict for instance %(ins_name)s! "
+                           "Original set: %(origin)s, new set: %(new)s"
+                           ) % {'ins_name': instance_name,
+                                'origin': current_list, 'new': fcp_list}
+                raise exception.ZVMVolumeError(msg=errmsg)
 
         if action == self._RESERVE:
             if instance_name in self._instance_fcp_map:
                 count = self._instance_fcp_map[instance_name]['count']
                 if count > 0:
-                    errmsg = _("Try to reserve a fcp device which already "
-                               "has volumes attached on: %(ins_name)s:%(fcp)s"
-                               ) % {'ins_name': instance_name, 'fcp': fcp}
-                    LOG.warning(errmsg)
+                    errmsg = _("Try to reserve fcp devices on which there are "
+                               "already volumes attached: "
+                               "%(ins_name)s:%(fcp_list)s") % {
+                                'ins_name': instance_name,
+                                'fcp_list': fcp_list}
+                    raise exception.ZVMVolumeError(msg=errmsg)
             else:
-                new_item = {instance_name: {'fcp': fcp, 'count': 0}}
+                for fcp_no in fcp_list:
+                    fcp = self._fcp_pool.get(fcp_no)
+                    fcp.reserve_device()
+                new_item = {instance_name: {'fcp_list': fcp_list, 'count': 0}}
                 self._instance_fcp_map.update(new_item)
 
         elif action == self._INCREASE:
+            for fcp_no in fcp_list:
+                fcp = self._fcp_pool.get(fcp_no)
+                fcp.set_in_use()
             if instance_name in self._instance_fcp_map:
                 count = self._instance_fcp_map[instance_name]['count']
-                new_item = {instance_name: {'fcp': fcp, 'count': count + 1}}
+                new_item = {instance_name: {'fcp_list': fcp_list,
+                                            'count': count + 1}}
                 self._instance_fcp_map.update(new_item)
             else:
-                new_item = {instance_name: {'fcp': fcp, 'count': 1}}
+                new_item = {instance_name: {'fcp_list': fcp_list, 'count': 1}}
                 self._instance_fcp_map.update(new_item)
 
         elif action == self._DECREASE:
             if instance_name in self._instance_fcp_map:
                 count = self._instance_fcp_map[instance_name]['count']
                 if count > 0:
-                    new_item = {instance_name: {'fcp': fcp,
+                    new_item = {instance_name: {'fcp_list': fcp_list,
                                                 'count': count - 1}}
                     self._instance_fcp_map.update(new_item)
+                    if count == 1:
+                        for fcp_no in fcp_list:
+                            fcp = self._fcp_pool.get(fcp_no)
+                            fcp.reserve_device()
                 else:
-                    fcp = self._instance_fcp_map[instance_name]['fcp']
-                    self._instance_fcp_map.pop(instance_name)
-                    self._fcp_pool.add(fcp)
+                    errmsg = _("Reference count falling down below 0 for map "
+                               "item: %(ins_name)s:%(fcp_list)s") % {
+                                'ins_name': instance_name,
+                                'fcp_list': fcp_list}
+                    raise exception.ZVMVolumeError(msg=errmsg)
             else:
                 errmsg = _("Try to decrease an inexistent map item: "
-                           "%(ins_name)s:%(fcp)s"
-                           ) % {'ins_name': instance_name, 'fcp': fcp}
-                LOG.warning(errmsg)
+                           "%(ins_name)s:%(fcp_list)s"
+                           ) % {'ins_name': instance_name,
+                                'fcp_list': fcp_list}
+                raise exception.ZVMVolumeError(msg=errmsg)
 
         elif action == self._REMOVE:
             if instance_name in self._instance_fcp_map:
                 count = self._instance_fcp_map[instance_name]['count']
                 if count > 0:
-                    errmsg = _("Try to remove a map item while some volumes "
-                               "are still attached on: %(ins_name)s:%(fcp)s"
-                               ) % {'ins_name': instance_name, 'fcp': fcp}
-                    LOG.warning(errmsg)
+                    errmsg = _("Try to remove a map item with volumes "
+                               "attached on: %(ins_name)s:%(fcp_list)s"
+                               ) % {'ins_name': instance_name,
+                                    'fcp_list': fcp_list}
+                    raise exception.ZVMVolumeError(msg=errmsg)
                 else:
-                    fcp = self._instance_fcp_map[instance_name]['fcp']
+                    for fcp_no in fcp_list:
+                        fcp = self._fcp_pool.get(fcp_no)
+                        fcp.release_device()
                     self._instance_fcp_map.pop(instance_name)
-                    self._fcp_pool.add(fcp)
             else:
                 errmsg = _("Try to remove an inexistent map item: "
-                           "%(ins_name)s:%(fcp)s"
-                           ) % {'ins_name': instance_name, 'fcp': fcp}
-                LOG.warning(errmsg)
+                           "%(ins_name)s:%(fcp_list)s"
+                           ) % {'ins_name': instance_name,
+                                'fcp_list': fcp_list}
+                raise exception.ZVMVolumeError(msg=errmsg)
 
         else:
             errmsg = _("Unrecognized option: %s") % action
-            LOG.warning(errmsg)
+            raise exception.ZVMVolumeError(msg=errmsg)
 
     def _get_host_volume_bdms(self):
         """Return all block device mappings on a compute host."""
@@ -484,47 +553,60 @@ class SVCDriver(DriverAPI):
     def _build_connection_info(self, bdm):
         try:
             connection_info = jsonutils.loads(bdm['connection_info'])
-            return connection_info
         except (TypeError, KeyError, ValueError):
             return None
 
+        # The value of zvm_fcp is a string in former release. It will be set
+        # in future. We have to translate a string FCP to a single-element set
+        # in order to make code goes on.
+        fcp = connection_info['data']['zvm_fcp']
+        if fcp and isinstance(fcp, basestring):
+            connection_info['data']['zvm_fcp'] = [fcp]
+
+        return connection_info
+
     def get_volume_connector(self, instance):
-        empty_connector = {'zvm_fcp': None, 'wwpns': [], 'host': ''}
+        empty_connector = {'zvm_fcp': [], 'wwpns': [], 'host': ''}
 
         try:
-            fcp = self._instance_fcp_map.get(instance['name'])['fcp']
+            fcp_list = self._instance_fcp_map.get(instance['name'])['fcp_list']
         except Exception:
-            fcp = None
-        if not fcp:
-            fcp = self._get_fcp_from_pool()
-            if fcp:
-                self._update_instance_fcp_map_if_unlocked(instance['name'],
-                                                          fcp, self._RESERVE)
+            fcp_list = []
+        if not fcp_list:
+            fcp_list = self._get_fcp_from_pool()
+            if fcp_list:
+                self._update_instance_fcp_map_if_unlocked(
+                        instance['name'], fcp_list, self._RESERVE)
 
-        if not fcp:
+        if not fcp_list:
             errmsg = _("No available FCP device found.")
             LOG.warning(errmsg)
             return empty_connector
-        fcp = fcp.lower()
 
-        wwpn = self._get_wwpn(fcp)
-        if not wwpn:
-            errmsg = _("FCP device %s has no available WWPN.") % fcp
+        wwpns = []
+        for fcp_no in fcp_list:
+            wwpn = self._get_wwpn(fcp_no)
+            if not wwpn:
+                errmsg = _("FCP device %s has no available WWPN.") % fcp_no
+                LOG.warning(errmsg)
+            else:
+                wwpns.append(wwpn)
+        if not wwpns:
+            errmsg = _("No available WWPN found.")
             LOG.warning(errmsg)
             return empty_connector
-        wwpn = wwpn.lower()
 
-        return {'zvm_fcp': fcp, 'wwpns': [wwpn], 'host': CONF.zvm_host}
+        return {'zvm_fcp': fcp_list, 'wwpns': wwpns, 'host': CONF.zvm_host}
 
-    def _get_wwpn(self, fcp):
-        states = ['active', 'free']
-        for _state in states:
-            fcps_info = self._list_fcp_details(_state)
-            if not fcps_info:
-                continue
-            wwpn = self._extract_wwpn_from_fcp_info(fcp, fcps_info)
-            if wwpn:
-                return wwpn
+    def _get_wwpn(self, fcp_no):
+        fcp = self._fcp_pool.get(fcp_no)
+        if not fcp:
+            return None
+        if fcp.get_npiv_port():
+            return fcp.get_npiv_port()
+        if fcp.get_physical_port():
+            return fcp.get_physical_port()
+        return None
 
     def _list_fcp_details(self, state):
         fields = '&field=--fcpdevices&field=' + state + '&field=details'
@@ -535,52 +617,58 @@ class SVCDriver(DriverAPI):
         except (TypeError, KeyError):
             return None
 
-    def _extract_wwpn_from_fcp_info(self, fcp, fcps_info):
-        """The FCP infomation would look like this:
-           host: FCP device number: xxxx
-           host:   Status: Active
-           host:   NPIV world wide port number: xxxxxxxx
-           host:   Channel path ID: xx
-           host:   Physical world wide port number: xxxxxxxx
-           ......
-           host: FCP device number: xxxx
-           host:   Status: Active
-           host:   NPIV world wide port number: xxxxxxxx
-           host:   Channel path ID: xx
-           host:   Physical world wide port number: xxxxxxxx
-
-        """
-
-        lines_per_item = 5
-        num_fcps = len(fcps_info) / lines_per_item
-        fcp = fcp.upper()
-        for _cur in range(0, num_fcps):
-            # Find target FCP device
-            if fcp not in fcps_info[_cur * lines_per_item]:
-                continue
-            # Try to get NPIV WWPN first
-            wwpn_info = fcps_info[(_cur + 1) * lines_per_item - 3]
-            wwpn = self._get_wwpn_from_line(wwpn_info)
-            if not wwpn:
-                # Get physical WWPN if NPIV WWPN is none
-                wwpn_info = fcps_info[(_cur + 1) * lines_per_item - 1]
-                wwpn = self._get_wwpn_from_line(wwpn_info)
-            return wwpn
-
-    def _get_wwpn_from_line(self, info_line):
-        wwpn = info_line.split(':')[-1].strip()
-        if wwpn and wwpn.upper() != 'NONE':
-            return wwpn
-        else:
-            return None
-
     def _get_fcp_from_pool(self):
-        if self._fcp_pool:
-            return self._fcp_pool.pop()
+        fcp_list = []
+        for fcp in self._fcp_pool.values():
+            if not fcp.is_reserved():
+                fcp_list.append(fcp.get_dev_no())
+                break
 
-        self._init_fcp_pool(CONF.zvm_fcp_list)
-        if self._fcp_pool:
-            return self._fcp_pool.pop()
+        if not fcp_list:
+            self._release_fcps_reserved()
+            for fcp in self._fcp_pool.values():
+                if not fcp.is_reserved():
+                    fcp_list.append(fcp.get_dev_no())
+                    break
+
+        if not fcp_list:
+            errmsg = _("No available FCP device found.")
+            LOG.warning(errmsg)
+            return []
+
+        if not CONF.zvm_multiple_fcp:
+            return fcp_list
+
+        primary_fcp = self._fcp_pool.get(fcp_list.pop())
+        backup_fcp = None
+        for fcp in self._fcp_pool.values():
+            if not fcp.is_reserved() and (
+                    fcp.get_chpid() != primary_fcp.get_chpid()):
+                backup_fcp = fcp
+                break
+
+        fcp_list.append(primary_fcp.get_dev_no())
+        if backup_fcp:
+            fcp_list.append(backup_fcp.get_dev_no())
+        else:
+            errmsg = _("Can not find a backup FCP device for primary FCP "
+                       "device %s") % primary_fcp.get_dev_no()
+            LOG.warning(errmsg)
+            return []
+        return fcp_list
+
+    def _release_fcps_reserved(self):
+        current = time.time()
+        for instance in self._instance_fcp_map.keys():
+            if self._instance_fcp_map.get(instance)['count'] != 0:
+                continue
+            # Only release FCP devices which are reserved more than 1 minute
+            # in case concurrent assignment.
+            fcp_list = self._instance_fcp_map.get(instance)['fcp_list']
+            fcp = self._fcp_pool.get(fcp_list[0])
+            if current - fcp.get_reserve_time() > 30:
+                self._update_instance_fcp_map_if_unlocked(instance, fcp_list,
+                                                          self._REMOVE)
 
     def _extract_connection_info(self, context, connection_info):
         with wrap_internal_errors():
@@ -595,9 +683,10 @@ class SVCDriver(DriverAPI):
                 volume_id = connection_info['data']['volume_id']
                 volume = self._get_volume_by_id(context, volume_id)
                 size = str(volume['size']) + 'G'
-            fcp = connection_info['data']['zvm_fcp']
+            fcp_list = connection_info['data']['zvm_fcp']
 
-            return (lun.lower(), self._format_wwpn(wwpn), size, fcp.lower())
+            return (lun.lower(), self._format_wwpn(wwpn), size,
+                    self._format_fcp_list(fcp_list))
 
     def _format_wwpn(self, wwpn):
         if isinstance(wwpn, basestring):
@@ -605,6 +694,12 @@ class SVCDriver(DriverAPI):
         else:
             new_wwpn = ';'.join(wwpn)
             return new_wwpn.lower()
+
+    def _format_fcp_list(self, fcp_list):
+        if len(fcp_list) == 1:
+            return fcp_list.pop().lower()
+        else:
+            return ';'.join(fcp_list).lower()
 
     def _get_volume_by_id(self, context, volume_id):
         volume = self._volume_api.get(context, volume_id)
@@ -616,9 +711,10 @@ class SVCDriver(DriverAPI):
 
         (lun, wwpn, size, fcp) = self._extract_connection_info(context,
                                                                connection_info)
+        fcp_list = fcp.split(';')
+        self._update_instance_fcp_map_if_unlocked(instance['name'],
+                                                  fcp_list, self._INCREASE)
         try:
-            self._update_instance_fcp_map_if_unlocked(instance['name'], fcp,
-                                                      self._INCREASE)
             self._add_zfcp_to_pool(fcp, wwpn, lun, size)
             self._add_zfcp(instance, fcp, wwpn, lun, size)
             if mountpoint:
@@ -629,9 +725,9 @@ class SVCDriver(DriverAPI):
                 exception.ZVMVolumeError):
             with excutils.save_and_reraise_exception():
                 self._update_instance_fcp_map_if_unlocked(instance['name'],
-                                                          fcp,
+                                                          fcp_list,
                                                           self._DECREASE)
-                do_detach = not self._is_fcp_in_use(instance, fcp)
+                do_detach = not self._is_fcp_in_use(instance)
                 if rollback:
                     with zvmutils.ignore_errors():
                         self._remove_mountpoint(instance, mountpoint)
@@ -641,7 +737,10 @@ class SVCDriver(DriverAPI):
                         self._remove_zfcp_from_pool(wwpn, lun)
                     with zvmutils.ignore_errors():
                         if do_detach:
-                            self._detach_device(instance['name'], fcp)
+                            for dev_no in fcp_list:
+                                self._detach_device(instance['name'], dev_no)
+                            self._update_instance_fcp_map_if_unlocked(
+                                    instance['name'], fcp_list, self._REMOVE)
 
     def detach_volume_active(self, connection_info, instance, mountpoint,
                              rollback=True):
@@ -649,25 +748,28 @@ class SVCDriver(DriverAPI):
 
         (lun, wwpn, size, fcp) = self._extract_connection_info(None,
                                                                connection_info)
+        fcp_list = fcp.split(';')
+        self._update_instance_fcp_map_if_unlocked(instance['name'], fcp_list,
+                                                  self._DECREASE)
         try:
-            self._update_instance_fcp_map_if_unlocked(instance['name'], fcp,
-                                                      self._DECREASE)
-            do_detach = not self._is_fcp_in_use(instance, fcp)
+            do_detach = not self._is_fcp_in_use(instance)
             if mountpoint:
                 self._remove_mountpoint(instance, mountpoint)
             self._remove_zfcp(instance, fcp, wwpn, lun)
             self._remove_zfcp_from_pool(wwpn, lun)
             if do_detach:
-                self._detach_device(instance['name'], fcp)
+                for dev_no in fcp_list:
+                    self._detach_device(instance['name'], dev_no)
                 self._update_instance_fcp_map_if_unlocked(instance['name'],
-                                                          fcp, self._REMOVE)
+                                                          fcp_list,
+                                                          self._REMOVE)
         except (exception.ZVMXCATRequestFailed,
                 exception.ZVMInvalidXCATResponseDataError,
                 exception.ZVMXCATInternalError,
                 exception.ZVMVolumeError):
             with excutils.save_and_reraise_exception():
                 self._update_instance_fcp_map_if_unlocked(instance['name'],
-                                                          fcp,
+                                                          fcp_list,
                                                           self._INCREASE)
                 if rollback:
                     with zvmutils.ignore_errors():
@@ -685,24 +787,25 @@ class SVCDriver(DriverAPI):
 
         (lun, wwpn, size, fcp) = self._extract_connection_info(context,
                                                                connection_info)
+        fcp_list = fcp.split(';')
+        do_attach = not self._is_fcp_in_use(instance)
+        self._update_instance_fcp_map_if_unlocked(instance['name'],
+                                                  fcp_list, self._INCREASE)
         try:
-            do_attach = not self._is_fcp_in_use(instance, fcp)
-            self._update_instance_fcp_map_if_unlocked(instance['name'], fcp,
-                                                      self._INCREASE)
             self._add_zfcp_to_pool(fcp, wwpn, lun, size)
             self._allocate_zfcp(instance, fcp, size, wwpn, lun)
             self._notice_attach(instance, fcp, wwpn, lun, mountpoint)
             if do_attach:
-                self._attach_device(instance['name'], fcp)
+                for dev_no in fcp_list:
+                    self._attach_device(instance['name'], dev_no)
         except (exception.ZVMXCATRequestFailed,
                 exception.ZVMInvalidXCATResponseDataError,
                 exception.ZVMXCATInternalError,
                 exception.ZVMVolumeError):
             with excutils.save_and_reraise_exception():
                 self._update_instance_fcp_map_if_unlocked(instance['name'],
-                                                          fcp,
+                                                          fcp_list,
                                                           self._DECREASE)
-                do_detach = not self._is_fcp_in_use(instance, fcp)
                 if rollback:
                     with zvmutils.ignore_errors():
                         self._notice_detach(instance, fcp, wwpn, lun,
@@ -710,10 +813,11 @@ class SVCDriver(DriverAPI):
                     with zvmutils.ignore_errors():
                         self._remove_zfcp_from_pool(wwpn, lun)
                     with zvmutils.ignore_errors():
-                        if do_detach:
-                            self._detach_device(instance['name'], fcp)
+                        if do_attach:
+                            for dev_no in fcp_list:
+                                self._detach_device(instance['name'], dev_no)
                             self._update_instance_fcp_map_if_unlocked(
-                                    instance['name'], fcp, self._REMOVE)
+                                    instance['name'], fcp_list, self._REMOVE)
 
     def detach_volume_inactive(self, connection_info, instance, mountpoint,
                                rollback=True):
@@ -721,24 +825,27 @@ class SVCDriver(DriverAPI):
 
         (lun, wwpn, size, fcp) = self._extract_connection_info(None,
                                                                connection_info)
+        fcp_list = fcp.split(';')
+        self._update_instance_fcp_map_if_unlocked(instance['name'],
+                                                  fcp_list, self._DECREASE)
+        do_detach = not self._is_fcp_in_use(instance)
         try:
-            self._update_instance_fcp_map_if_unlocked(instance['name'], fcp,
-                                                      self._DECREASE)
-            do_detach = not self._is_fcp_in_use(instance, fcp)
             self._remove_zfcp(instance, fcp, wwpn, lun)
             self._remove_zfcp_from_pool(wwpn, lun)
             self._notice_detach(instance, fcp, wwpn, lun, mountpoint)
             if do_detach:
-                self._detach_device(instance['name'], fcp)
+                for dev_no in fcp_list:
+                    self._detach_device(instance['name'], dev_no)
                 self._update_instance_fcp_map_if_unlocked(instance['name'],
-                                                          fcp, self._REMOVE)
+                                                          fcp_list,
+                                                          self._REMOVE)
         except (exception.ZVMXCATRequestFailed,
                 exception.ZVMInvalidXCATResponseDataError,
                 exception.ZVMXCATInternalError,
                 exception.ZVMVolumeError):
             with excutils.save_and_reraise_exception():
                 self._update_instance_fcp_map_if_unlocked(instance['name'],
-                                                          fcp,
+                                                          fcp_list,
                                                           self._INCREASE)
                 if rollback:
                     with zvmutils.ignore_errors():
@@ -824,7 +931,7 @@ class SVCDriver(DriverAPI):
         body = ["command=chccwdev -e %s" % dev]
         self._xcat_xdsh(node, body)
 
-    def _is_fcp_in_use(self, instance, fcp):
+    def _is_fcp_in_use(self, instance):
         if instance['name'] in self._instance_fcp_map:
             count = self._instance_fcp_map.get(instance['name'])['count']
             if count > 0:
