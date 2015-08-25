@@ -134,7 +134,7 @@ class ZVMTestCase(test.TestCase):
                    zvm_image_default_password='pass',
                    zvm_fcp_list="1FB0-1FB3",
                    zvm_zhcp_fcp_list="1FAF",
-                   config_drive_format='tgz',
+                   config_drive_format='iso9660',
                    zvm_image_compression_level='0')
 
     def tearDown(self):
@@ -1515,7 +1515,7 @@ class ZVMDriverTestCases(ZVMTestCase):
         self.assertEqual('fakenode: 00: zIPL boot menu', console_log)
 
     def test_create_config_drive_non_tgz(self):
-        self.flags(config_drive_format='nontgz')
+        self.flags(config_drive_format='dummy')
         linuxdist = dist.ListDistManager().get_linux_dist('rhel6')
         self.assertRaises(exception.ZVMConfigDriveError,
             self.driver._create_config_drive, '', self.instance, '', '', '',
@@ -2124,7 +2124,7 @@ class ZVMConfigDriveTestCase(test.NoDBTestCase):
 
     def setUp(self):
         super(ZVMConfigDriveTestCase, self).setUp()
-        self.flags(config_drive_format='tgz',
+        self.flags(config_drive_format='iso9660',
                    tempdir='/tmp/os')
         self.inst_md = FakeInstMeta()
 

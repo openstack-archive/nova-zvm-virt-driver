@@ -500,7 +500,7 @@ class ZVMDriver(driver.ComputeDriver):
 
     def _create_config_drive(self, instance_path, instance, injected_files,
                              admin_password, commands, linuxdist):
-        if CONF.config_drive_format != 'tgz':
+        if CONF.config_drive_format not in ['tgz', 'iso9660']:
             msg = (_("Invalid config drive format %s") %
                    CONF.config_drive_format)
             raise exception.ZVMConfigDriveError(msg=msg)
