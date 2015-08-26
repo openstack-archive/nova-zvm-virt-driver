@@ -1019,6 +1019,7 @@ class ZVMDriver(driver.ComputeDriver):
             'cpu_info': jsonutils.dumps(stats['cpu_info']),
             'disk_available_least': stats['disk_available'],
             'supported_instances': jsonutils.dumps(supported_instances),
+            'numa_topology': None,
         }
 
         return dic
