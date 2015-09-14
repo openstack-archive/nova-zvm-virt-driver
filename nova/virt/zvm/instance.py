@@ -48,7 +48,7 @@ class ZVMInstance(object):
     def power_off(self):
         """Power off z/VM instance."""
         try:
-            self._power_state("PUT", "off")
+            self._power_state("PUT", "softoff")
         except exception.ZVMXCATInternalError as err:
             err_str = err.format_message()
             if ("Return Code: 200" in err_str and
