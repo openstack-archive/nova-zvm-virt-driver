@@ -193,15 +193,17 @@ class ZVMDriver(driver.ComputeDriver):
         self._xcat_url = zvmutils.XCATUrl()
 
         self._host_stats = []
-        try:
-            self._host_stats = self.update_host_status()
-            self._networkop = networkop.NetworkOperator()
-        except Exception as e:
-            # Ignore any exceptions and log as warning
-            emsg = zvmutils.format_exception_msg(e)
-            LOG.warn(_("Exception raised while initializing z/VM driver: %s")
-                     % emsg)
 
+        while (self._host_stats == []):
+            try:
+                self._host_stats = self.update_host_status()
+            except Exception:
+                # Ignore any exceptions and log as warning
+                LOG.warn(_("Failed to get host stats while initializing zVM "
+                           "driver, will re-try in 1 minute"))
+                time.sleep(60)
+
+        self._networkop = networkop.NetworkOperator()
         self._zvm_images = imageop.ZVMImages()
         self._pathutils = zvmutils.PathUtils()
         self._networkutils = zvmutils.NetworkUtils()
