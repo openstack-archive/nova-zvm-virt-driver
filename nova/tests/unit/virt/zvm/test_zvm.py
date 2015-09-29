@@ -212,6 +212,7 @@ class ZVMDriverTestCases(ZVMTestCase):
             'root_gb', 'ephemeral_gb')
     _fake_inst = {'name': 'os000001'}
     _old_inst = {'name': 'rszos000001'}
+
     for k in keys:
         _fake_inst[k] = ''
         _old_inst[k] = ''
@@ -239,10 +240,6 @@ class ZVMDriverTestCases(ZVMTestCase):
                           "fakenode: FAKEDP Free: 38842.7 G\n"]
         return self._generate_xcat_resp(fake_disk_info)
 
-    def _set_fake_host_info(self):
-        self._set_fake_xcat_responses([self._fake_host_rinv_info(),
-            self._fake_disk_info(), self._gen_resp(info=['userid=fakehcp'])])
-
     def _setup_fake_inst_obj(self):
         keys = ('image_ref', 'uuid', 'user_id', 'project_id',
             'power_state', 'system_metadata', 'memory_mb', 'vcpus',
@@ -255,9 +252,28 @@ class ZVMDriverTestCases(ZVMTestCase):
 
     def setUp(self):
         super(ZVMDriverTestCases, self).setUp()
-        self._set_fake_host_info()
         self._setup_fake_inst_obj()
-        self.driver = driver.ZVMDriver(fake.FakeVirtAPI())
+        with mock.patch.object(driver.ZVMDriver, 'update_host_status') as uhs:
+            uhs.return_value = [{
+                'host': 'fakehost',
+                'allowed_vm_type': 'zLinux',
+                'vcpus': 10,
+                'vcpus_used': 10,
+                'cpu_info': {'Architecture': 's390x', 'CEC model': '2097'},
+                'disk_total': 406105,
+                'disk_used': 367263,
+                'disk_available': 38842,
+                'host_memory_total': 16384,
+                'host_memory_free': 8096,
+                'hypervisor_type': 'zvm',
+                'hypervisor_version': '630',
+                'hypervisor_hostname': 'fakenode',
+                'supported_instances': [('s390x', 'zvm', 'hvm')],
+                'zhcp': {'hostname': 'fakehcp.fake.com',
+                         'nodename': 'fakehcp', 'userid': 'fakehcp'},
+                'ipl_time': 'IPL at 03/13/14 21:43:12 EDT',
+            }]
+            self.driver = driver.ZVMDriver(fake.FakeVirtAPI())
         self.mox.UnsetStubs()
 
     def test_init_driver(self):
