@@ -186,7 +186,7 @@ class XCATUrl(object):
             return rurl
 
 
-class XCATConnection():
+class XCATConnection(object):
     """Https requests to xCAT web service."""
 
     def __init__(self):

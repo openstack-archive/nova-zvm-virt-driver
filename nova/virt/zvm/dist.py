@@ -333,7 +333,7 @@ class sles12(sles):
         return "echo 'root:%s' | chpasswd" % admin_password
 
 
-class ListDistManager():
+class ListDistManager(object):
     def get_linux_dist(self, os_version):
         distro, release = self._parse_dist(os_version)
         return globals()[distro + release]
