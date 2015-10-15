@@ -28,8 +28,7 @@ from oslo_utils import excutils
 from nova import block_device
 from nova.compute import power_state
 from nova import exception as nova_exception
-from nova.i18n import _
-from nova.i18n import _LE
+from nova.i18n import _, _LE, _LI
 from nova.virt import driver
 from nova.virt.zvm import const
 from nova.virt.zvm import exception
@@ -195,7 +194,7 @@ class XCATConnection():
         self.conn = httplib.HTTPSConnection(self.host,
                         timeout=CONF.zvm_xcat_connection_timeout)
 
-    def request(self, method, url, body=None, headers={}):
+    def request(self, method, url, body=None, headers=None):
         """Send https request to xCAT server.
 
         Will return a python dictionary including:
@@ -204,6 +203,7 @@ class XCATConnection():
          'message': response message}
 
         """
+        headers = headers or []
         if body is not None:
             body = jsonutils.dumps(body)
             headers = {'content-type': 'text/plain',
@@ -261,7 +261,8 @@ class XCATConnection():
         return resp
 
 
-def xcat_request(method, url, body=None, headers={}):
+def xcat_request(method, url, body=None, headers=None):
+    headers = headers or {}
     conn = XCATConnection()
     resp = conn.request(method, url, body, headers)
     return load_xcat_resp(resp['message'])
@@ -325,7 +326,7 @@ def except_xcat_call_failed_and_reraise(exc, **kwargs):
             exception.ZVMXCATInternalError) as err:
         msg = err.format_message()
         kwargs['msg'] = msg
-        LOG.error('XCAT response return error: %s', msg)
+        LOG.error(_LE('XCAT response return error: %s'), msg)
         raise exc(**kwargs)
 
 
@@ -428,7 +429,7 @@ def _log_warnings(resp):
     for msg in (resp['info'], resp['node'], resp['data']):
         msgstr = str(msg)
         if 'warn' in msgstr.lower():
-            LOG.info(_("Warning from xCAT: %s") % msgstr)
+            LOG.info(_LI("Warning from xCAT: %s") % msgstr)
 
 
 def _is_warning_or_recoverable_issue(err_str):

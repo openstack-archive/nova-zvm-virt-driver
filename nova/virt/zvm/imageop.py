@@ -26,7 +26,7 @@ from oslo_log import log as logging
 from oslo_utils import excutils
 
 from nova import exception as nova_exception
-from nova.i18n import _
+from nova.i18n import _, _LW
 from nova.image import glance
 from nova import utils
 from nova.virt import images
@@ -152,7 +152,7 @@ class ZVMImages(object):
         except (exception.ZVMXCATInternalError,
                 exception.ZVMInvalidXCATResponseDataError,
                 exception.ZVMXCATRequestFailed):
-            LOG.warn(_("Failed to delete image file %s from xCAT") %
+            LOG.warn(_LW("Failed to delete image file %s from xCAT") %
                      image_name_xcat)
 
     def _delete_image_object_from_xcat(self, image_name_xcat):
@@ -169,7 +169,7 @@ class ZVMImages(object):
         except (exception.ZVMXCATInternalError,
                 exception.ZVMInvalidXCATResponseDataError,
                 exception.ZVMXCATRequestFailed):
-            LOG.warn(_("Failed to delete image definition %s from xCAT") %
+            LOG.warn(_LW("Failed to delete image definition %s from xCAT") %
                      image_name_xcat)
 
     def get_image_file_path_from_image_name(self, image_name_xcat):
@@ -199,7 +199,7 @@ class ZVMImages(object):
         if os.path.exists(manifest_xml):
             xml_file = Dom.parse(manifest_xml)
         else:
-            LOG.warn(_('manifest.xml does not exist'))
+            LOG.warn(_LW('manifest.xml does not exist'))
             manifest['imagename'] = ''
             manifest['imagetype'] = ''
             manifest['osarch'] = ''
@@ -516,7 +516,7 @@ class ZVMImages(object):
         except (exception.ZVMXCATRequestFailed,
                 exception.ZVMInvalidXCATResponseDataError,
                 exception.ZVMXCATInternalError) as err:
-            LOG.warn(_("Illegal date for last_use_date %s") %
+            LOG.warn(_LW("Illegal date for last_use_date %s") %
                      err.format_message())
 
         return last_use_date_string
@@ -531,16 +531,16 @@ class ZVMImages(object):
                 re.match(timere, last_use_date_string)):
             LOG.debug("The format for last_use_date is valid ")
         else:
-            LOG.warn(_("The format for image %s record in xcat table osimage's"
-                       " last_used_date is not valid. The correct format is "
-                       "auto:last_use_date:yyyy-mm-dd") % image_name)
+            LOG.warn(_LW("The format for image %s record in xcat table "
+                "osimage's last_used_date is not valid. The correct "
+                "format is auto:last_use_date:yyyy-mm-dd") % image_name)
             return
 
         try:
             last_use_date_datetime = datetime.datetime.strptime(
                                     last_use_date_string, '%Y-%m-%d')
         except Exception as err:
-            LOG.warn(_("Illegal date for last_use_date %(msg)s") % err)
+            LOG.warn(_LW("Illegal date for last_use_date %(msg)s") % err)
             return
 
         return last_use_date_datetime.date()

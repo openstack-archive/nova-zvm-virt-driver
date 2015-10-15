@@ -30,7 +30,6 @@ from nova.compute import power_state
 from nova import context
 from nova import db
 from nova import exception as nova_exception
-from nova.i18n import _
 from nova.image import glance
 from nova.network import model
 from nova import test
@@ -57,7 +56,8 @@ class FakeXCATConn(object):
     def __init__(self):
         pass
 
-    def request(self, one, two, three=None, four={}):
+    def request(self, one, two, three=None, four=None):
+        four = four or {}
         pass
 
 
@@ -288,7 +288,7 @@ class ZVMDriverTestCases(ZVMTestCase):
         self._set_fake_xcat_responses([self._fake_instance_list_data()])
         inst_list = self.driver.list_instances()
         self.mox.VerifyAll()
-        self.assertTrue("os000001" in inst_list)
+        self.assertIn("os000001", inst_list)
 
     def test_list_instances_exclude_xcat_master(self):
         self.flags(zvm_xcat_master='xcat')
@@ -298,8 +298,8 @@ class ZVMDriverTestCases(ZVMTestCase):
             {'data': [{'data': fake_inst_list}]}])
         inst_list = self.driver.list_instances()
         self.mox.VerifyAll()
-        self.assertTrue("os000001" in inst_list)
-        self.assertTrue("xcat" not in inst_list)
+        self.assertIn("os000001", inst_list)
+        self.assertNotIn("xcat", inst_list)
 
     def test_get_available_resource(self):
         self._set_fake_xcat_responses([self._fake_host_rinv_info(),
@@ -2045,7 +2045,7 @@ class ZVMUtilsTestCases(ZVMTestCase):
                 'node': ['Warn ...'],
                 'error': []}
         self.mox.StubOutWithMock(zvmutils.LOG, 'info')
-        msg = _("Warning from xCAT: %s")
+        msg = ("Warning from xCAT: %s")
         zvmutils.LOG.info(msg % str(resp['node']))
         self.mox.ReplayAll()
 
@@ -2115,7 +2115,7 @@ class ZVMUtilsTestCases(ZVMTestCase):
                          'NETTYPE="qeth"\nONBOOT="yes"\nPORTNAME="PORT1000"\n'
                          'OPTIONS="layer2=1"\nSUBCHANNELS='
                          '"0.0.1000,0.0.1001,0.0.1002"\n')
-        self.assertEqual(cmd_str, None)
+        self.assertIsNone(cmd_str)
         self.assertEqual(dns_str, '')
         self.assertEqual(route_str, '')
 
@@ -2361,7 +2361,7 @@ class FCPTestCase(ZVMTestCase):
 
     def test_init(self):
         self.assertEqual('b83d', self.fcp.get_dev_no())
-        self.assertEqual(None, self.fcp.get_npiv_port())
+        self.assertIsNone(self.fcp.get_npiv_port())
         self.assertEqual('5A', self.fcp.get_chpid())
         self.assertEqual('20076d8500005181', self.fcp.get_physical_port())
         self.assertTrue(self.fcp.is_valid())
@@ -3683,26 +3683,26 @@ class ZVMDistManagerTestCases(test.TestCase):
                        'REDHAT6.4']
         for v in os_versions:
             d = self.dist_manager.get_linux_dist(v)()
-            self.assertTrue(isinstance(d, dist.rhel6))
+            self.assertIsInstance(d, dist.rhel6)
 
     def test_rhel7(self):
         os_versions = ['rhel7.1', 'red hat7.1', 'redhat7.1', 'RHEL7.1']
         for v in os_versions:
             d = self.dist_manager.get_linux_dist(v)()
-            self.assertTrue(isinstance(d, dist.rhel7))
+            self.assertIsInstance(d, dist.rhel7)
 
     def test_sles11(self):
         os_versions = ['sles11sp2', 'sles11sp3', 'sles11.2', 'sles11.3',
                        'Sles11sp3', 'SLES11.2']
         for v in os_versions:
             d = self.dist_manager.get_linux_dist(v)()
-            self.assertTrue(isinstance(d, dist.sles11))
+            self.assertIsInstance(d, dist.sles11)
 
     def test_sles12(self):
         os_versions = ['sles12', 'sles12.0', 'Sles12', 'SLES12.0']
         for v in os_versions:
             d = self.dist_manager.get_linux_dist(v)()
-            self.assertTrue(isinstance(d, dist.sles12))
+            self.assertIsInstance(d, dist.sles12)
 
     def test_invalid(self):
         os_versions = ['', 'sles 11.0', 'sles13.0', 'sles10', 'rhel8',
