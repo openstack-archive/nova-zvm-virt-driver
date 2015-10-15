@@ -14,8 +14,8 @@
 
 """Test suite for ZVMDriver."""
 
-import httplib
 import os
+from six.moves import http_client as httplib
 import socket
 
 import mock
