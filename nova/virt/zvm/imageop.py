@@ -769,7 +769,7 @@ class ZVMImages(object):
         """use 'hexdump' to get the root_disk_units."""
         cmd = "hexdump -n 48 -C %s" % image_file_path
         try:
-            (output, _toss) = utils.execute(cmd, shell=True)
+            (output, _toss) = utils.execute(cmd) 
         except processutils.ProcessExecutionError:
             msg = (_("Get image property failed,"
                     " please check whether the image file exists!"))
