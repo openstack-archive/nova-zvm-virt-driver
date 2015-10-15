@@ -15,6 +15,7 @@
 """Test suite for ZVMDriver."""
 
 import os
+import six
 from six.moves import http_client as httplib
 import socket
 
@@ -169,7 +170,7 @@ class ZVMTestCase(test.TestCase):
 
     def _gen_resp(self, **kwargs):
         data = []
-        for (k, v) in kwargs.iteritems():
+        for (k, v) in six.iteritems(kwargs):
             if v not in (None, []):
                 data.append({k: v})
 
