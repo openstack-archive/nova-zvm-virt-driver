@@ -747,6 +747,40 @@ def format_exception_msg(exc_obj):
         return str(exc_obj)
 
 
+def looping_call(f, sleep=5, inc_sleep=0, max_sleep=60, timeout=600,
+                 exceptions=(), *args, **kwargs):
+    """Helper function that to run looping call with fixed/dynamical interval.
+
+    :param f:          the looping call function or method.
+    :param sleep:      initial interval of the looping calls.
+    :param inc_sleep:  sleep time increment, default as 0.
+    :param max_sleep:  max sleep time.
+    :param timeout:    looping call timeout in seconds, 0 means no timeout.
+    :param exceptions: exceptions that trigger re-try.
+
+    """
+    time_start = time.time()
+    expiration = time_start + timeout
+
+    retry = True
+    while retry:
+        expired = timeout and (time.time() > expiration)
+
+        try:
+            f(*args, **kwargs)
+        except exceptions:
+            retry = not expired
+            if retry:
+                LOG.debug("Will re-try %(fname)s in %(itv)d seconds" %
+                          {'fname': f.__name__, 'itv': sleep})
+                time.sleep(sleep)
+                sleep = min(sleep + inc_sleep, max_sleep)
+            else:
+                LOG.debug("Looping call %s timeout" % f.__name__)
+            continue
+        retry = False
+
+
 class PathUtils(object):
     def open(self, path, mode):
         """Wrapper on __builin__.open used to simplify unit testing."""
