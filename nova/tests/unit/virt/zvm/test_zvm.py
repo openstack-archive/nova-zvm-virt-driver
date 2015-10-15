@@ -14,7 +14,6 @@
 
 """Test suite for ZVMDriver."""
 
-import __builtin__
 import httplib
 import os
 import socket
@@ -486,7 +485,8 @@ class ZVMDriverTestCases(ZVMTestCase):
         self.driver.spawn({}, self.instance, self._fake_image_meta(), ['fake'],
                           'fakepass', self._fake_network_info(), {})
 
-    def test_spawn_with_eph(self):
+    @mock.patch('__builtin__.open')
+    def test_spawn_with_eph(self, mock_open):
         self.instance['config_drive'] = True
         self.stubs.Set(self.driver._pathutils, 'get_instance_path',
                        self._fake_fun('/temp/os000001'))
@@ -518,7 +518,6 @@ class ZVMDriverTestCases(ZVMTestCase):
                        self._fake_fun())
         self.stubs.Set(self.driver, '_wait_for_addnic', self._fake_fun())
         self.stubs.Set(self.driver, '_is_nic_granted', self._fake_fun(True))
-        self.stubs.Set(__builtin__, 'open', mock.mock_open())
         self.stubs.Set(os, 'remove', self._fake_fun())
         self.stubs.Set(zvmutils, 'get_host', self._fake_fun("fake@10.1.1.10"))
         self._set_fake_xcat_resp([
@@ -680,7 +679,8 @@ class ZVMDriverTestCases(ZVMTestCase):
                 'profile': 'fakeprof',
                 'provmethod': 'netboot'}
 
-    def test_snapshot(self):
+    @mock.patch('__builtin__.open')
+    def test_snapshot(self, mock_open):
         if not os.path.exists("/tmp/fakeimg"):
             os.mknod("/tmp/fakeimg")
         self.instance['power_state'] = 0x01
@@ -721,7 +721,6 @@ class ZVMDriverTestCases(ZVMTestCase):
         self.stubs.Set(self.driver._zvm_images, 'get_root_disk_units',
                        self._fake_fun(1111))
         self.stubs.Set(os, 'makedirs', self._fake_fun())
-        self.stubs.Set(__builtin__, 'open', mock.mock_open())
         self.driver.snapshot({}, self.instance, '0000-1111', self._fake_fun())
         self.mox.VerifyAll()
 
@@ -745,7 +744,8 @@ class ZVMDriverTestCases(ZVMTestCase):
                           {}, self.instance, '0000-1111', self._fake_fun())
         self.mox.VerifyAll()
 
-    def test_snapshot_all_in_one_mode(self):
+    @mock.patch('__builtin__.open')
+    def test_snapshot_all_in_one_mode(self, mock_open):
         fake_menifest = {'imagetype': 'linux',
                          'osarch': 's390x',
                          'imagename': 'fakeimg-uuid',
@@ -757,7 +757,6 @@ class ZVMDriverTestCases(ZVMTestCase):
 
         self.stubs.Set(glance, 'get_remote_image_service',
             self._fake_fun((FakeImageService(self.fake_image_meta), 0)))
-        self.stubs.Set(__builtin__, 'open', mock.mock_open())
 
         self.mox.StubOutWithMock(self.driver._zvm_images,
                                  'get_free_space_xcat')
