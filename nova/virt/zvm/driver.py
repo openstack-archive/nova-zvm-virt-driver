@@ -1699,8 +1699,9 @@ class ZVMDriver(driver.ComputeDriver):
                         for vif in network_info:
                             self._networkop.clean_mac_switch_host(
                                 new_inst._name)
-                    except exception.ZVMNetworkError:
-                        pass
+                    except exception.ZVMNetworkError as e:
+                        emsg = zvmutils.format_exception_msg(e)
+                        LOG.debug('clean_mac_switch_host error: %s' % emsg)
 
                 new_inst.delete_userid(self._get_hcp_info()['nodename'])
                 new_inst.delete_xcat_node()

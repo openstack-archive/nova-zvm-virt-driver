@@ -14,6 +14,7 @@
 
 import contextlib
 import re
+import six
 import time
 
 from oslo_config import cfg
@@ -368,8 +369,9 @@ class SVCDriver(DriverAPI):
                                    "is used by %(inst_name)s.") % {'dev': _fcp,
                                    'inst_name': instance_name}
                         LOG.warning(errmsg)
-                except (TypeError, KeyError):
-                    pass
+                except (TypeError, KeyError) as e:
+                    LOG.debug('got exception in _init_fcp_pool %s'
+                        % six.text_type(e))
 
         for _key in self._instance_fcp_map.keys():
             fcp = self._instance_fcp_map.get(_key)['fcp']
