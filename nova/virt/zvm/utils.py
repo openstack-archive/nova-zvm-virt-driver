@@ -14,9 +14,9 @@
 
 import contextlib
 import functools
-import httplib
 import os
 import shutil
+from six.moves import http_client as httplib
 import socket
 import time
 
