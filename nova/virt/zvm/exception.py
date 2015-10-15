@@ -76,3 +76,7 @@ class ZVMXCATDeployNodeFailed(ZVMBaseException):
 
 class ZVMConfigDriveError(ZVMBaseException):
     msg_fmt = _('Create configure drive failed: %(msg)s')
+
+
+class ZVMRetryException(ZVMBaseException):
+    pass
