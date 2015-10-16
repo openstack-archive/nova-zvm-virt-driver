@@ -23,7 +23,7 @@ from oslo_utils import timeutils
 
 from nova.compute import power_state
 from nova import exception as nova_exception
-from nova.i18n import _
+from nova.i18n import _, _LW
 from nova.virt import hardware
 from nova.virt.zvm import const
 from nova.virt.zvm import exception
@@ -37,8 +37,9 @@ CONF = cfg.CONF
 class ZVMInstance(object):
     '''OpenStack instance that running on of z/VM hypervisor.'''
 
-    def __init__(self, instance={}):
+    def __init__(self, instance=None):
         """Initialize instance attributes for database."""
+        instance = instance or {}
         self._xcat_url = zvmutils.XCATUrl()
         self._xcat_conn = zvmutils.XCATConnection()
         self._instance = instance
@@ -54,7 +55,7 @@ class ZVMInstance(object):
             if ("Return Code: 200" in err_str and
                     "Reason Code: 12" in err_str):
                 # Instance already not active
-                LOG.warn(_("z/VM instance %s not active") % self._name)
+                LOG.warn(_LW("z/VM instance %s not active") % self._name)
                 return
             else:
                 msg = _("Failed to power off instance: %s") % err_str
@@ -70,7 +71,7 @@ class ZVMInstance(object):
             if ("Return Code: 200" in err_str and
                     "Reason Code: 8" in err_str):
                 # Instance already not active
-                LOG.warn(_("z/VM instance %s already active") % self._name)
+                LOG.warn(_LW("z/VM instance %s already active") % self._name)
                 return
 
         self._wait_for_reachable()
@@ -88,7 +89,7 @@ class ZVMInstance(object):
             if ("Return Code: 200" in err_str and
                     "Reason Code: 12" in err_str):
                 # Be able to reset in power state of SHUTDOWN
-                LOG.warn(_("Reset z/VM instance %s from SHUTDOWN state") %
+                LOG.warn(_LW("Reset z/VM instance %s from SHUTDOWN state") %
                          self._name)
                 return
             else:
@@ -146,7 +147,8 @@ class ZVMInstance(object):
                 _instance_info.cpu_time_ns = cpu_time
 
             except exception.ZVMInvalidXCATResponseDataError:
-                LOG.warn(_("Failed to get inventory info for %s") % self._name)
+                LOG.warn(_LW("Failed to get inventory info for %s")
+                    % self._name)
                 _instance_info.state = power_stat
                 _instance_info.max_mem_kb = max_mem_kb
                 _instance_info.mem_kb = max_mem_kb
@@ -295,7 +297,8 @@ class ZVMInstance(object):
                 exception.ZVMVolumeError,
                 exception.ZVMDriverError) as err:
             emsg = err.format_message()
-            msg = _("Failed to clean boot from volume preparations: %s") % emsg
+            msg = _LW("Failed to clean boot from volume "
+                      "preparations: %s") % emsg
             LOG.warn(msg)
             raise exception.ZVMVolumeError(msg=msg)
 
