@@ -600,6 +600,12 @@ class SVCDriver(DriverAPI):
             return (lun.lower(), self._format_wwpn(wwpn), size, fcp.lower())
 
     def _format_wwpn(self, wwpn):
+        # py3 don't support basestring, use str instead
+        try:
+            basestring
+        except NameError:
+            basestring = str
+
         if isinstance(wwpn, basestring):
             return wwpn.lower()
         else:
