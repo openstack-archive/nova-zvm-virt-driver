@@ -1046,7 +1046,7 @@ class ZVMDriverTestCases(ZVMTestCase):
             'fakeimagename', '/tmp').AndReturn('/tmp/fakeimg')
         self.mox.ReplayAll()
 
-        class FakeInstanceType:
+        class FakeInstanceType(object):
             def __init__(self):
                 self.root_gb = 10
                 self.ephemeral_gb = 10
@@ -1091,7 +1091,7 @@ class ZVMDriverTestCases(ZVMTestCase):
 
         inst = fake_instance.fake_instance_obj(self.context)
 
-        class FakeInstanceType:
+        class FakeInstanceType(object):
             def __init__(self):
                 self.root_gb = -1
                 self.ephemeral_gb = 10
