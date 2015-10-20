@@ -2118,6 +2118,16 @@ class ZVMUtilsTestCases(ZVMTestCase):
         self.assertEqual(dns_str, '')
         self.assertEqual(route_str, '')
 
+    def test_looping_call(self):
+        fake_func = mock.Mock()
+        fake_func.__name__ = "fake_func"
+        fake_func.side_effect = [exception.ZVMRetryException, None]
+
+        zvmutils.looping_call(fake_func, 1, 0, 1, 3,
+                              exception.ZVMRetryException)
+        # expect called 2 times
+        fake_func.assert_has_calls([(), ()])
+
 
 class ZVMConfigDriveTestCase(test.NoDBTestCase):
 

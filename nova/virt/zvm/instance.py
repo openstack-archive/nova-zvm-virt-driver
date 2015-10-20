@@ -548,23 +548,15 @@ class ZVMInstance(object):
         """Called at an interval until the instance is reachable."""
         self._reachable = False
 
-        def _wait_reachable(expiration):
-            if (CONF.zvm_reachable_timeout and
-                    timeutils.utcnow() > expiration):
-                raise loopingcall.LoopingCallDone()
-
-            if self.is_reachable():
+        def _check_reachable():
+            if not self.is_reachable():
+                raise exception.ZVMRetryException()
+            else:
                 self._reachable = True
-                LOG.debug("Instance %s reachable now" %
-                         self._name)
-                raise loopingcall.LoopingCallDone()
 
-        expiration = timeutils.utcnow() + datetime.timedelta(
-                         seconds=CONF.zvm_reachable_timeout)
-
-        timer = loopingcall.FixedIntervalLoopingCall(_wait_reachable,
-                                                     expiration)
-        timer.start(interval=5).wait()
+        zvmutils.looping_call(_check_reachable, 5, 5, 30,
+                              CONF.zvm_reachable_timeout,
+                              exception.ZVMRetryException)
 
     def update_node_info(self, image_meta):
         LOG.debug("Update the node info for instance %s" % self._name)
