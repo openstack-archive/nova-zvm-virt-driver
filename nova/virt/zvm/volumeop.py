@@ -602,7 +602,7 @@ class SVCDriver(DriverAPI):
             return (lun.lower(), self._format_wwpn(wwpn), size, fcp.lower())
 
     def _format_wwpn(self, wwpn):
-        if isinstance(wwpn, basestring):
+        if zvmutils.is_string_type(wwpn):
             return wwpn.lower()
         else:
             new_wwpn = ';'.join(wwpn)
