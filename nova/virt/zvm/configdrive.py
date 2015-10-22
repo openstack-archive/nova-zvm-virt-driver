@@ -16,10 +16,15 @@ import os
 import tarfile
 
 from oslo_config import cfg
+from oslo_log import log as logging
 
 from nova import exception
 from nova import utils
 from nova.virt import configdrive
+from nova.virt.zvm import utils as zvmutils
+
+
+LOG = logging.getLogger(__name__)
 
 
 CONF = cfg.CONF
@@ -58,6 +63,8 @@ class ZVMConfigDriveBuilder(configdrive.ConfigDriveBuilder):
             tar.add("ec2")
             try:
                 os.chdir(olddir)
-            except Exception:
-                pass
+            except Exception as e:
+                emsg = zvmutils.format_exception_msg(e)
+                LOG.debug('exception in _make_tgz %s', emsg)
+
             tar.close()
