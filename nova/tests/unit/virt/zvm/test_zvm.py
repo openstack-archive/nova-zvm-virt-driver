@@ -3592,7 +3592,7 @@ class ZVMDistTestCases(test.TestCase):
     def test_get_znetconfig_contents(self):
         for v in self.support_list:
             contents = v.get_znetconfig_contents()
-            self.assertTrue(contents > 0)
+            self.assertTrue(len(contents) > 0)
 
     def test_get_dns_filename(self):
         for v in self.support_list:
@@ -3609,17 +3609,17 @@ class ZVMDistTestCases(test.TestCase):
     def test_get_network_file_path(self):
         for v in self.support_list:
             contents = v._get_network_file_path()
-            self.assertTrue(contents > 0)
+            self.assertTrue(len(contents) > 0)
 
     def test_get_change_passwd_command(self):
         for v in self.support_list:
             contents = v.get_change_passwd_command('0')
-            self.assertTrue(contents > 0)
+            self.assertTrue(len(contents) > 0)
 
     def test_get_device_name(self):
         for v in self.support_list:
             contents = v._get_device_name(0)
-            self.assertTrue(contents > 0)
+            self.assertTrue(len(contents) > 0)
 
     def test_get_cfg_str(self):
         for v in self.support_list:
@@ -3628,7 +3628,7 @@ class ZVMDistTestCases(test.TestCase):
     def test_get_device_filename(self):
         for v in self.support_list:
             contents = v._get_device_filename(0)
-            self.assertTrue(contents > 0)
+            self.assertTrue(len(contents) > 0)
 
     def test_get_udev_configuration(self):
         for v in self.support_list:
