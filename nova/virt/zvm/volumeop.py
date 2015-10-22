@@ -14,6 +14,7 @@
 
 import contextlib
 import re
+import six
 import time
 
 from oslo_config import cfg
@@ -713,7 +714,7 @@ class SVCDriver(DriverAPI):
                     self._format_fcp_list(fcp_list))
 
     def _format_wwpn(self, wwpn):
-        if isinstance(wwpn, basestring):
+        if isinstance(wwpn, six.string_types):
             return wwpn.lower()
         else:
             new_wwpn = ';'.join(wwpn)
