@@ -486,7 +486,7 @@ class ZVMDriverTestCases(ZVMTestCase):
         self.driver.spawn({}, self.instance, self._fake_image_meta(), ['fake'],
                           'fakepass', self._fake_network_info(), {})
 
-    @mock.patch('__builtin__.open')
+    @mock.patch.object(six.moves.builtins, 'open')
     def test_spawn_with_eph(self, mock_open):
         self.instance['config_drive'] = True
         self.stubs.Set(self.driver._pathutils, 'get_instance_path',
@@ -680,7 +680,7 @@ class ZVMDriverTestCases(ZVMTestCase):
                 'profile': 'fakeprof',
                 'provmethod': 'netboot'}
 
-    @mock.patch('__builtin__.open')
+    @mock.patch.object(six.moves.builtins, 'open')
     def test_snapshot(self, mock_open):
         if not os.path.exists("/tmp/fakeimg"):
             os.mknod("/tmp/fakeimg")
@@ -745,7 +745,7 @@ class ZVMDriverTestCases(ZVMTestCase):
                           {}, self.instance, '0000-1111', self._fake_fun())
         self.mox.VerifyAll()
 
-    @mock.patch('__builtin__.open')
+    @mock.patch.object(six.moves.builtins, 'open')
     def test_snapshot_all_in_one_mode(self, mock_open):
         fake_menifest = {'imagetype': 'linux',
                          'osarch': 's390x',
