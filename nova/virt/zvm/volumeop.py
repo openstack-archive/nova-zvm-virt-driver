@@ -554,7 +554,7 @@ class SVCDriver(DriverAPI):
         """
 
         lines_per_item = 5
-        num_fcps = len(fcps_info) / lines_per_item
+        num_fcps = len(fcps_info) // lines_per_item
         fcp = fcp.upper()
         for _cur in range(0, num_fcps):
             # Find target FCP device
