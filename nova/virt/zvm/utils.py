@@ -781,6 +781,20 @@ def looping_call(f, sleep=5, inc_sleep=0, max_sleep=60, timeout=600,
             continue
         retry = False
 
+def is_string_type(obj):
+    """Return true if the type of the obj is basestring in py2 or is str
+       in py3.
+    """
+    try:
+        basestring
+    except NameError:
+        basestring = str
+
+    if isinstance(obj, basestring):
+        return True
+    else:
+        return False
+
 
 class PathUtils(object):
     def open(self, path, mode):
