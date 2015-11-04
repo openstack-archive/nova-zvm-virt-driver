@@ -203,7 +203,7 @@ class XCATConnection(object):
          'message': response message}
 
         """
-        headers = headers or []
+        headers = headers or {}
         if body is not None:
             body = jsonutils.dumps(body)
             headers = {'content-type': 'text/plain',
