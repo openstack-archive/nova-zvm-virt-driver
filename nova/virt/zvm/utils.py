@@ -78,6 +78,7 @@ class XCATUrl(object):
         self.IMGIMPORT = '/import'
         self.BOOTSTAT = '/bootstate'
         self.XDSH = '/dsh'
+        self.VERSION = '/version'
 
     def _nodes(self, arg=''):
         return self.PREFIX + self.NODES + arg + self.SUFFIX
@@ -183,6 +184,9 @@ class XCATUrl(object):
             return rurl + addp
         else:
             return rurl
+
+    def version(self):
+        return self.PREFIX + self.VERSION + self.SUFFIX
 
 
 class XCATConnection(object):
