@@ -1583,6 +1583,12 @@ class ZVMDriverTestCases(ZVMTestCase):
         nodes = self.driver.get_available_nodes()
         self.assertEqual(nodes[0], 'fakenode')
 
+    def test_get_xcat_version(self):
+        res = ["Version 2.8.3.5 (built Mon Apr 27 10:50:11 EDT 2015)"]
+        self._set_fake_xcat_responses([self._gen_resp(data=res)])
+        version = self.driver._get_xcat_version()
+        self.assertEqual(version, 2008003005)
+
 
 class ZVMInstanceTestCases(ZVMTestCase):
     """Test cases for zvm.instance."""
