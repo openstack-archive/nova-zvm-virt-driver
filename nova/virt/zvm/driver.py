@@ -14,6 +14,7 @@
 
 import contextlib
 import datetime
+import operator
 import os
 import time
 import uuid
@@ -2000,3 +2001,19 @@ class ZVMDriver(driver.ComputeDriver):
             version = dict_str.split()[1]
             version = versionutils.convert_version_to_int(version)
         return version
+
+    def _version_check(self, req_ver=None, op=operator.lt):
+        try:
+            if req_ver is not None:
+                cur_ver = self._get_xcat_version()
+                if op(cur_ver, versionutils.convert_version_to_int(req_ver)):
+                    return False
+            return True
+        except Exception:
+            return False
+
+    def has_min_version(self, req_ver=None):
+        return self._version_check(req_ver=req_ver, op=operator.lt)
+
+    def has_version(self, req_ver=None):
+        return self._version_check(req_ver=req_ver, op=operator.ne)
