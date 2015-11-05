@@ -1590,6 +1590,26 @@ class ZVMDriverTestCases(ZVMTestCase):
         version = self.driver._get_xcat_version()
         self.assertEqual(version, 2008003005)
 
+    @mock.patch('nova.virt.zvm.driver.ZVMDriver._get_xcat_version')
+    def test_has_min_version(self, fake_xcat_ver):
+        fake_xcat_ver.return_value = 1002003004
+
+        self.assertFalse(self.driver.has_min_version((1, 3, 3, 4)))
+        self.assertTrue(self.driver.has_min_version((1, 1, 3, 4)))
+        self.assertTrue(self.driver.has_min_version(None))
+
+    @mock.patch('nova.virt.zvm.driver.ZVMDriver._get_xcat_version')
+    def test_has_version(self, fake_xcat_ver):
+        fake_xcat_ver.return_value = 1002003004
+
+        xcat_ver = (1, 2, 3, 4)
+        self.assertTrue(self.driver.has_version(xcat_ver))
+
+        for xcat_ver_ in [(1, 1, 3, 4), (1, 3, 3, 2)]:
+            self.assertFalse(self.driver.has_version(xcat_ver_))
+
+        self.assertTrue(self.driver.has_version(None))
+
 
 class ZVMInstanceTestCases(ZVMTestCase):
     """Test cases for zvm.instance."""
