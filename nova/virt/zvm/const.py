@@ -65,3 +65,19 @@ ZVM_DEFAULT_FCP_ID = 'auto'
 ZVM_DEFAULT_NIC_VDEV = '1000'
 
 ZVM_IMAGE_SIZE_MAX = 10
+
+# It means we introduced 'version' concept at 2.8.3.7
+# later on, any new features especially backward incompatible
+# change need a new version such as
+# Support_xxxx = 'x.x.x.x', then we will compare whether
+# The XCAT we are using has higher or lower version than x.x.x.x
+# and do different things according to the version
+# we might INFO in log if version is lower than XCAT_INIT_VERSION
+XCAT_INIT_VERSION = '2.8.3.7'
+
+# From 2.8.3.7 version, openstack will only send 'nozip' format
+# to xcat, so before that, a tgz format will be send and processed
+# while >= this version, a nozip flag along with tar format is sent.
+# xcat was bumped to this version at 2015.08.06, so version lower than
+# it should use zip format instead.
+XCAT_BUNDLE_USE_NOZIP = '2.8.3.7'
