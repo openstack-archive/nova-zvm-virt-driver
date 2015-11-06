@@ -4116,6 +4116,20 @@ class ZVMImageOPTestCases(ZVMTestCase):
         self.assertRaises(exception.ZVMImageError,
                          self.imageop.get_root_disk_units, '/fake')
 
+    def test_zimage_check(self):
+        image_meta = {}
+        image_meta['properties'] = {'image_file_name': 'name',
+                                    'image_type__xcat': 'type',
+                                    'architecture': 's390x',
+                                    'os_name': 'name',
+                                    'provisioning_method': 'method'}
+        image_meta['id'] = '0'
+        exc = self.assertRaises(exception.ZVMImageError,
+            self.imageop.zimage_check, image_meta)
+        msg = ("Image error: The image 0 is not a valid zVM image, "
+               "property ['image_type_xcat', 'os_version'] are missing")
+        self.assertEqual(msg, six.text_type(exc))
+
 
 class ZVMDistTestCases(test.TestCase):
     def setUp(self):
