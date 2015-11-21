@@ -729,7 +729,9 @@ class ZVMImages(object):
         if size_sum >= current_needed:
             return to_be_deleted_image_profile
         else:
-            msg = _("xCAT MN space not enough for the current image operation")
+            msg = _("xCAT MN space not enough for the current image operation"
+                    "%(n)d G needed,%(a)d G available") % {'n': current_needed,
+                                                           'a': size_sum}
             raise exception.ZVMImageError(msg=msg)
 
     def prune_image_xcat(self, context, size_needed, current_needed):
