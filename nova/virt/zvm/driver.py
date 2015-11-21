@@ -555,7 +555,10 @@ class ZVMDriver(driver.ComputeDriver):
             network = network_info[0]['network']
             ip_addr = network['subnets'][0]['ips'][0]['address']
         except Exception:
-            msg = _("Invalid network info")
+            if network_info:
+                msg = _("Invalid network info: %s") % str(network_info)
+            else:
+                msg = _("Network info is Empty")
             raise exception.ZVMNetworkError(msg=msg)
 
         self._networkop.add_xcat_host(instance_name, ip_addr, instance_name)
@@ -1617,7 +1620,9 @@ class ZVMDriver(driver.ComputeDriver):
         if disk_type != CONF.zvm_diskpool_type:
             if same_xcat_mn:
                 self._zvm_images.delete_image_from_xcat(image_name_xcat)
-            msg = _("Can not migration between different disk type")
+            msg = _("Can not migration between different disk type"
+                    "current is %(c)s, target is %(t)s") % {'t': disk_type,
+                    'c': CONF.zvm_diskpool_type}
             LOG.error(msg, instance=instance)
             raise nova_exception.MigrationError(reason=msg)
 
@@ -1989,7 +1994,8 @@ class ZVMDriver(driver.ComputeDriver):
             if is_root:
                 return bd['connection_info']['serial']
 
-        errmsg = _("Failed to extract volume id from block device mapping.")
+        errmsg = _("Failed to extract volume id from block device mapping."
+                   "%s") % str(bdm)
         raise exception.ZVMDriverError(msg=errmsg)
 
     def _exclude_root_volume_bdm(self, bdm, root_mount_device):
