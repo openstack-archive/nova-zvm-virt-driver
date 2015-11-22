@@ -25,6 +25,7 @@ from oslo_service import loopingcall
 from oslo_utils import excutils
 from oslo_utils import timeutils
 from oslo_utils import units
+from oslo_utils import versionutils
 
 from nova.api.metadata import base as instance_metadata
 from nova.compute import power_state
@@ -1997,5 +1998,5 @@ class ZVMDriver(driver.ComputeDriver):
         with zvmutils.expect_invalid_xcat_resp_data():
             dict_str = zvmutils.xcat_request("GET", url)['data'][0][0]
             version = dict_str.split()[1]
-            version = utils.convert_version_to_int(version)
+            version = versionutils.convert_version_to_int(version)
         return version
