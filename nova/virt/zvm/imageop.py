@@ -444,7 +444,7 @@ class ZVMImages(object):
         with zvmutils.except_xcat_call_failed_and_reraise(
                 exception.ZVMImageError):
             res = zvmutils.xcat_request("GET", url)
-            with zvmutils.expect_invalid_xcat_resp_data():
+            with zvmutils.expect_invalid_xcat_resp_data(res):
                 res_image = res['info'][0][0]
                 res_img_name = res_image.strip().split(" ")[0]
 
@@ -605,7 +605,7 @@ class ZVMImages(object):
         with zvmutils.except_xcat_call_failed_and_reraise(
                 exception.ZVMImageError):
             result = zvmutils.xcat_request("GET", url)
-            with zvmutils.expect_invalid_xcat_resp_data():
+            with zvmutils.expect_invalid_xcat_resp_data(result):
                 if len(result['info']) == 0:
                     msg = _("'rinv <zvm_xcat_master> --freerepospace' returns "
                             "null, please check 'df -h /install', there may "
