@@ -458,7 +458,7 @@ class ZVMInstance(object):
         LOG.debug('Remote inventory of %s' % self._name)
         res_info = zvmutils.xcat_request("GET", url)['info']
 
-        with zvmutils.expect_invalid_xcat_resp_data():
+        with zvmutils.expect_invalid_xcat_resp_data(res_info):
             rinv_info = res_info[0][0].split('\n')
 
         return rinv_info
@@ -535,7 +535,7 @@ class ZVMInstance(object):
         LOG.debug('Get instance status of %s' % self._name)
         res_dict = zvmutils.xcat_request("GET", url)
 
-        with zvmutils.expect_invalid_xcat_resp_data():
+        with zvmutils.expect_invalid_xcat_resp_data(res_dict):
             status = res_dict['node'][0][0]['data'][0]
 
         if status is not None:
@@ -670,9 +670,9 @@ class ZVMInstance(object):
                                   '&field=%s') % logsize
 
         LOG.debug('Get console log of %s' % self._name)
-        res_info = zvmutils.xcat_request("GET", url)['info']
+        res_info = zvmutils.xcat_request("GET", url)
 
-        with zvmutils.expect_invalid_xcat_resp_data():
-            rinv_info = res_info[0][0]
+        with zvmutils.expect_invalid_xcat_resp_data(res_info):
+            rinv_info = res_info['info'][0][0]
 
         return rinv_info

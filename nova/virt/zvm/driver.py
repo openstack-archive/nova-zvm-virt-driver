@@ -262,7 +262,7 @@ class ZVMDriver(driver.ComputeDriver):
 
         instances = []
 
-        with zvmutils.expect_invalid_xcat_resp_data():
+        with zvmutils.expect_invalid_xcat_resp_data(res_dict):
             data_entries = res_dict['data'][0][1:]
             for data in data_entries:
                 l = data.split(",")
@@ -1367,7 +1367,7 @@ class ZVMDriver(driver.ComputeDriver):
 
         host_info = {}
 
-        with zvmutils.expect_invalid_xcat_resp_data():
+        with zvmutils.expect_invalid_xcat_resp_data(inv_info):
             host_info['vcpus'] = int(inv_info['lpar_cpu_total'])
             host_info['vcpus_used'] = int(inv_info['lpar_cpu_used'])
             host_info['cpu_info'] = {}
@@ -1399,7 +1399,7 @@ class ZVMDriver(driver.ComputeDriver):
         dp_keys = const.XCAT_DISKPOOL_KEYWORDS
         dp_info = zvmutils.translate_xcat_resp(dp_info_raw[0], dp_keys)
 
-        with zvmutils.expect_invalid_xcat_resp_data():
+        with zvmutils.expect_invalid_xcat_resp_data(dp_info):
             for k in dp_info.keys():
                 s = dp_info[k].strip().upper()
                 if s.endswith('G'):
@@ -1512,7 +1512,7 @@ class ZVMDriver(driver.ComputeDriver):
                          not mdisk.__contains__(exl))]
 
         eph_disk_info = []
-        with zvmutils.expect_invalid_xcat_resp_data():
+        with zvmutils.expect_invalid_xcat_resp_data(eph_disks):
             for eph in eph_disks:
                 eph_l = eph.rpartition(" MDISK ")[2].split(' ')
                 eph_disk_info.append({'vdev': eph_l[0],
@@ -1858,8 +1858,10 @@ class ZVMDriver(driver.ComputeDriver):
 
     def _get_user_directory(self, inst_name):
         url = self._xcat_url.lsvm('/' + inst_name)
-        with zvmutils.expect_invalid_xcat_resp_data():
-            dict_str = zvmutils.xcat_request("GET", url)['info'][0][0]
+        user_dict = zvmutils.xcat_request("GET", url)
+
+        with zvmutils.expect_invalid_xcat_resp_data(user_dict):
+            dict_str = user_dict['info'][0][0]
 
         return dict_str.split("\n")
 
@@ -1968,7 +1970,7 @@ class ZVMDriver(driver.ComputeDriver):
 
     def get_host_uptime(self, host_name):
         """Get host uptime."""
-        with zvmutils.expect_invalid_xcat_resp_data():
+        with zvmutils.expect_invalid_xcat_resp_data(self._host_stats):
             return self._host_stats[0]['ipl_time']
 
     def get_available_nodes(self, refresh=False):
@@ -1995,8 +1997,9 @@ class ZVMDriver(driver.ComputeDriver):
 
     def _get_xcat_version(self):
         url = self._xcat_url.version()
-        with zvmutils.expect_invalid_xcat_resp_data():
-            dict_str = zvmutils.xcat_request("GET", url)['data'][0][0]
+        version_info = zvmutils.xcat_request("GET", url)
+        with zvmutils.expect_invalid_xcat_resp_data(version_info):
+            dict_str = version_info['data'][0][0]
             version = dict_str.split()[1]
             version = versionutils.convert_version_to_int(version)
         return version
