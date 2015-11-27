@@ -1991,3 +1991,11 @@ class ZVMDriver(driver.ComputeDriver):
             if is_root:
                 bdm.remove(bd)
         return bdm
+
+    def _get_xcat_version(self):
+        url = self._xcat_url.version()
+        with zvmutils.expect_invalid_xcat_resp_data():
+            dict_str = zvmutils.xcat_request("GET", url)['data'][0][0]
+            version = dict_str.split()[1]
+            version = utils.convert_version_to_int(version)
+        return version
