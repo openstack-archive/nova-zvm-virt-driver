@@ -13,8 +13,8 @@
 #    under the License.
 
 
+# THIS FILE IS MANAGED BY THE GLOBAL REQUIREMENTS REPO - DO NOT EDIT
 import setuptools
-
 
 # In python < 2.7.4, a lazy loading of package `pbr` will break
 # setuptools if some other modules registered functions in `atexit`.
@@ -25,5 +25,5 @@ except ImportError:
     pass
 
 setuptools.setup(
-    setup_requires=['pbr'],
+    setup_requires=['pbr>=1.8'],
     pbr=True)
