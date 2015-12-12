@@ -369,7 +369,7 @@ def translate_xcat_resp(rawdata, dirt):
     data = {}
 
     for ls in data_list:
-        for k in dirt.keys():
+        for k in list(dirt.keys()):
             if ls.__contains__(dirt[k]):
                 data[k] = ls[(ls.find(dirt[k]) + len(dirt[k])):].strip()
                 break

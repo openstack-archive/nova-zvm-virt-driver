@@ -327,7 +327,7 @@ class ZVMImages(object):
                     'profile': image_profile,
                     'provmethod': prov_method}
 
-        for item in manifest.keys():
+        for item in list(manifest.keys()):
             itemkey = doc.createElement(item)
             itemvalue = doc.createTextNode(manifest[item])
             itemkey.appendChild(itemvalue)
@@ -747,7 +747,7 @@ class ZVMImages(object):
         property_ = ['image_file_name', 'image_type_xcat', 'architecture',
                     'os_name', 'provisioning_method', 'os_version']
         for prop in property_:
-            if prop not in image_meta['properties'].keys():
+            if prop not in list(image_meta['properties'].keys()):
                 msg = (_("The image %s is not a valid zVM image,please check "
                        "if the image properties match the requirements.")
                        % image_meta['id'])
