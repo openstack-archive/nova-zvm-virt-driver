@@ -1410,7 +1410,7 @@ class ZVMDriver(driver.ComputeDriver):
         dp_info = zvmutils.translate_xcat_resp(dp_info_raw[0], dp_keys)
 
         with zvmutils.expect_invalid_xcat_resp_data(dp_info):
-            for k in dp_info.keys():
+            for k in list(dp_info.keys()):
                 s = dp_info[k].strip().upper()
                 if s.endswith('G'):
                     sl = s[:-1].split('.')
