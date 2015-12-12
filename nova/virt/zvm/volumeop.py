@@ -587,7 +587,7 @@ class SVCDriver(DriverAPI):
         # in future. We have to translate a string FCP to a single-element set
         # in order to make code goes on.
         fcp = connection_info['data']['zvm_fcp']
-        if fcp and isinstance(fcp, basestring):
+        if fcp and isinstance(fcp, six.string_types):
             connection_info['data']['zvm_fcp'] = [fcp]
 
         return connection_info
