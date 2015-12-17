@@ -17,6 +17,7 @@ import functools
 import os
 import shutil
 from six.moves import http_client as httplib
+import six
 import socket
 import time
 
@@ -788,9 +789,8 @@ def looping_call(f, sleep=5, inc_sleep=0, max_sleep=60, timeout=600,
 
 class PathUtils(object):
     def open(self, path, mode):
-        """Wrapper on __builin__.open used to simplify unit testing."""
-        import __builtin__
-        return __builtin__.open(path, mode)
+        """Wrapper on six.moves.builtins.open used to simplify unit testing."""
+        return six.moves.builtins.open(path, mode)
 
     def _get_image_tmp_path(self):
         image_tmp_path = os.path.normpath(CONF.zvm_image_tmp_path)
