@@ -1501,7 +1501,7 @@ class ZVMDriverTestCases(ZVMTestCase):
 
 #     def test_get_host_uptime(self):
 #         ipl_time = 'IPL at 03/13/14 21:43:12 EDT'
-#         self.assertEqual(self.driver.get_host_uptime(None), ipl_time)
+#         self.assertEqual(self.driver.get_host_uptime(), ipl_time)
 
     def _fake_console_rinv_info(self):
         fake_console_rinv_info = ["fakenode: 00: zIPL boot menu\n"]
