@@ -789,7 +789,7 @@ def looping_call(f, sleep=5, inc_sleep=0, max_sleep=60, timeout=600,
 class PathUtils(object):
     def open(self, path, mode):
         """Wrapper on __builin__.open used to simplify unit testing."""
-        import __builtin__
+        import six.moves.builtins as __builtin__
         return __builtin__.open(path, mode)
 
     def _get_image_tmp_path(self):
