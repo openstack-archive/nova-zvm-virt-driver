@@ -232,7 +232,7 @@ class ZVMImages(object):
             os.remove(image_bundle)
         else:
             self.clean_up_snapshot_time_path(snapshot_time_path)
-            msg = _("Image bundle does not exist")
+            msg = _("Image bundle does not exist %s") % image_bundle
             raise exception.ZVMImageError(msg=msg)
 
     def get_image_file_name(self, image_package_path):
@@ -241,7 +241,7 @@ class ZVMImages(object):
             for f in file_contents:
                 if f.endswith('.img'):
                     return f
-            msg = _("Can not find image file")
+            msg = _("Can not find image file under %s") % image_package_path
         else:
             msg = _("Image path %s not exist") % image_package_path
         raise exception.ZVMImageError(msg=msg)
