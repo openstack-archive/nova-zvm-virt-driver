@@ -2172,6 +2172,28 @@ class ZVMUtilsTestCases(ZVMTestCase):
         # expect called 2 times
         fake_func.assert_has_calls([(), ()])
 
+    @mock.patch.object(zvmutils, "LOG")
+    def test_expect_invalid_xcat_resp_data_list(self, mock_log):
+        data = ['abcdef']
+        try:
+            with zvmutils.expect_invalid_xcat_resp_data(data):
+                raise ValueError
+        except exception.ZVMInvalidXCATResponseDataError:
+            pass
+
+        mock_log.error.assert_called_with('Parse %s encounter error', data)
+
+    @mock.patch.object(zvmutils, "LOG")
+    def test_expect_invalid_xcat_resp_data_dict(self, mock_log):
+        data = {'data': ['a', 'b'], 'error': 1, 'info': {'a': [1, 3, '5']}}
+        try:
+            with zvmutils.expect_invalid_xcat_resp_data(data):
+                raise ValueError
+        except exception.ZVMInvalidXCATResponseDataError:
+            pass
+
+        mock_log.error.assert_called_with('Parse %s encounter error', data)
+
 
 class ZVMConfigDriveTestCase(test.NoDBTestCase):
 

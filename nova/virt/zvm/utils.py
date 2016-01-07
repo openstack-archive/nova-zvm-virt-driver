@@ -283,12 +283,13 @@ def jsonloads(jsonstr):
 
 
 @contextlib.contextmanager
-def expect_invalid_xcat_resp_data():
+def expect_invalid_xcat_resp_data(data=''):
     """Catch exceptions when using xCAT response data."""
     try:
         yield
     except (ValueError, TypeError, IndexError, AttributeError,
             KeyError) as err:
+        LOG.error(_('Parse %s encounter error'), data)
         raise exception.ZVMInvalidXCATResponseDataError(msg=err)
 
 
@@ -506,10 +507,10 @@ def get_host():
 def get_userid(node_name):
     """Returns z/VM userid for the xCAT node."""
     url = XCATUrl().lsdef_node(''.join(['/', node_name]))
-    info = xcat_request('GET', url)['info']
+    info = xcat_request('GET', url)
 
-    with expect_invalid_xcat_resp_data():
-        for s in info[0]:
+    with expect_invalid_xcat_resp_data(info):
+        for s in info['info'][0]:
             if s.__contains__('userid='):
                 return s.strip().rpartition('=')[2]
 
@@ -722,7 +723,7 @@ def xcat_cmd_gettab(table, col, col_value, attr):
             {'col': col, 'col_value': col_value, 'attr': attr})
     url = XCATUrl().gettab('/%s' % table, addp)
     res_info = xcat_request("GET", url)
-    with expect_invalid_xcat_resp_data():
+    with expect_invalid_xcat_resp_data(res_info):
         return res_info['data'][0][0]
 
 
@@ -734,7 +735,7 @@ def xcat_cmd_gettab_multi_attr(table, col, col_value, attr_list):
     res_data = xcat_request("GET", url)['data']
 
     outp = {}
-    with expect_invalid_xcat_resp_data():
+    with expect_invalid_xcat_resp_data(res_data):
         for attr in attr_list:
             for data in res_data:
                 if attr in data[0]:
