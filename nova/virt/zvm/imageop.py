@@ -746,13 +746,17 @@ class ZVMImages(object):
         """Do a brief check to see if the image is a valid zVM image."""
         property_ = ['image_file_name', 'image_type_xcat', 'architecture',
                     'os_name', 'provisioning_method', 'os_version']
+        missing_prop = []
         for prop in property_:
             if prop not in image_meta['properties'].keys():
-                msg = (_("The image %s is not a valid zVM image,please check "
-                       "if the image properties match the requirements.")
-                       % image_meta['id'])
-                LOG.error(msg)
-                raise exception.ZVMImageError(msg=msg)
+                missing_prop.append(prop)
+
+        if len(missing_prop) > 0:
+            msg = (_("The image %(id)s is not a valid zVM image, "
+                   "property %(prop)s are missing") % {'id': image_meta['id'],
+                                                       'prop': missing_prop})
+            LOG.error(msg)
+            raise exception.ZVMImageError(msg=msg)
 
     def cleanup_image_after_migration(self, inst_name):
         """Cleanup osimages in xCAT image repository while confirm migration
