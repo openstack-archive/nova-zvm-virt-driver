@@ -646,14 +646,14 @@ class SVCDriver(DriverAPI):
 
     def _get_fcp_from_pool(self):
         fcp_list = []
-        for fcp in self._fcp_pool.values():
+        for fcp in list(self._fcp_pool.values()):
             if not fcp.is_reserved():
                 fcp_list.append(fcp.get_dev_no())
                 break
 
         if not fcp_list:
             self._release_fcps_reserved()
-            for fcp in self._fcp_pool.values():
+            for fcp in list(self._fcp_pool.values()):
                 if not fcp.is_reserved():
                     fcp_list.append(fcp.get_dev_no())
                     break
@@ -666,7 +666,7 @@ class SVCDriver(DriverAPI):
 
         primary_fcp = self._fcp_pool.get(fcp_list.pop())
         backup_fcp = None
-        for fcp in self._fcp_pool.values():
+        for fcp in list(self._fcp_pool.values()):
             if not fcp.is_reserved() and (
                     fcp.get_chpid() != primary_fcp.get_chpid()):
                 backup_fcp = fcp
