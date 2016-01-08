@@ -1978,7 +1978,7 @@ class ZVMDriver(driver.ComputeDriver):
 
         return log_data
 
-    def get_host_uptime(self, host_name):
+    def get_host_uptime(self):
         """Get host uptime."""
         with zvmutils.expect_invalid_xcat_resp_data():
             return self._host_stats[0]['ipl_time']
