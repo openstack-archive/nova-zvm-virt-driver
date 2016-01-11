@@ -327,7 +327,7 @@ class ZVMImages(object):
                     'profile': image_profile,
                     'provmethod': prov_method}
 
-        for item in manifest.keys():
+        for item in list(manifest.keys()):
             itemkey = doc.createElement(item)
             itemvalue = doc.createTextNode(manifest[item])
             itemkey.appendChild(itemvalue)
@@ -750,7 +750,7 @@ class ZVMImages(object):
                     'os_name', 'provisioning_method', 'os_version']
         missing_prop = []
         for prop in property_:
-            if prop not in image_meta['properties'].keys():
+            if prop not in list(image_meta['properties'].keys()):
                 missing_prop.append(prop)
 
         if len(missing_prop) > 0:

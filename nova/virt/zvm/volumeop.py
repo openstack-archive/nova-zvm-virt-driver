@@ -684,7 +684,7 @@ class SVCDriver(DriverAPI):
 
     def _release_fcps_reserved(self):
         current = time.time()
-        for instance in self._instance_fcp_map.keys():
+        for instance in list(self._instance_fcp_map.keys()):
             if self._instance_fcp_map.get(instance)['count'] != 0:
                 continue
             # Only release FCP devices which are reserved more than 30 secs
