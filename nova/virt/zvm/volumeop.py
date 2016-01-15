@@ -128,8 +128,8 @@ class VolumeOperator(object):
             raise exception.ZVMDriverError(msg=errmsg)
 
         for bdm in bdm_list:
-            if zvmutils.is_volume_root(bdm.mount_device, root_device):
-                return bdm.connection_info
+            if zvmutils.is_volume_root(bdm['mount_device'], root_device):
+                return bdm['connection_info']
         errmsg = _("Failed to get connection info of root volume.")
         raise exception.ZVMDriverError(msg=errmsg)
 

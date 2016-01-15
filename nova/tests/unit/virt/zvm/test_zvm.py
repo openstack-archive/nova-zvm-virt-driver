@@ -2363,14 +2363,7 @@ class ZVMVolumeOperatorTestCase(ZVMTestCase):
                           [], fake_root_device)
 
     def test_get_root_volume_connection_info_get_none(self):
-        class FakeBdm(object):
-            """Fake bdm class for UT only."""
-
-            def __init__(self, connection_info, mount_device):
-                self.connection_info = connection_info
-                self.mount_device = mount_device
-
-        fake_bdm = FakeBdm('fake_info', '/dev/sda')
+        fake_bdm = {'connection_info': 'fake_info', 'mount_device': '/dev/sda'}
         fake_root_device = '/dev/sdb'
 
         farg = mox.IgnoreArg()
@@ -2384,15 +2377,10 @@ class ZVMVolumeOperatorTestCase(ZVMTestCase):
         self.mox.VerifyAll()
 
     def test_get_root_volume_connection_info(self):
-        class FakeBdm(object):
-            """Fake bdm class for UT only."""
-
-            def __init__(self, connection_info, mount_device):
-                self.connection_info = connection_info
-                self.mount_device = mount_device
-
-        fake_bdm1 = FakeBdm('fake_info_a', '/dev/sda')
-        fake_bdm2 = FakeBdm('fake_info_b', '/dev/sdb')
+        fake_bdm1 = {'connection_info': 'fake_info_a',
+                    'mount_device': '/dev/sda'}
+        fake_bdm2 = {'connection_info': 'fake_info_b',
+                    'mount_device': '/dev/sdb'}
         fake_root_device = '/dev/sdb'
 
         farg = mox.IgnoreArg()
