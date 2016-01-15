@@ -344,15 +344,7 @@ class ZVMDriver(driver.ComputeDriver):
             volume_id = self._extract_volume_id(bdm, root_mount_device)
             volume_summery = self._volume_api.get(context, volume_id)
             volume_meta = volume_summery['volume_metadata']
-            os_type = volume_meta['os_type']
-            # FIXME (jichenjc), woraround now need more effort here
-            # os_type is sles or rhel before, we need to know
-            # they are rhel6 or 7 , sles11 or 12, but not considered before
-            os_version = ''
-            if os_type == 'rhel':
-                os_version == 'rhel6'
-            if os_type == 'sles':
-                os_version == 'sles11'
+            os_version = volume_meta['os_version']
 
         linuxdist = self._dist_manager.get_linux_dist(os_version)()
         files_and_cmds = linuxdist.create_network_configuration_files(
