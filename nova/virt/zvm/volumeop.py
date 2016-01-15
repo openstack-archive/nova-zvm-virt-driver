@@ -39,8 +39,12 @@ CONF = cfg.CONF
 class VolumeOperator(object):
     """Volume operator on IBM z/VM platform."""
 
+    _svc_driver_obj = None
+
     def __init__(self):
-        self._svc_driver = SVCDriver()
+        if not VolumeOperator._svc_driver_obj:
+            VolumeOperator._svc_driver_obj = SVCDriver()
+        self._svc_driver = VolumeOperator._svc_driver_obj
 
     def init_host(self, host_stats):
         try:
@@ -884,13 +888,13 @@ class SVCDriver(DriverAPI):
                         self._allocate_zfcp(instance, fcp, size, wwpn, lun)
 
     def volume_boot_init(self, instance, fcp):
-        self._update_instance_fcp_map_if_unlocked(instance['name'], fcp,
+        self._update_instance_fcp_map_if_unlocked(instance['name'], [fcp],
                                                   self._INCREASE)
         self._attach_device(instance['name'], fcp)
 
     def volume_boot_cleanup(self, instance, fcp):
         self._update_instance_fcp_map_if_unlocked(instance['name'],
-                                                  fcp, self._DECREASE)
+                                                  [fcp], self._DECREASE)
         self._detach_device(instance['name'], fcp)
 
     def _expand_fcp_list(self, fcp_list):
