@@ -162,6 +162,18 @@ class LinuxDist(object):
                           udev_cfg_str):
         pass
 
+    @abc.abstractmethod
+    def get_scp_string(self, root, fcp, wwpn, lun):
+        """construct scp_data string for ipl parameter"""
+        pass
+
+    @abc.abstractmethod
+    def get_zipl_script_lines(self, image, ramdisk, root, fcp, wwpn, lun):
+        """construct the lines composing the script to generate
+           the /etc/zipl.conf file
+        """
+        pass
+
 
 class rhel(LinuxDist):
     def _get_network_file_path(self):
@@ -222,6 +234,27 @@ class rhel6(rhel):
     def _get_device_name(self, device_num):
         return 'eth' + str(device_num)
 
+    def get_scp_string(self, root, fcp, wwpn, lun):
+        return ("=root=%(root)s selinux=0 "
+                "rd_ZFCP=0.0.%(fcp)s,0x%(wwpn)s,0x%(lun)s") % {
+                'root': root, 'fcp': fcp, 'wwpn': wwpn, 'lun': lun}
+
+    def get_zipl_script_lines(self, image, ramdisk, root, fcp, wwpn, lun):
+        return ['#!/bin/bash\n',
+                ('echo -e "[defaultboot]\\n'
+                 'timeout=5\\n'
+                 'default=boot-from-volume\\n'
+                 'target=/boot/\\n'
+                 '[boot-from-volume]\\n'
+                 'image=%(image)s\\n'
+                 'ramdisk=%(ramdisk)s\\n'
+                 'parameters=\\"root=%(root)s '
+                 'rd_ZFCP=0.0.%(fcp)s,0x%(wwpn)s,0x%(lun)s selinux=0\\""'
+                 '>/etc/zipl_volume.conf\n'
+                 'zipl -c /etc/zipl_volume.conf')
+                % {'image': image, 'ramdisk': ramdisk, 'root': root,
+                   'fcp': fcp, 'wwpn': wwpn, 'lun': lun}]
+
 
 class rhel7(rhel):
     def get_znetconfig_contents(self):
@@ -244,6 +277,28 @@ class rhel7(rhel):
         base = int(const.ZVM_DEFAULT_NIC_VDEV, 16)
         device = str(hex(base + device_num * 3))[2:]
         return 'enccw0.0.' + str(device).zfill(4)
+
+    def get_scp_string(self, root, fcp, wwpn, lun):
+        return ("=root=%(root)s selinux=0 zfcp.allow_lun_scan=0 "
+                "rd.zfcp=0.0.%(fcp)s,0x%(wwpn)s,0x%(lun)s") % {
+                'root': root, 'fcp': fcp, 'wwpn': wwpn, 'lun': lun}
+
+    def get_zipl_script_lines(self, image, ramdisk, root, fcp, wwpn, lun):
+        return ['#!/bin/bash\n',
+                ('echo -e "[defaultboot]\\n'
+                 'timeout=5\\n'
+                 'default=boot-from-volume\\n'
+                 'target=/boot/\\n'
+                 '[boot-from-volume]\\n'
+                 'image=%(image)s\\n'
+                 'ramdisk=%(ramdisk)s\\n'
+                 'parameters=\\"root=%(root)s '
+                 'rd.zfcp=0.0.%(fcp)s,0x%(wwpn)s,0x%(lun)s '
+                 'zfcp.allow_lun_scan=0 selinux=0\\""'
+                 '>/etc/zipl_volume.conf\n'
+                 'zipl -c /etc/zipl_volume.conf')
+                % {'image': image, 'ramdisk': ramdisk, 'root': root,
+                   'fcp': fcp, 'wwpn': wwpn, 'lun': lun}]
 
 
 class sles(LinuxDist):
@@ -303,6 +358,27 @@ class sles(LinuxDist):
 
         return cfg_str
 
+    def get_scp_string(self, root, fcp, wwpn, lun):
+        return ("=root=%(root)s "
+                "zfcp.device=0.0.%(fcp)s,0x%(wwpn)s,0x%(lun)s") % {
+                'root': root, 'fcp': fcp, 'wwpn': wwpn, 'lun': lun}
+
+    def get_zipl_script_lines(self, image, ramdisk, root, fcp, wwpn, lun):
+        return ['#!/bin/bash\n',
+                ('echo -e "[defaultboot]\\n'
+                 'default=boot-from-volume\\n'
+                 '[boot-from-volume]\\n'
+                 'image=%(image)s\\n'
+                 'target = /boot/zipl\\n'
+                 'ramdisk=%(ramdisk)s\\n'
+                 'parameters=\\"root=%(root)s '
+                 'zfcp.device=0.0.%(fcp)s,0x%(wwpn)s,0x%(lun)s\\""'
+                 '>/etc/zipl_volume.conf\n'
+                 'mkinitrd\n'
+                 'zipl -c /etc/zipl_volume.conf')
+                % {'image': image, 'ramdisk': ramdisk, 'root': root,
+                   'fcp': fcp, 'wwpn': wwpn, 'lun': lun}]
+
 
 class sles11(sles):
     def get_znetconfig_contents(self):
@@ -335,7 +411,7 @@ class sles12(sles):
 
 class ListDistManager(object):
     def get_linux_dist(self, os_version):
-        distro, release = self._parse_dist(os_version)
+        distro, release = self.parse_dist(os_version)
         return globals()[distro + release]
 
     def _parse_release(self, os_version, distro, remain):
@@ -350,7 +426,7 @@ class ListDistManager(object):
             msg = _('Can not handle os: %s') % os_version
             raise exception.ZVMImageError(msg=msg)
 
-    def _parse_dist(self, os_version):
+    def parse_dist(self, os_version):
         """Separate os and version from os_version.
 
         Possible return value are only:

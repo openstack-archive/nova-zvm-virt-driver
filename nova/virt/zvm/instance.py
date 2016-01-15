@@ -26,6 +26,7 @@ from nova import exception as nova_exception
 from nova.i18n import _, _LW
 from nova.virt import hardware
 from nova.virt.zvm import const
+from nova.virt.zvm import dist
 from nova.virt.zvm import exception
 from nova.virt.zvm import utils as zvmutils
 from nova.virt.zvm import volumeop
@@ -45,6 +46,7 @@ class ZVMInstance(object):
         self._instance = instance
         self._name = instance['name']
         self._volumeop = volumeop.VolumeOperator()
+        self._dist_manager = dist.ListDistManager()
 
     def power_off(self):
         """Power off z/VM instance."""
@@ -305,29 +307,23 @@ class ZVMInstance(object):
     def _forge_hex_scpdata(self, fcp, wwpn, lun, volume_meta):
         """Forge scpdata in string form and HEX form."""
         root = volume_meta['root']
-        os_type = volume_meta['os_type']
-        if os_type == 'rhel':
-            scpstring = ("=root=%(root)s selinux=0 "
-                         "rd_ZFCP=0.0.%(fcp)s,0x%(wwpn)s,0x%(lun)s") % {
-                        'root': root, 'fcp': fcp, 'wwpn': wwpn, 'lun': lun}
-        else:    # sles
-            scpstring = ("=root=%(root)s "
-                         "zfcp.device=0.0.%(fcp)s,0x%(wwpn)s,0x%(lun)s") % {
-                         'root': root, 'fcp': fcp, 'wwpn': wwpn, 'lun': lun}
+        os_version = volume_meta['os_version']
+        linux_dist = self._dist_manager.get_linux_dist(os_version)()
+        scp_string = linux_dist.get_scp_string(root, fcp, wwpn, lun)
 
         # Convert to HEX string
         # Without Encode / Decode it will still work for python 2.6 but not for
         # Python 3
         try:
-            scpstring_b = scpstring.encode('ascii')
-            scpdata_b = binascii.hexlify(scpstring_b)
-            scpdata = scpdata_b.decode('ascii')
+            scp_string_ascii = scp_string.encode('ascii')
+            scp_string_hex = binascii.hexlify(scp_string_ascii)
+            scp_data = scp_string_hex.decode('ascii')
         except Exception as err:
             errmsg = _("Failed to forge hex scpdata: %s") % err
             LOG.error(errmsg)
             raise exception.ZVMDriverError(msg=errmsg)
 
-        return (scpstring, scpdata)
+        return (scp_string, scp_data)
 
     def _set_ipl(self, ipl_state):
         body = ["--setipl %s" % ipl_state]
