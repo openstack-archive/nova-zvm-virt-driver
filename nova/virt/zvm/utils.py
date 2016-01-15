@@ -32,6 +32,7 @@ from nova import exception as nova_exception
 from nova.i18n import _, _LE, _LI
 from nova.virt import driver
 from nova.virt.zvm import const
+from nova.virt.zvm import dist
 from nova.virt.zvm import exception
 
 
@@ -646,39 +647,13 @@ def _generate_zipl_file(fn, lun, wwpn, fcp, volume_meta):
     image = volume_meta['image']
     ramdisk = volume_meta['ramdisk']
     root = volume_meta['root']
-    os_type = volume_meta['os_type']
-    if os_type == 'rhel':
-        lines = ['#!/bin/bash\n',
-        ('echo -e "[defaultboot]\\n'
-         'timeout=5\\n'
-         'default=boot-from-volume\\n'
-         'target=/boot/\\n'
-         '[boot-from-volume]\\n'
-         'image=%(image)s\\n'
-         'ramdisk=%(ramdisk)s\\n'
-         'parameters=\\"root=%(root)s '
-         'rd_ZFCP=0.0.%(fcp)s,0x%(wwpn)s,0x%(lun)s selinux=0\\""'
-         '>/etc/zipl_volume.conf\n'
-         'zipl -c /etc/zipl_volume.conf')
-            % {'image': image, 'ramdisk': ramdisk, 'root': root, 'fcp': fcp,
-                'wwpn': wwpn, 'lun': lun}]
-    else:  # sles
-        lines = ['#!/bin/bash\n',
-        ('echo -e "[defaultboot]\\n'
-         'default=boot-from-volume\\n'
-         '[boot-from-volume]\\n'
-         'image=%(image)s\\n'
-         'target = /boot/zipl\\n'
-         'ramdisk=%(ramdisk)s\\n'
-         'parameters=\\"root=%(root)s '
-         'zfcp.device=0.0.%(fcp)s,0x%(wwpn)s,0x%(lun)s\\""'
-         '>/etc/zipl_volume.conf\n'
-         'mkinitrd\n'
-         'zipl -c /etc/zipl_volume.conf')
-            % {'image': image, 'ramdisk': ramdisk, 'root': root, 'fcp': fcp,
-                'wwpn': wwpn, 'lun': lun}]
+    os_version = volume_meta['os_version']
+    dist_manager = dist.ListDistManager()
+    linux_dist = dist_manager.get_linux_dist(os_version)()
+    zipl_script_lines = linux_dist.get_zipl_script_lines(
+                            image, ramdisk, root, fcp, wwpn, lun)
     with open(fn, 'w') as f:
-        f.writelines(lines)
+        f.writelines(zipl_script_lines)
 
 
 @wrap_invalid_xcat_resp_data_error

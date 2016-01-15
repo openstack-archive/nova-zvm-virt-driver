@@ -4213,6 +4213,89 @@ class ZVMDistTestCases(test.TestCase):
         for v in self.support_list:
             v._append_udev_info([], '0', '0', '0')
 
+    def test_get_scp_string(self):
+        root = "/dev/sda2"
+        fcp = "1faa"
+        wwpn = "55556666"
+        lun = "11112222"
+
+        expected = ("=root=/dev/sda2 selinux=0 "
+                    "rd_ZFCP=0.0.1faa,0x55556666,0x11112222")
+        actual = self.rhel6.get_scp_string(root, fcp, wwpn, lun)
+        self.assertEqual(expected, actual)
+
+        expected = ("=root=/dev/sda2 selinux=0 zfcp.allow_lun_scan=0 "
+                    "rd.zfcp=0.0.1faa,0x55556666,0x11112222")
+        actual = self.rhel7.get_scp_string(root, fcp, wwpn, lun)
+        self.assertEqual(expected, actual)
+
+        expected = ("=root=/dev/sda2 "
+                    "zfcp.device=0.0.1faa,0x55556666,0x11112222")
+        actual = self.sles11.get_scp_string(root, fcp, wwpn, lun)
+        self.assertEqual(expected, actual)
+        actual = self.sles12.get_scp_string(root, fcp, wwpn, lun)
+        self.assertEqual(expected, actual)
+
+    def test_get_zipl_script_lines(self):
+        image = "image"
+        ramdisk = "ramdisk"
+        root = "/dev/sda2"
+        fcp = "1faa"
+        wwpn = "55556666"
+        lun = "11112222"
+
+        expected = ['#!/bin/bash\n',
+                    'echo -e "[defaultboot]\\n'
+                    'timeout=5\\n'
+                    'default=boot-from-volume\\n'
+                    'target=/boot/\\n'
+                    '[boot-from-volume]\\n'
+                    'image=image\\n'
+                    'ramdisk=ramdisk\\n'
+                    'parameters=\\"root=/dev/sda2 '
+                    'rd_ZFCP=0.0.1faa,0x55556666,0x11112222 selinux=0\\""'
+                    '>/etc/zipl_volume.conf\n'
+                    'zipl -c /etc/zipl_volume.conf']
+        actual = self.rhel6.get_zipl_script_lines(image, ramdisk, root,
+                                                  fcp, wwpn, lun)
+        self.assertEqual(expected, actual)
+
+        expected = ['#!/bin/bash\n',
+                    'echo -e "[defaultboot]\\n'
+                    'timeout=5\\n'
+                    'default=boot-from-volume\\n'
+                    'target=/boot/\\n'
+                    '[boot-from-volume]\\n'
+                    'image=image\\n'
+                    'ramdisk=ramdisk\\n'
+                    'parameters=\\"root=/dev/sda2 '
+                    'rd.zfcp=0.0.1faa,0x55556666,0x11112222 '
+                    'zfcp.allow_lun_scan=0 selinux=0\\""'
+                    '>/etc/zipl_volume.conf\n'
+                    'zipl -c /etc/zipl_volume.conf']
+        actual = self.rhel7.get_zipl_script_lines(image, ramdisk, root,
+                                                  fcp, wwpn, lun)
+        self.assertEqual(expected, actual)
+
+        expected = ['#!/bin/bash\n',
+                    'echo -e "[defaultboot]\\n'
+                    'default=boot-from-volume\\n'
+                    '[boot-from-volume]\\n'
+                    'image=image\\n'
+                    'target = /boot/zipl\\n'
+                    'ramdisk=ramdisk\\n'
+                    'parameters=\\"root=/dev/sda2 '
+                    'zfcp.device=0.0.1faa,0x55556666,0x11112222\\""'
+                    '>/etc/zipl_volume.conf\n'
+                    'mkinitrd\n'
+                    'zipl -c /etc/zipl_volume.conf']
+        actual = self.sles11.get_zipl_script_lines(image, ramdisk, root,
+                                                   fcp, wwpn, lun)
+        self.assertEqual(expected, actual)
+        actual = self.sles12.get_zipl_script_lines(image, ramdisk, root,
+                                                  fcp, wwpn, lun)
+        self.assertEqual(expected, actual)
+
 
 class ZVMDistRhel7TestCases(test.TestCase):
     def setUp(self):
