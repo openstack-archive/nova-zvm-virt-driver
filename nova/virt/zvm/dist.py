@@ -335,7 +335,7 @@ class sles12(sles):
 
 class ListDistManager(object):
     def get_linux_dist(self, os_version):
-        distro, release = self._parse_dist(os_version)
+        distro, release = self.parse_dist(os_version)
         return globals()[distro + release]
 
     def _parse_release(self, os_version, distro, remain):
@@ -350,7 +350,7 @@ class ListDistManager(object):
             msg = _('Can not handle os: %s') % os_version
             raise exception.ZVMImageError(msg=msg)
 
-    def _parse_dist(self, os_version):
+    def parse_dist(self, os_version):
         """Separate os and version from os_version.
 
         Possible return value are only:

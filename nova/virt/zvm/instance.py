@@ -26,6 +26,7 @@ from nova import exception as nova_exception
 from nova.i18n import _, _LW
 from nova.virt import hardware
 from nova.virt.zvm import const
+from nova.virt.zvm import dist
 from nova.virt.zvm import exception
 from nova.virt.zvm import utils as zvmutils
 from nova.virt.zvm import volumeop
@@ -45,6 +46,7 @@ class ZVMInstance(object):
         self._instance = instance
         self._name = instance['name']
         self._volumeop = volumeop.VolumeOperator()
+        self._dist_manager = dist.ListDistManager()
 
     def power_off(self):
         """Power off z/VM instance."""
@@ -305,10 +307,15 @@ class ZVMInstance(object):
     def _forge_hex_scpdata(self, fcp, wwpn, lun, volume_meta):
         """Forge scpdata in string form and HEX form."""
         root = volume_meta['root']
-        os_type = volume_meta['os_type']
-        if os_type == 'rhel':
+        os_version = volume_meta['os_version']
+        (distro, release) = dist_manager.parse_dist(os_version)
+        if (distro + release == 'rhel6'):
             scpstring = ("=root=%(root)s selinux=0 "
                          "rd_ZFCP=0.0.%(fcp)s,0x%(wwpn)s,0x%(lun)s") % {
+                        'root': root, 'fcp': fcp, 'wwpn': wwpn, 'lun': lun}
+        elif (distro + release == 'rhel7'):
+            scpstring = ("=root=%(root)s selinux=0 zfcp.allow_lun_scan=0"
+                         "rd.zfcp=0.0.%(fcp)s,0x%(wwpn)s,0x%(lun)s") % {
                         'root': root, 'fcp': fcp, 'wwpn': wwpn, 'lun': lun}
         else:    # sles
             scpstring = ("=root=%(root)s "
