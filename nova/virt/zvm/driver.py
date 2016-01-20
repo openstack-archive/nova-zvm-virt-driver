@@ -1056,7 +1056,7 @@ class ZVMDriver(driver.ComputeDriver):
         return dest_check_data
 
     def check_can_live_migrate_source(self, ctxt, instance_ref,
-                                      dest_check_data):
+                                      dest_check_data, block_device_info=None):
         """Check if it is possible to execute live migration.
 
         This checks if the live migration can succeed, based on the
