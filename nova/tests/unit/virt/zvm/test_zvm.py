@@ -35,6 +35,7 @@ from nova.image import glance
 from nova.network import model
 from nova import test
 from nova.tests.unit import fake_instance
+from nova.virt import configdrive as virt_configdrive
 from nova.virt import fake
 from nova.virt import hardware
 from nova.virt.zvm import configdrive
@@ -472,6 +473,7 @@ class ZVMDriverTestCases(ZVMTestCase):
         self.instance['config_drive'] = True
         self.stubs.Set(self.driver._pathutils, 'get_instance_path',
                        self._fake_fun('/temp/os000001'))
+        self.stubs.Set(virt_configdrive, 'required_by', self._fake_fun(True))
         self.stubs.Set(self.driver, '_create_config_drive',
                        self._fake_fun('/temp/os000001/configdrive.tgz'))
         self.stubs.Set(instance.ZVMInstance, 'create_xcat_node',
@@ -510,6 +512,7 @@ class ZVMDriverTestCases(ZVMTestCase):
                        self._fake_fun('/temp/os000001'))
         self.stubs.Set(self.driver, '_create_config_drive',
                        self._fake_fun('/temp/os000001/configdrive.tgz'))
+        self.stubs.Set(virt_configdrive, 'required_by', self._fake_fun(True))
         self.stubs.Set(instance.ZVMInstance, 'create_xcat_node',
                        self._fake_fun())
         self.stubs.Set(self.driver, '_preset_instance_network',
@@ -565,6 +568,7 @@ class ZVMDriverTestCases(ZVMTestCase):
         self.mox.StubOutWithMock(self.driver._pathutils, 'get_instance_path')
         self.mox.StubOutWithMock(dist.LinuxDist,
             "create_network_configuration_files")
+        self.stubs.Set(virt_configdrive, 'required_by', self._fake_fun(True))
         self.mox.StubOutWithMock(self.driver, '_create_config_drive')
         self.mox.StubOutWithMock(instance.ZVMInstance, 'create_xcat_node')
         self.mox.StubOutWithMock(self.driver, '_preset_instance_network')
@@ -626,6 +630,7 @@ class ZVMDriverTestCases(ZVMTestCase):
     def test_spawn_image_error(self):
         self.stubs.Set(self.driver._pathutils, 'get_instance_path',
                        self._fake_fun('/temp/os000001'))
+        self.stubs.Set(virt_configdrive, 'required_by', self._fake_fun(True))
         self.stubs.Set(self.driver, '_create_config_drive',
                        self._fake_fun('/temp/os000001/configdrive.tgz'))
         self.stubs.Set(instance.ZVMInstance, 'create_xcat_node',
@@ -649,6 +654,9 @@ class ZVMDriverTestCases(ZVMTestCase):
     def test_spawn_deploy_failed(self):
         self.stubs.Set(self.driver._pathutils, 'get_instance_path',
                        self._fake_fun('/temp/os000001'))
+        self.stubs.Set(virt_configdrive, 'required_by', self._fake_fun(True))
+        self.stubs.Set(self.driver, '_create_config_drive',
+                       self._fake_fun('/temp/os000001/configdrive.tgz'))
         self.stubs.Set(instance.ZVMInstance, 'create_xcat_node',
                        self._fake_fun())
         self.stubs.Set(self.driver, '_preset_instance_network',
