@@ -1024,7 +1024,7 @@ class ZVMDriver(driver.ComputeDriver):
             'hypervisor_hostname': stats['hypervisor_hostname'],
             'cpu_info': jsonutils.dumps(stats['cpu_info']),
             'disk_available_least': stats['disk_available'],
-            'supported_instances': jsonutils.dumps(supported_instances),
+            'supported_instances': supported_instances,
             'numa_topology': None,
         }
 
