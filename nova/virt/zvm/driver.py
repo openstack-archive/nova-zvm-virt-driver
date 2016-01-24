@@ -34,6 +34,7 @@ from nova.compute import task_states
 from nova.compute import vm_mode
 from nova import exception as nova_exception
 from nova.i18n import _, _LI, _LW
+from nova.image import api as image_api
 from nova.image import glance
 from nova import utils
 from nova.virt import configdrive
@@ -219,6 +220,7 @@ class ZVMDriver(driver.ComputeDriver):
         self._volumeop = volumeop.VolumeOperator()
         self._volume_api = volume.API()
         self._dist_manager = dist.ListDistManager()
+        self._image_api = image_api.API()
 
     def init_host(self, host):
         """Initialize anything that is necessary for the driver to function,
@@ -314,6 +316,12 @@ class ZVMDriver(driver.ComputeDriver):
                                   attached to the instance.
 
         """
+        # This is because commit fbe31e461ac3f16edb795993558a2314b4c16b52
+        # changes the image_meta from dict to object, we have several
+        # unique property can't be handled well
+        # see bug 1537921 for detail info
+        image_meta = self._image_api.get(context, image_meta['id'])
+
         root_mount_device, boot_from_volume = zvmutils.is_boot_from_volume(
                                                             block_device_info)
         bdm = driver.block_device_info_get_mapping(block_device_info)
