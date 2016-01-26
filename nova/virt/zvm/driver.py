@@ -321,7 +321,7 @@ class ZVMDriver(driver.ComputeDriver):
         # changes the image_meta from dict to object, we have several
         # unique property can't be handled well
         # see bug 1537921 for detail info
-        image_meta = self._image_api.get(context, image_meta['id'])
+        image_meta = self._image_api.get(context, image_meta.id)
 
         root_mount_device, boot_from_volume = zvmutils.is_boot_from_volume(
                                                             block_device_info)
