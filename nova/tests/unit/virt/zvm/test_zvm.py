@@ -28,6 +28,7 @@ from oslo_serialization import jsonutils
 from oslo_utils import fileutils
 
 from nova.compute import power_state
+from nova.compute import vm_states
 from nova import context
 from nova import db
 from nova import exception as nova_exception
@@ -909,6 +910,7 @@ class ZVMDriverTestCases(ZVMTestCase):
         return conn_info
 
     def test_attach_volume(self):
+        self.instance.vm_state = vm_states.ACTIVE
         self.mox.StubOutWithMock(self.driver, '_format_mountpoint')
         self.mox.StubOutWithMock(self.driver, 'instance_exists')
         self.mox.StubOutWithMock(instance.ZVMInstance, 'is_reachable')
@@ -925,7 +927,22 @@ class ZVMDriverTestCases(ZVMTestCase):
                                   self.instance, '/dev/sdd')
         self.mox.VerifyAll()
 
+    def test_attach_volume_invalid_vm_states(self):
+        self.instance.vm_state = vm_states.PAUSED
+        self.assertRaises(exception.ZVMDriverError,
+                          self.driver.attach_volume,
+                          {}, None, fake_instance, None)
+        self.instance.vm_state = vm_states.RESIZED
+        self.assertRaises(exception.ZVMDriverError,
+                          self.driver.attach_volume,
+                          {}, None, fake_instance, None)
+        self.instance.vm_state = vm_states.SOFT_DELETED
+        self.assertRaises(exception.ZVMDriverError,
+                          self.driver.attach_volume,
+                          {}, None, fake_instance, None)
+
     def test_attach_volume_no_mountpoint(self):
+        self.instance.vm_state = vm_states.ACTIVE
         self.mox.StubOutWithMock(self.driver, 'instance_exists')
         self.mox.StubOutWithMock(instance.ZVMInstance, 'is_reachable')
         self.mox.StubOutWithMock(instance.ZVMInstance, 'attach_volume')

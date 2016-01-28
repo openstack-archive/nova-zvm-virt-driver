@@ -32,6 +32,7 @@ from nova.api.metadata import base as instance_metadata
 from nova.compute import power_state
 from nova.compute import task_states
 from nova.compute import vm_mode
+from nova.compute import vm_states
 from nova import exception as nova_exception
 from nova.i18n import _, _LI, _LW
 from nova.image import glance
@@ -747,6 +748,10 @@ class ZVMDriver(driver.ComputeDriver):
     def attach_volume(self, context, connection_info, instance, mountpoint,
                       disk_bus=None, device_type=None, encryption=None):
         """Attach the disk to the instance at mountpoint using info."""
+        if instance.vm_state not in [vm_states.ACTIVE, vm_states.STOPPED]:
+            msg = _("Instance must be ACTIVE or SHUTDOWN "
+                    "when attaching volumes.")
+            raise exception.ZVMDriverError(msg=msg)
         if mountpoint:
             mountpoint = self._format_mountpoint(mountpoint)
         if self.instance_exists(instance['name']):
