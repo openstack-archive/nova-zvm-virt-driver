@@ -408,6 +408,9 @@ class ZVMDriverTestCases(ZVMTestCase):
         self.driver.destroy({}, self.instance2, {}, {})
         self.mox.VerifyAll()
 
+    def fake_image_get(self, context, id):
+        return self._fake_image_meta()
+
     def _fake_image_meta(self):
         return {'checksum': '1a2bbbdbcc9c536a2688fc6278685dfb',
                 'container_format': 'bare',
@@ -503,6 +506,7 @@ class ZVMDriverTestCases(ZVMTestCase):
                        self._fake_fun())
         self.stubs.Set(self.driver, '_wait_for_addnic', self._fake_fun())
         self.stubs.Set(self.driver, '_is_nic_granted', self._fake_fun(True))
+        self.stubs.Set(self.driver._image_api, 'get', self.fake_image_get)
         self.driver.spawn({}, self.instance, self._fake_image_meta(), ['fake'],
                           'fakepass', self._fake_network_info(), {})
 
@@ -545,6 +549,7 @@ class ZVMDriverTestCases(ZVMTestCase):
         self._set_fake_xcat_resp([
             ("PUT", None, None, self._gen_resp(info='done')),
             ])
+        self.stubs.Set(self.driver._image_api, 'get', self.fake_image_get)
         self.driver.spawn({}, self.instance2, self._fake_image_meta(),
                           ['fake'], 'fakepass', self._fake_network_info(), {})
         self.mox.VerifyAll()
@@ -566,6 +571,7 @@ class ZVMDriverTestCases(ZVMTestCase):
              'guest_format': u'ext3',
              'size': 1}]}
 
+        self.stubs.Set(self.driver._image_api, 'get', self.fake_image_get)
         self.mox.StubOutWithMock(self.driver._pathutils, 'get_instance_path')
         self.mox.StubOutWithMock(dist.LinuxDist,
             "create_network_configuration_files")
@@ -644,6 +650,7 @@ class ZVMDriverTestCases(ZVMTestCase):
         self.mox.StubOutWithMock(self.driver._zvm_images, 'image_exist_xcat')
         self.driver._zvm_images.image_exist_xcat(mox.IgnoreArg()
                                 ).AndRaise(exception.ZVMImageError(msg='fake'))
+        self.stubs.Set(self.driver._image_api, 'get', self.fake_image_get)
         self.mox.ReplayAll()
         self.stubs.Set(instance.ZVMInstance, 'delete_xcat_node',
                        self._fake_fun())
@@ -682,6 +689,7 @@ class ZVMDriverTestCases(ZVMTestCase):
         self.stubs.Set(self.driver._pathutils, 'clean_temp_folder',
                        self._fake_fun())
         self.stubs.Set(self.driver, 'destroy', self._fake_fun())
+        self.stubs.Set(self.driver._image_api, 'get', self.fake_image_get)
         self.assertRaises(exception.ZVMXCATDeployNodeFailed, self.driver.spawn,
                           {}, self.instance, self._fake_image_meta(), [],
                           'fakepass', self._fake_network_info(), {})
