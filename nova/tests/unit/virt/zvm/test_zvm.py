@@ -30,7 +30,6 @@ from oslo_utils import fileutils
 from nova.compute import power_state
 from nova.compute import vm_states
 from nova import context
-from nova import db
 from nova import exception as nova_exception
 from nova.image import glance
 from nova.network import model
@@ -102,8 +101,8 @@ class ZVMTestCase(test.TestCase):
     def setUp(self):
         super(ZVMTestCase, self).setUp()
         self.context = context.get_admin_context()
-        self.instance = db.instance_create(self.context,
-                                 {'user_id': 'fake',
+        self.instance = fake_instance.fake_instance_obj(self.context,
+                                 **{'user_id': 'fake',
                                   'project_id': 'fake',
                                   'instance_type_id': 1,
                                   'memory_mb': 1024,
@@ -112,8 +111,8 @@ class ZVMTestCase(test.TestCase):
                                   'ephemeral_gb': 0,
                                   'image_ref': '0000-1111',
                                   'host': 'fakenode'})
-        self.instance2 = db.instance_create(self.context,
-                                 {'user_id': 'fake',
+        self.instance2 = fake_instance.fake_instance_obj(self.context,
+                                 **{'user_id': 'fake',
                                   'project_id': 'fake',
                                   'instance_type_id': 1,
                                   'memory_mb': 1024,
@@ -404,7 +403,7 @@ class ZVMDriverTestCases(ZVMTestCase):
         self.mox.VerifyAll()
 
     def test_destroy_non_exist(self):
-        self._set_fake_xcat_responses([self._fake_instance_list_data()])
+        self.stubs.Set(self.driver, 'instance_exists', self._fake_fun(False))
         self.driver.destroy({}, self.instance2, {}, {})
         self.mox.VerifyAll()
 
@@ -507,6 +506,7 @@ class ZVMDriverTestCases(ZVMTestCase):
         self.stubs.Set(self.driver, '_wait_for_addnic', self._fake_fun())
         self.stubs.Set(self.driver, '_is_nic_granted', self._fake_fun(True))
         self.stubs.Set(self.driver._image_api, 'get', self.fake_image_get)
+        self.stubs.Set(self.instance, 'save', self._fake_fun())
         self.driver.spawn({}, self.instance, self._fake_image_meta(), ['fake'],
                           'fakepass', self._fake_network_info(), {})
 
@@ -550,6 +550,7 @@ class ZVMDriverTestCases(ZVMTestCase):
             ("PUT", None, None, self._gen_resp(info='done')),
             ])
         self.stubs.Set(self.driver._image_api, 'get', self.fake_image_get)
+        self.stubs.Set(self.instance2, 'save', self._fake_fun())
         self.driver.spawn({}, self.instance2, self._fake_image_meta(),
                           ['fake'], 'fakepass', self._fake_network_info(), {})
         self.mox.VerifyAll()
@@ -628,6 +629,7 @@ class ZVMDriverTestCases(ZVMTestCase):
         instance.ZVMInstance.power_on()
         self.driver._pathutils.clean_temp_folder(mox.IgnoreArg())
         self.driver._zvm_images.update_last_use_date(mox.IgnoreArg())
+        self.stubs.Set(self.instance, 'save', self._fake_fun())
         self.mox.ReplayAll()
 
         self.driver.spawn(self.context, self.instance, self._fake_image_meta(),
