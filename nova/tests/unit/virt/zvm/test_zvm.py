@@ -1175,6 +1175,18 @@ class ZVMDriverTestCases(ZVMTestCase):
         self.assertRaises(exception.ZVMInvalidXCATResponseDataError,
                           self.driver._get_eph_disk_info, 'os000001')
 
+    def _fake_bdi(self):
+        _fake_eph = {'guest_format': None,
+                     'device_name': '/dev/sdb',
+                     'disk_bus': None,
+                     'device_type': 'disk',
+                     'size': 2}
+        _fake_bdi = {'swap': None,
+                     'root_device_name': '/dev/sda',
+                     'ephemerals': [_fake_eph],
+                     'block_device_mapping': []}
+        return _fake_bdi
+
     def test_finish_migration_same_mn(self):
         self.flags(zvm_xcat_server="10.10.10.10")
         network_info = self._fake_network_info()
@@ -1230,7 +1242,8 @@ class ZVMDriverTestCases(ZVMTestCase):
         self.mox.ReplayAll()
 
         self.driver.finish_migration(self.context, migration, self._fake_inst,
-                                     disk_info, network_info, None, None)
+                                     disk_info, network_info, None, None,
+                                     block_device_info=self._fake_bdi())
         self.mox.VerifyAll()
 
     def test_finish_migration_all_in_one_mode(self):
@@ -1285,7 +1298,8 @@ class ZVMDriverTestCases(ZVMTestCase):
         self.mox.ReplayAll()
 
         self.driver.finish_migration(self.context, migration, self._fake_inst,
-                                     disk_info, network_info, None, None)
+                                     disk_info, network_info, None, None,
+                                     block_device_info=self._fake_bdi())
         self.mox.VerifyAll()
 
     def test_finish_migration_same_mn_with_eph(self):
@@ -1344,7 +1358,8 @@ class ZVMDriverTestCases(ZVMTestCase):
         self.mox.ReplayAll()
 
         self.driver.finish_migration(self.context, migration, self._fake_inst,
-                                     disk_info, network_info, None, None)
+                                     disk_info, network_info, None, None,
+                                     block_device_info=self._fake_bdi())
         self.mox.VerifyAll()
 
     def test_finish_migration_same_mn_deploy_failed(self):
@@ -1410,7 +1425,8 @@ class ZVMDriverTestCases(ZVMTestCase):
 
         self.assertRaises(exception.ZVMXCATDeployNodeFailed,
             self.driver.finish_migration, self.context, migration,
-            self._fake_inst, disk_info, network_info, None, None)
+            self._fake_inst, disk_info, network_info, None, None,
+            block_device_info=self._fake_bdi())
         self.mox.VerifyAll()
 
     def test_finish_migration_diff_mn(self):
@@ -1465,7 +1481,8 @@ class ZVMDriverTestCases(ZVMTestCase):
         self.mox.ReplayAll()
 
         self.driver.finish_migration(self.context, migration, self._fake_inst,
-                                     disk_info, network_info, None, None)
+                                     disk_info, network_info, None, None,
+                                     block_device_info=self._fake_bdi())
         self.mox.VerifyAll()
 
     def test_confirm_migration_same_mn(self):
