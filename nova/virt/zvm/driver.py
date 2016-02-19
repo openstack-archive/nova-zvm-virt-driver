@@ -1602,9 +1602,18 @@ class ZVMDriver(driver.ComputeDriver):
         eph_disk_info = disk_info['eph_disk_info']
         shared_image_repo = disk_info['shared_image_repo']
 
+        old_eph_info = block_device_info['ephemerals']
+        new_eph_info = [eph for eph in eph_disk_info
+                            if eph['vdev'] != CONF.zvm_user_adde_vdev]
+
         block_device_info = block_device_info or {}
-        block_device_info['ephemerals'] = [eph for eph in eph_disk_info
-            if eph['vdev'] != CONF.zvm_user_adde_vdev]
+        block_device_info['ephemerals'] = new_eph_info
+
+        if (len(old_eph_info) == 1 and
+                old_eph_info[0]['size'] == disk_eph_size_old):
+            # Enlarge the only ephemeral disk
+            block_device_info['ephemerals'][0]['size'] = disk_eph_size_new
+            block_device_info['ephemerals'][0]['size_in_units'] = False
 
         old_userid = disk_info['disk_owner'].encode('gbk')
         new_userid = None
