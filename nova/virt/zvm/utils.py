@@ -15,6 +15,7 @@
 import contextlib
 import functools
 import os
+import pwd
 import shutil
 import six
 from six.moves import http_client as httplib
@@ -492,7 +493,7 @@ def is_boot_from_volume(block_device_info):
 
 
 def get_host():
-    return ''.join([os.environ["USER"], '@', CONF.my_ip])
+    return ''.join([pwd.getpwuid(os.geteuid()).pw_name, '@', CONF.my_ip])
 
 
 def get_userid(node_name):
