@@ -397,8 +397,10 @@ class sles11(sles):
 
 class sles12(sles):
     def get_znetconfig_contents(self):
+        remove_route = 'rm -rf %s/ifroute-eth*' % self._get_network_file_path()
         return '\n'.join(('cio_ignore -R',
                           'znetconf -R -n',
+                          remove_route,
                           'udevadm trigger',
                           'udevadm settle',
                           'sleep 2',
