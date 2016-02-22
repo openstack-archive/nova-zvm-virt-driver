@@ -207,6 +207,9 @@ class ZVMInstance(object):
                 'cpu=%i' % self._instance['vcpus'],
                 'memory=%im' % self._instance['memory_mb'],
                 'privilege=%s' % CONF.zvm_user_default_privilege]
+        if 'name' in image_meta.keys():
+            kwimage = 'imagename=%s' % image_meta['name']
+            body.append(kwimage)
         url = self._xcat_url.mkvm('/' + self._name)
 
         try:
@@ -557,7 +560,7 @@ class ZVMInstance(object):
     def update_node_info(self, image_meta):
         LOG.debug("Update the node info for instance %s" % self._name)
 
-        image_name = image_meta['name']
+        image_name = ''.join(i for i in image_meta['name'] if i.isalnum())
         image_id = image_meta['id']
         os_type = image_meta['properties']['os_version']
         os_arch = image_meta['properties']['architecture']
