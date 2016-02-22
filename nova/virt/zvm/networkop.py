@@ -165,7 +165,11 @@ class NetworkOperator(object):
                    userid=None):
         """Create network information in xCAT and zVM user direct."""
         macid = mac_address.replace(':', '')[-6:]
-        self._add_instance_nic(zhcpnode, inst_name, vdev, macid, userid)
+        # Ensure the updated driver code can works with old version of xCAT
+        if zvmutils.xcat_support_chvm_smcli():
+            self._add_instance_nic_by_chvm(inst_name, vdev, macid)
+        else:
+            self._add_instance_nic(zhcpnode, inst_name, vdev, macid, userid)
         self._delete_xcat_mac(inst_name)
         self.add_xcat_mac(inst_name, vdev, mac_address, zhcpnode)
         self.add_xcat_switch(inst_name, nic_name, vdev, zhcpnode)
@@ -185,3 +189,15 @@ class NetworkOperator(object):
         except exception.ZVMXCATXdshFailed as err:
             msg = _("Adding nic error: %s") % err.format_message()
             raise exception.ZVMNetworkError(msg=msg)
+
+    def _add_instance_nic_by_chvm(self, nodename, vdev, macid):
+        """Add NIC defination into user direct"""
+        command = 'Image_Definition_Update_DM -T  %userid%'
+        command += ' -k \'NICDEF=VDEV=%s TYPE=QDIO ' % vdev
+        command += 'MACID=%s\'' % macid
+        body = ['--smcli', command]
+        url = self._xcat_url.chvm('/' + nodename)
+        with zvmutils.except_xcat_call_failed_and_reraise(
+                exception.ZVMNetworkError):
+            zvmutils.xcat_request("PUT", url, body)
+
