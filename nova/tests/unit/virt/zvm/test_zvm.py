@@ -608,17 +608,18 @@ class ZVMDriverTestCases(ZVMTestCase):
         self.driver._create_config_drive('/temp/os000001', self.instance,
             mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(),
             mox.IgnoreArg()).AndReturn('/temp/os000001/configdrive.tgz')
-        instance.ZVMInstance.create_xcat_node('fakehcp.fake.com')
-        self.driver._preset_instance_network('os000001', network_info)
+
         self.driver._zvm_images.image_exist_xcat(mox.IgnoreArg()).AndReturn(
                                                                     True)
+        instance.ZVMInstance.create_xcat_node('fakehcp.fake.com')
         instance.ZVMInstance.create_userid(fake_bdi,
             image_meta).AndReturn(None)
-        instance.ZVMInstance.update_node_info(image_meta)
+        self.driver._preset_instance_network('os000001', network_info)
         self.driver._networkop.create_nic(mox.IgnoreArg(), 'os000001',
             mox.IgnoreArg(), mox.IgnoreArg(), '1000')
         self.driver._zvm_images.get_imgname_xcat(mox.IgnoreArg()).AndReturn(
                                                                     'fakeimg')
+        instance.ZVMInstance.update_node_info(image_meta)
         instance.ZVMInstance.deploy_node('fakeimg',
                                          '/temp/os000001/configdrive.tgz')
         zvmutils.punch_adminpass_file(mox.IgnoreArg(), 'os000001', 'pass',
@@ -1738,16 +1739,44 @@ class ZVMInstanceTestCases(ZVMTestCase):
 
     def test_create_userid(self):
         """Create userid."""
+        image_meta = {'name': 'fake#@%4test',
+                      'id': '00-11-22-33'}
         info = ['os000001: Defining OS000001 in directory... Done\n'
                 'os000001: Granting VSwitch for OS000001... Done\n']
         self._set_fake_xcat_responses([self._generate_xcat_resp(info)])
         self.stubs.Set(self._instance, '_set_ipl', lambda *args: None)
         self.stubs.Set(self._instance, 'add_mdisk', lambda *args: None)
-        self._instance.create_userid({}, {'min_disk': 3})
+        self._instance.create_userid({}, image_meta)
+
+    def test_create_userid_different_image_dict(self):
+        """Test Create userid with image dictionary that is different
+        from spawn
+        """
+        image_meta = {'container_format': 'bare',
+                      'disk_format': 'raw',
+                      'min_disk': 0,
+                      'min_ram': 0,
+                      'properties': {'os_version': 'fake',
+                                     'architecture': 'fake',
+                                     'provisioning_method': 'fake',
+                                     'root_disk_units': '3'}}
+        info = ['os000001: Defining OS000001 in directory... Done\n'
+                'os000001: Granting VSwitch for OS000001... Done\n']
+        self._set_fake_xcat_responses([self._generate_xcat_resp(info)])
+        self.stubs.Set(self._instance, '_set_ipl', lambda *args: None)
+        self.stubs.Set(self._instance, 'add_mdisk', lambda *args: None)
+        self._instance.create_userid({}, image_meta)
 
     def test_create_userid_has_ephemeral(self):
         """Create userid with epheral disk added."""
+        image_meta = {'name': 'fake',
+                      'id': '00-11-22-33',
+                      'properties': {'os_version': 'fake',
+                                     'architecture': 'fake',
+                                     'provisioning_method': 'fake',
+                                     'root_disk_units': '3'}}
         self._instance._instance['ephemeral_gb'] = 20
+        self._instance._instance['root_gb'] = 0
         cu_info = ['os000001: Defining OS000001 in directory... Done\n'
                    'os000001: Granting VSwitch for OS000001... Done\n']
         am_info = ["os000001: Adding a disk to OS00001... Done\n"
@@ -1756,11 +1785,12 @@ class ZVMInstanceTestCases(ZVMTestCase):
                                        self._generate_xcat_resp(am_info),
                                        self._generate_xcat_resp(am_info)])
         self.stubs.Set(self._instance, '_set_ipl', lambda *args: None)
-        self._instance.create_userid({}, {'min_disk': 3})
+        self._instance.create_userid({}, image_meta)
         self.mox.VerifyAll()
 
     def test_create_userid_with_eph_opts(self):
         """Create userid with '--ephemeral' options."""
+        self._instance._instance['root_gb'] = 0
         self._instance._instance['ephemeral_gb'] = 20
         fake_bdi = {'ephemerals': [
             {'device_name': '/dev/sdb',
@@ -1773,24 +1803,31 @@ class ZVMInstanceTestCases(ZVMTestCase):
              'disk_bus': None,
              'guest_format': u'ext3',
              'size': 1}]}
+        image_meta = {'name': 'fake',
+                      'id': '00-11-22-33',
+                      'properties': {'os_version': 'fake',
+                                     'architecture': 'fake',
+                                     'provisioning_method': 'fake',
+                                     'root_disk_units': '3338'}}
 
         self.mox.StubOutWithMock(zvmutils, 'xcat_request')
         self.mox.StubOutWithMock(self._instance, 'add_mdisk')
         self.mox.StubOutWithMock(self._instance, '_set_ipl')
 
         zvmutils.xcat_request('POST', mox.IgnoreArg(), mox.IgnoreArg())
-        self._instance.add_mdisk('fakedp', '0100', '10g')
+        self._instance.add_mdisk('fakedp', '0100', '3338')
         self._instance._set_ipl('0100')
         self._instance.add_mdisk('fakedp', '0102', '2g', 'ext4')
         self._instance.add_mdisk('fakedp', '0103', '1g', 'ext3')
         self.mox.ReplayAll()
 
-        self._instance.create_userid(fake_bdi, {})
+        self._instance.create_userid(fake_bdi, image_meta)
         self.mox.VerifyAll()
 
     def test_create_userid_with_eph_opts_resize(self):
         """Create userid with '--ephemeral' options."""
         self._instance._instance['ephemeral_gb'] = 20
+        self._instance._instance['root_gb'] = 5
         fake_bdi = {'ephemerals': [
             {'device_name': '/dev/sdb',
              'device_type': None,
@@ -1804,23 +1841,28 @@ class ZVMInstanceTestCases(ZVMTestCase):
              'guest_format': u'ext3',
              'size': '100000',
              'size_in_units': True}]}
-
+        image_meta = {'name': 'fake',
+                      'id': '00-11-22-33',
+                      'properties': {'os_version': 'fake',
+                                     'architecture': 'fake',
+                                     'provisioning_method': 'fake',
+                                     'root_disk_units': '3'}}
         self.mox.StubOutWithMock(zvmutils, 'xcat_request')
         self.mox.StubOutWithMock(self._instance, 'add_mdisk')
         self.mox.StubOutWithMock(self._instance, '_set_ipl')
 
         zvmutils.xcat_request('POST', mox.IgnoreArg(), mox.IgnoreArg())
-        self._instance.add_mdisk('fakedp', '0100', '10g')
+        self._instance.add_mdisk('fakedp', '0100', '5g')
         self._instance._set_ipl('0100')
         self._instance.add_mdisk('fakedp', '0102', '200000', 'ext4')
         self._instance.add_mdisk('fakedp', '0103', '100000', 'ext3')
         self.mox.ReplayAll()
 
-        self._instance.create_userid(fake_bdi, {})
+        self._instance.create_userid(fake_bdi, image_meta)
         self.mox.VerifyAll()
 
     def test_update_node_info(self):
-        image_meta = {'name': 'fake',
+        image_meta = {'name': 'fake#@%4test',
                       'id': '00-11-22-33',
                       'properties': {'os_version': 'fake',
                                      'architecture': 'fake',
@@ -2072,6 +2114,11 @@ class ZVMNetworkTestCases(ZVMTestCase):
     def test_add_instance_nic(self):
         self._set_fake_xcat_responses([{'data': [{'data': ['Done']}]}])
         self.networkop._add_instance_nic('fakehcp', self.iname, '1000', 'fake')
+        self.mox.VerifyAll()
+
+    def test_add_instance_nic_by_chvm(self):
+        self._set_fake_xcat_responses([{'data': [{'data': ['Done']}]}])
+        self.networkop._add_instance_nic_by_chvm(self.iname, '1000', 'macid')
         self.mox.VerifyAll()
 
     def test_add_instance_err(self):

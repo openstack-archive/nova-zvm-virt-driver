@@ -66,6 +66,7 @@ ZVM_DEFAULT_NIC_VDEV = '1000'
 
 ZVM_IMAGE_SIZE_MAX = 10
 
+
 # It means we introduced 'version' concept at 2.8.3.7
 # later on, any new features especially backward incompatible
 # change need a new version such as
@@ -81,3 +82,5 @@ XCAT_INIT_VERSION = '2.8.3.7'
 # xcat was bumped to this version at 2015.08.06, so version lower than
 # it should use zip format instead.
 XCAT_BUNDLE_USE_NOZIP = '2.8.3.7'
+
+XCAT_SUPPORT_CHVM_SMCLI_VERSION = '2.8.3.8'
