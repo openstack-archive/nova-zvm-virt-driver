@@ -504,6 +504,24 @@ def get_host():
     return ''.join([os.environ["USER"], '@', CONF.my_ip])
 
 
+def get_xcat_version():
+    """Return the version of xCAT"""
+    url = XCATUrl().version()
+    data = xcat_request('GET', url)['data']
+
+    with expect_invalid_xcat_resp_data(data):
+        version = data[0][0].split()[1]
+        version = version.strip()
+        return version
+
+
+def xcat_support_chvm_smcli():
+    """Return true if xCAT version support clone"""
+    xcat_version = get_xcat_version()
+    return map(int, xcat_version.split('.')) >= map(int,
+        const.XCAT_SUPPORT_CHVM_SMCLI_VERSION.split('.'))
+
+
 def get_userid(node_name):
     """Returns z/VM userid for the xCAT node."""
     url = XCATUrl().lsdef_node(''.join(['/', node_name]))
