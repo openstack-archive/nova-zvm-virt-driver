@@ -341,7 +341,7 @@ class ZVMInstance(object):
 
         return "is Unlocked..." not in str(resp)
 
-    def _wait_for_unlock(self, zhcp_node, interval=10, timeout=600):
+    def _wait_for_unlock(self, zhcp_node, interval=60, timeout=300):
         LOG.debug("Waiting for unlock instance %s" % self._name)
 
         def _wait_unlock(expiration):
