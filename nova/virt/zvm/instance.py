@@ -14,12 +14,9 @@
 
 
 import binascii
-import datetime
 
 from oslo_config import cfg
 from oslo_log import log as logging
-from oslo_service import loopingcall
-from oslo_utils import timeutils
 
 from nova.compute import power_state
 from nova import exception as nova_exception
@@ -335,32 +332,6 @@ class ZVMInstance(object):
         url = self._xcat_url.chvm('/' + self._name)
         zvmutils.xcat_request("PUT", url, body)
 
-    def is_locked(self, zhcp_node):
-        cmd = "smcli Image_Lock_Query_DM -T %s" % self._name
-        resp = zvmutils.xdsh(zhcp_node, cmd)
-
-        return "is Unlocked..." not in str(resp)
-
-    def _wait_for_unlock(self, zhcp_node, interval=10, timeout=600):
-        LOG.debug("Waiting for unlock instance %s" % self._name)
-
-        def _wait_unlock(expiration):
-            if timeutils.utcnow() > expiration:
-                LOG.debug("Waiting for unlock instance %s timeout" %
-                          self._name)
-                raise loopingcall.LoopingCallDone()
-
-            if not self.is_locked(zhcp_node):
-                LOG.debug("Instance %s is unlocked" %
-                         self._name)
-                raise loopingcall.LoopingCallDone()
-
-        expiration = timeutils.utcnow() + datetime.timedelta(seconds=timeout)
-
-        timer = loopingcall.FixedIntervalLoopingCall(_wait_unlock,
-                                                     expiration)
-        timer.start(interval=interval).wait()
-
     def delete_userid(self, zhcp_node):
         """Delete z/VM userid for the instance.This will remove xCAT node
         at same time.
@@ -375,12 +346,6 @@ class ZVMInstance(object):
                     emsg.__contains__("Reason Code: 4")):
                 # zVM user definition not found, delete xCAT node directly
                 self.delete_xcat_node()
-            elif (emsg.__contains__("Return Code: 400") and
-                    (emsg.__contains__("Reason Code: 16") or
-                     emsg.__contains__("Reason Code: 12"))):
-                # The vm or vm device was locked. Unlock before deleting
-                self._wait_for_unlock(zhcp_node)
-                zvmutils.xcat_request("DELETE", url)
             else:
                 raise err
         except exception.ZVMXCATRequestFailed as err:

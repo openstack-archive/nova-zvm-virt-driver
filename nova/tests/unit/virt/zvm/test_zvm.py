@@ -1837,66 +1837,15 @@ class ZVMInstanceTestCases(ZVMTestCase):
                           self._instance.deploy_node, 'fakeimg', '/fake/file')
 
     def test_delete_userid(self):
-        resp = {'error': [['Return Code: 400\nReason Code: 16\n']]}
+        resp = {'error': [['Return Code: 400\nReason Code: 4\n']]}
 
         self.mox.StubOutWithMock(zvmutils, 'xcat_request')
-        self.mox.StubOutWithMock(self._instance, '_wait_for_unlock')
         zvmutils.xcat_request("DELETE", mox.IgnoreArg()).AndRaise(
             exception.ZVMXCATInternalError(msg=str(resp)))
-        self._instance._wait_for_unlock('fakehcp')
         zvmutils.xcat_request("DELETE", mox.IgnoreArg())
         self.mox.ReplayAll()
 
         self._instance.delete_userid('fakehcp')
-        self.mox.VerifyAll()
-
-    def test_delete_userid_400012(self):
-        resp = {'error': [['Return Code: 400\nReason Code: 12\n']]}
-
-        self.mox.StubOutWithMock(zvmutils, 'xcat_request')
-        self.mox.StubOutWithMock(self._instance, '_wait_for_unlock')
-        zvmutils.xcat_request("DELETE", mox.IgnoreArg()).AndRaise(
-            exception.ZVMXCATInternalError(msg=str(resp)))
-        self._instance._wait_for_unlock('fakehcp')
-        zvmutils.xcat_request("DELETE", mox.IgnoreArg())
-        self.mox.ReplayAll()
-
-        self._instance.delete_userid('fakehcp')
-        self.mox.VerifyAll()
-
-    def test_is_locked_true(self):
-        resp = {'data': [['os000001: os000001 is locked']]}
-
-        self.mox.StubOutWithMock(zvmutils, 'xdsh')
-        zvmutils.xdsh('fakehcp',
-                    "smcli Image_Lock_Query_DM -T os000001").AndReturn(resp)
-        self.mox.ReplayAll()
-
-        locked = self._instance.is_locked('fakehcp')
-        self.mox.VerifyAll()
-
-        self.assertTrue(locked)
-
-    def test_is_locked_false(self):
-        resp = {'data': [['os000001: os000001 is Unlocked...']]}
-
-        self.mox.StubOutWithMock(zvmutils, 'xdsh')
-        zvmutils.xdsh('fakehcp',
-                    "smcli Image_Lock_Query_DM -T os000001").AndReturn(resp)
-        self.mox.ReplayAll()
-
-        locked = self._instance.is_locked('fakehcp')
-        self.mox.VerifyAll()
-
-        self.assertFalse(locked)
-
-    def test_wait_for_unlock(self):
-        self.mox.StubOutWithMock(self._instance, 'is_locked')
-        self._instance.is_locked('fakehcp').AndReturn(True)
-        self._instance.is_locked('fakehcp').AndReturn(False)
-        self.mox.ReplayAll()
-
-        self._instance._wait_for_unlock('fakehcp', 1)
         self.mox.VerifyAll()
 
     def test_modify_storage_format(self):
