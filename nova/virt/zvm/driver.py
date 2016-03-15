@@ -756,10 +756,8 @@ class ZVMDriver(driver.ComputeDriver):
     def attach_volume(self, context, connection_info, instance, mountpoint,
                       disk_bus=None, device_type=None, encryption=None):
         """Attach the disk to the instance at mountpoint using info."""
-        if instance.vm_state not in [vm_states.ACTIVE, vm_states.STOPPED,
-                                     vm_states.BUILDING]:
-            msg = _("Instance must be ACTIVE, BUILDING or SHUTDOWN "
-                    "when attaching volumes.")
+        if instance.vm_state == vm_states.PAUSED:
+            msg = _("Attaching to a paused instance is not supported.")
             raise exception.ZVMDriverError(msg=msg)
         if mountpoint:
             mountpoint = self._format_mountpoint(mountpoint)
