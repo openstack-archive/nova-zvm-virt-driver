@@ -946,14 +946,6 @@ class ZVMDriverTestCases(ZVMTestCase):
         self.assertRaises(exception.ZVMDriverError,
                           self.driver.attach_volume,
                           {}, None, self.instance, None)
-        self.instance.vm_state = vm_states.RESIZED
-        self.assertRaises(exception.ZVMDriverError,
-                          self.driver.attach_volume,
-                          {}, None, self.instance, None)
-        self.instance.vm_state = vm_states.SOFT_DELETED
-        self.assertRaises(exception.ZVMDriverError,
-                          self.driver.attach_volume,
-                          {}, None, self.instance, None)
         self.instance.vm_state = vm_states.ACTIVE
 
     def test_attach_volume_no_mountpoint(self):
