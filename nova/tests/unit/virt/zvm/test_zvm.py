@@ -40,7 +40,6 @@ from nova.virt import configdrive as virt_configdrive
 from nova.virt import fake
 from nova.virt import hardware
 from nova.virt.zvm import configdrive
-from nova.virt.zvm import const
 from nova.virt.zvm import dist
 from nova.virt.zvm import driver
 from nova.virt.zvm import exception
@@ -4348,13 +4347,13 @@ class ZVMDistRhel7TestCases(test.TestCase):
             self.assertEqual(result[index], contents)
 
         result = ['enccw0.0.0800', 'enccw0.0.0803', 'enccw0.0.080c']
-        temp = const.ZVM_DEFAULT_NIC_VDEV
-        const.ZVM_DEFAULT_NIC_VDEV = '800'
+        temp = CONF.zvm_default_nic_vdev
+        self.flags(zvm_default_nic_vdev='800')
         devices = [0, 1, 4]
         for (index, s) in enumerate(devices):
             contents = self.rhel7._get_device_name(s)
             self.assertEqual(result[index], contents)
-        const.ZVM_DEFAULT_NIC_VDEV = temp
+        self.flags(zvm_default_nic_vdev=temp)
 
     def test_get_device_filename(self):
         result = ['ifcfg-enccw0.0.1000',
@@ -4368,13 +4367,13 @@ class ZVMDistRhel7TestCases(test.TestCase):
         result = ['ifcfg-enccw0.0.0800',
                   'ifcfg-enccw0.0.0803',
                   'ifcfg-enccw0.0.080c']
-        temp = const.ZVM_DEFAULT_NIC_VDEV
-        const.ZVM_DEFAULT_NIC_VDEV = '800'
+        temp = CONF.zvm_default_nic_vdev
+        self.flags(zvm_default_nic_vdev='800')
         devices = [0, 1, 4]
         for (index, s) in enumerate(devices):
             contents = self.rhel7._get_device_filename(s)
             self.assertEqual(result[index], contents)
-        const.ZVM_DEFAULT_NIC_VDEV = temp
+        self.flags(zvm_default_nic_vdev=temp)
 
 
 class ZVMDistManagerTestCases(test.TestCase):
