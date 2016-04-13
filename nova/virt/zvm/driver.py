@@ -140,6 +140,9 @@ zvm_user_opts = [
     cfg.StrOpt('zvm_user_root_vdev',
                default='0100',
                help='Virtual device number for ephemeral root disk'),
+    cfg.StrOpt('zvm_default_nic_vdev',
+               default='1000',
+               help='Virtual device number for default NIC address'),
     cfg.StrOpt('zvm_user_adde_vdev',
                default='0101',
                help='Virtual device number for additional ephemeral disk'),
@@ -345,7 +348,7 @@ class ZVMDriver(driver.ComputeDriver):
         # Create network configuration files
         LOG.debug('Creating network configuration files '
                     'for instance: %s' % zvm_inst._name, instance=instance)
-        base_nic_vdev = const.ZVM_DEFAULT_NIC_VDEV
+        base_nic_vdev = CONF.zvm_default_nic_vdev
 
         if not boot_from_volume:
             os_version = image_meta['properties']['os_version']
@@ -1232,7 +1235,7 @@ class ZVMDriver(driver.ComputeDriver):
 
         """
         inst_name = instance_ref['name']
-        nic_vdev = const.ZVM_DEFAULT_NIC_VDEV
+        nic_vdev = CONF.zvm_default_nic_vdev
         zhcp = self._get_hcp_info()['hostname']
 
         for vif in network_info:
@@ -1794,7 +1797,7 @@ class ZVMDriver(driver.ComputeDriver):
             self.attach_volume(context, connection_info, instance, mountpoint)
 
     def _add_nic_to_instance(self, inst_name, network_info, userid=None):
-        nic_vdev = const.ZVM_DEFAULT_NIC_VDEV
+        nic_vdev = CONF.zvm_default_nic_vdev
         zhcpnode = self._get_hcp_info()['nodename']
         for vif in network_info:
             self._networkop.create_nic(zhcpnode, inst_name,
