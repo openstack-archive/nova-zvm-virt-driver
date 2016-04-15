@@ -16,7 +16,6 @@
 from oslo_config import cfg
 from oslo_log import log as logging
 
-from nova.i18n import _
 from nova.virt.zvm import exception
 from nova.virt.zvm import utils as zvmutils
 
@@ -161,42 +160,8 @@ class NetworkOperator(object):
         nic_name = "fake"
         self.add_xcat_mac(instance_name, nic_name, fake_mac_addr)
 
-    def create_nic(self, zhcpnode, inst_name, nic_name, mac_address, vdev,
-                   userid=None):
-        """Create network information in xCAT and zVM user direct."""
-        macid = mac_address.replace(':', '')[-6:]
-        # Ensure the updated driver code can works with old version of xCAT
-        if zvmutils.xcat_support_chvm_smcli():
-            self._add_instance_nic_by_chvm(inst_name, vdev, macid)
-        else:
-            self._add_instance_nic(zhcpnode, inst_name, vdev, macid, userid)
+    def create_xcat_table_about_nic(self, zhcpnode, inst_name,
+                                    nic_name, mac_address, vdev):
         self._delete_xcat_mac(inst_name)
         self.add_xcat_mac(inst_name, vdev, mac_address, zhcpnode)
         self.add_xcat_switch(inst_name, nic_name, vdev, zhcpnode)
-
-    def _add_instance_nic(self, zhcpnode, inst_name, vdev, macid, userid=None):
-        """Add NIC definition into user direct."""
-        if userid is None:
-            command = ("/opt/zhcp/bin/smcli Image_Definition_Update_DM -T %s" %
-                       inst_name)
-        else:
-            command = ("/opt/zhcp/bin/smcli Image_Definition_Update_DM -T %s" %
-                       userid)
-        command += " -k \'NICDEF=VDEV=%s TYPE=QDIO " % vdev
-        command += "MACID=%s\'" % macid
-        try:
-            zvmutils.xdsh(zhcpnode, command)
-        except exception.ZVMXCATXdshFailed as err:
-            msg = _("Adding nic error: %s") % err.format_message()
-            raise exception.ZVMNetworkError(msg=msg)
-
-    def _add_instance_nic_by_chvm(self, nodename, vdev, macid):
-        """Add NIC defination into user direct"""
-        command = 'Image_Definition_Update_DM -T  %userid%'
-        command += ' -k \'NICDEF=VDEV=%s TYPE=QDIO ' % vdev
-        command += 'MACID=%s\'' % macid
-        body = ['--smcli', command]
-        url = self._xcat_url.chvm('/' + nodename)
-        with zvmutils.except_xcat_call_failed_and_reraise(
-                exception.ZVMNetworkError):
-            zvmutils.xcat_request("PUT", url, body)
