@@ -518,7 +518,6 @@ def get_userid(node_name):
     """Returns z/VM userid for the xCAT node."""
     url = XCATUrl().lsdef_node(''.join(['/', node_name]))
     info = xcat_request('GET', url)
-
     with expect_invalid_xcat_resp_data(info):
         for s in info['info'][0]:
             if s.__contains__('userid='):
