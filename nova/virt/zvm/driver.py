@@ -312,19 +312,7 @@ class ZVMDriver(driver.ComputeDriver):
 
             # Setup network for z/VM instance
             self._preset_instance_network(zvm_inst._name, network_info)
-            nic_vdev = base_nic_vdev
-            zhcpnode = self._get_hcp_info()['nodename']
-            for vif in network_info:
-                LOG.debug('Create nic for instance: %(inst)s, MAC: '
-                            '%(mac)s Network: %(network)s Vdev: %(vdev)s' %
-                          {'inst': zvm_inst._name, 'mac': vif['address'],
-                           'network': vif['network']['label'],
-                           'vdev': nic_vdev}, instance=instance)
-                self._networkop.create_nic(zhcpnode, zvm_inst._name,
-                                           vif['id'],
-                                           vif['address'],
-                                           nic_vdev)
-                nic_vdev = str(hex(int(nic_vdev, 16) + 3))[2:]
+            self._add_nic_to_table(zvm_inst._name, network_info)
 
             # Call nodeset restapi to deploy image on node
             if not boot_from_volume:
@@ -354,12 +342,9 @@ class ZVMDriver(driver.ComputeDriver):
                         zvmutils.process_eph_disk(zvm_inst._name, vdev, fmt,
                                                   mount_dir)
 
-            # Wait until network configuration finish
-            self._wait_for_addnic(zvm_inst._name)
-            if not self._is_nic_granted(zvm_inst._name):
-                msg = _("Failed to bind vswitch")
-                LOG.error(msg, instance=instance)
-                raise exception.ZVMNetworkError(msg=msg)
+            # Wait neutron zvm-agent add NIC information
+            # to user direct.
+            self._wait_and_get_nic_direct(zvm_inst._name)
 
             # Attach persistent volume, exclude root volume
             bdm_attach = list(bdm)
@@ -1627,8 +1612,9 @@ class ZVMDriver(driver.ComputeDriver):
                 zvmutils.process_eph_disk(new_inst._name)
 
             # Add nic and deploy the image
-            self._add_nic_to_instance(new_inst._name, network_info, new_userid)
+            self._add_nic_to_table(new_inst._name, network_info)
             self._deploy_root_and_ephemeral(new_inst, image_name_xcat)
+            self._wait_and_get_nic_direct(new_inst._name)
         except exception.ZVMBaseException:
             with excutils.save_and_reraise_exception():
                 self._zvm_images.delete_image_from_xcat(image_name_xcat)
@@ -1653,13 +1639,8 @@ class ZVMDriver(driver.ComputeDriver):
                     # re-configure the networking
                     self._reconfigure_networking(new_inst._name, network_info,
                                                  old_userid)
-
-                    if not self._is_nic_granted(new_inst._name):
-                        msg = _LW("Failed to bind vswitch")
-                        LOG.warning(msg, instance=instance)
-                    else:
-                        if power_on:
-                            new_inst.power_on()
+                    if power_on:
+                        new_inst.power_on()
 
         # Cleanup image from xCAT image repository
         self._zvm_images.delete_image_from_xcat(image_name_xcat)
@@ -1682,9 +1663,8 @@ class ZVMDriver(driver.ComputeDriver):
 
     def _reconfigure_networking(self, inst_name, network_info, userid=None):
         self._preset_instance_network(inst_name, network_info)
-        self._add_nic_to_instance(inst_name, network_info, userid)
-        self._wait_for_nic_update(inst_name)
-        self._wait_for_addnic(inst_name)
+        self._add_nic_to_table(inst_name, network_info)
+        self._wait_and_get_nic_direct(inst_name)
 
     def _copy_instance(self, instance):
         keys = ('name', 'image_ref', 'uuid', 'user_id', 'project_id',
@@ -1704,12 +1684,20 @@ class ZVMDriver(driver.ComputeDriver):
             mountpoint = bd['mount_device']
             self.attach_volume(context, connection_info, instance, mountpoint)
 
-    def _add_nic_to_instance(self, inst_name, network_info, userid=None):
+    def _add_nic_to_table(self, inst_name, network_info):
         nic_vdev = CONF.zvm_default_nic_vdev
         zhcpnode = self._get_hcp_info()['nodename']
         for vif in network_info:
-            self._networkop.create_nic(zhcpnode, inst_name,
-                vif['id'], vif['address'], nic_vdev, userid)
+            LOG.debug('Create xcat table value about nic: '
+                       'ID is %(id)s, address is %(address)s, '
+                        'vdev is %(vdev)s' %
+                        {'id': vif.id, 'address': vif.address,
+                         'vdev': nic_vdev})
+            self._networkop.create_xcat_table_about_nic(zhcpnode,
+                                         inst_name,
+                                         vif.id,
+                                         vif.address,
+                                         nic_vdev)
             nic_vdev = str(hex(int(nic_vdev, 16) + 3))[2:]
 
     def _deploy_root_and_ephemeral(self, instance, image_name_xcat):
@@ -1752,11 +1740,6 @@ class ZVMDriver(driver.ComputeDriver):
             zvm_inst.delete_xcat_node()
 
             self._reconfigure_networking(instance['name'], network_info)
-
-            if not self._is_nic_granted(instance['name']):
-                msg = _("Failed to bind vswitch")
-                LOG.error(msg, instance=instance)
-                raise nova_exception.MigrationError(reason=msg)
         else:
             # Different xCAT MN:
             self._zvm_images.cleanup_image_after_migration(instance['name'])
@@ -1766,31 +1749,21 @@ class ZVMDriver(driver.ComputeDriver):
         if power_on:
             self.power_on({}, instance, [])
 
-    def _wait_for_addnic(self, inst_name):
-        """Wait until quantum adding NIC done."""
+    def _get_nic_switch_info(self, inst_name):
+        url = self._xcat_url.tabdump("/switch")
+        with zvmutils.expect_invalid_xcat_resp_data():
+            switch_info = zvmutils.xcat_request("GET", url)['data'][0]
+            switch_info.pop(0)
+            switch_dict = {}
+            for item in switch_info:
+                switch_list = item.split(',')
+                if switch_list[0].strip('"') == inst_name:
+                    switch_dict[switch_list[4].strip('"')] = \
+                                            switch_list[1].strip('"')
 
-        def _wait_addnic(inst_name, expiration):
-            if (CONF.zvm_reachable_timeout and
-                    timeutils.utcnow() > expiration):
-                raise loopingcall.LoopingCallDone()
-
-            is_done = False
-            try:
-                is_done = self._is_nic_granted(inst_name)
-            except exception.ZVMBaseException:
-                # Ignore any zvm driver exceptions
-                return
-
-            if is_done:
-                LOG.debug("NIC added and granted to vswitch correctly")
-                raise loopingcall.LoopingCallDone()
-
-        expiration = timeutils.utcnow() + datetime.timedelta(
-                         seconds=CONF.zvm_reachable_timeout)
-
-        timer = loopingcall.FixedIntervalLoopingCall(_wait_addnic, inst_name,
-                                                     expiration)
-        timer.start(interval=10).wait()
+            LOG.debug("Switch info the %(inst_name)s is %(switch_dict)s" %
+                        {"inst_name": inst_name, "switch_dict": switch_dict})
+            return switch_dict
 
     def _get_user_directory(self, inst_name):
         url = self._xcat_url.lsvm('/' + inst_name)
@@ -1800,17 +1773,6 @@ class ZVMDriver(driver.ComputeDriver):
             dict_str = user_dict['info'][0][0]
 
         return dict_str.split("\n")
-
-    def _is_nic_granted(self, inst_name):
-        dict_list = self._get_user_directory(inst_name)
-        _all_granted = False
-        for rec in dict_list:
-            if " NICDEF " in rec:
-                _all_granted = " LAN SYSTEM " in rec
-                if not _all_granted:
-                    return False
-
-        return _all_granted
 
     def set_admin_password(self, instance, new_pass=None):
         """Set the root password on the specified instance.
@@ -1832,35 +1794,45 @@ class ZVMDriver(driver.ComputeDriver):
                       {'instance': inst_name, 'err': err.format_message()})
             raise err
 
-    def _wait_for_nic_update(self, inst_name):
-        """Wait until NIC definition is updated."""
-
-        def _wait_revoke(inst_name, expiration):
-            """Wait until NIC is uncoupled from vswitch."""
+    def _wait_and_get_nic_direct(self, inst_name):
+        """Wait until neutron zvm-agent add NICs into user direct done."""
+        def _wait_for_nic_add_in_direct(inst_name, expiration):
             if (CONF.zvm_reachable_timeout and
                     timeutils.utcnow() > expiration):
                 LOG.warning(_LW("NIC update check failed."))
                 raise loopingcall.LoopingCallDone()
 
-            is_granted = True
             try:
-                is_granted = self._is_nic_granted(inst_name)
+                switch_dict = self._get_nic_switch_info(inst_name)
+                if switch_dict and '' not in switch_dict.values():
+                    for key, value in switch_dict.items():
+                        args = '&checknics=' + key
+                        url = self._xcat_url.lsvm('/' + inst_name)
+                        url = url + args
+                        res_info = zvmutils.xcat_request("GET", url)
+                        with zvmutils.expect_invalid_xcat_resp_data(res_info):
+                            if ("errorcode" in res_info and
+                                (len(res_info["errorcode"]) > 0) and
+                                res_info["errorcode"][0] != '0'):
+                                # we didn't found the definition
+                                return
+
             except exception.ZVMBaseException:
                 # Ignore any zvm driver exceptions
                 return
 
-            if not is_granted:
-                LOG.debug("NIC has been updated")
-                raise loopingcall.LoopingCallDone()
+            # Enter here means all NIC granted
+            LOG.info(_LI("All NICs are added in user direct for "
+                         "instance %s."), inst_name)
+            raise loopingcall.LoopingCallDone()
 
         expiration = timeutils.utcnow() + datetime.timedelta(
-                         seconds=CONF.zvm_reachable_timeout)
-
-        timer = loopingcall.FixedIntervalLoopingCall(_wait_revoke, inst_name,
-                                                     expiration)
+                             seconds=CONF.zvm_reachable_timeout)
+        LOG.info(_LI("Wait neturon-zvm-agent to add NICs to %s user direct.")
+                    % inst_name)
+        timer = loopingcall.FixedIntervalLoopingCall(
+                    _wait_for_nic_add_in_direct, inst_name, expiration)
         timer.start(interval=10).wait()
-
-        return
 
     def get_console_output(self, context, instance):
         """Get console output for an instance."""
