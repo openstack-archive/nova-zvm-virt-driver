@@ -506,7 +506,8 @@ class ZVMDriverTestCases(ZVMTestCase):
         self.stubs.Set(instance.ZVMInstance, 'power_on', self._fake_fun())
         self.stubs.Set(self.driver._zvm_images, 'update_last_use_date',
                        self._fake_fun())
-        self.stubs.Set(self.driver, '_wait_for_addnic', self._fake_fun())
+        self.stubs.Set(self.driver, '_wait_and_get_nic_switch',
+                       self._fake_fun())
         self.stubs.Set(self.driver, '_is_nic_granted', self._fake_fun(True))
         self.stubs.Set(self.driver._image_api, 'get', self.fake_image_get)
         self.stubs.Set(self.instance, 'save', self._fake_fun())
@@ -545,7 +546,8 @@ class ZVMDriverTestCases(ZVMTestCase):
         self.stubs.Set(instance.ZVMInstance, 'power_on', self._fake_fun())
         self.stubs.Set(self.driver._zvm_images, 'update_last_use_date',
                        self._fake_fun())
-        self.stubs.Set(self.driver, '_wait_for_addnic', self._fake_fun())
+        self.stubs.Set(self.driver, '_wait_and_get_nic_switch',
+                       self._fake_fun())
         self.stubs.Set(self.driver, '_is_nic_granted', self._fake_fun(True))
         self.stubs.Set(os, 'remove', self._fake_fun())
         self.stubs.Set(zvmutils, 'get_host', self._fake_fun("fake@10.1.1.10"))
@@ -593,7 +595,7 @@ class ZVMDriverTestCases(ZVMTestCase):
         self.mox.StubOutWithMock(zvmutils, 'punch_adminpass_file')
         self.mox.StubOutWithMock(zvmutils, 'punch_xcat_auth_file')
         self.mox.StubOutWithMock(zvmutils, 'process_eph_disk')
-        self.mox.StubOutWithMock(self.driver, '_wait_for_addnic')
+        self.mox.StubOutWithMock(self.driver, '_wait_and_get_nic_switch')
         self.mox.StubOutWithMock(self.driver, '_is_nic_granted')
         self.mox.StubOutWithMock(instance.ZVMInstance, 'power_on')
         self.mox.StubOutWithMock(self.driver._zvm_images,
@@ -628,7 +630,7 @@ class ZVMDriverTestCases(ZVMTestCase):
                                   mox.IgnoreArg())
         zvmutils.process_eph_disk('os000001', mox.IgnoreArg(), mox.IgnoreArg(),
                                   mox.IgnoreArg())
-        self.driver._wait_for_addnic('os000001').AndReturn(True)
+        self.driver._wait_and_get_nic_switch('os000001').AndReturn(True)
         self.driver._is_nic_granted('os000001').AndReturn(True)
         instance.ZVMInstance.power_on()
         self.driver._pathutils.clean_temp_folder(mox.IgnoreArg())
@@ -1524,7 +1526,7 @@ class ZVMDriverTestCases(ZVMTestCase):
         self.mox.StubOutWithMock(self.driver, '_preset_instance_network')
         self.mox.StubOutWithMock(self.driver, '_add_nic_to_instance')
         self.mox.StubOutWithMock(self.driver, '_wait_for_nic_update')
-        self.mox.StubOutWithMock(self.driver, '_wait_for_addnic')
+        self.mox.StubOutWithMock(self.driver, '_wait_and_get_nic_switch')
         self.mox.StubOutWithMock(self.driver, '_is_nic_granted')
         self.mox.StubOutWithMock(self.driver, '_attach_volume_to_instance')
         self.mox.StubOutWithMock(self.driver, 'power_on')
@@ -1535,7 +1537,7 @@ class ZVMDriverTestCases(ZVMTestCase):
         self.driver._add_nic_to_instance('os000001',
             self._fake_network_info(), None).AndReturn(None)
         self.driver._wait_for_nic_update('os000001').AndReturn(None)
-        self.driver._wait_for_addnic('os000001').AndReturn(None)
+        self.driver._wait_and_get_nic_switch('os000001').AndReturn(None)
         self.driver._is_nic_granted('os000001').AndReturn(True)
         self.driver._attach_volume_to_instance({}, mox.IgnoreArg(),
             []).AndReturn(None)
