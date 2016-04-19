@@ -389,6 +389,21 @@ def mapping_power_stat(power_stat):
     return const.ZVM_POWER_STAT.get(power_stat, power_state.NOSTATE)
 
 
+def _get_rc_from_xcat_response(resp):
+    frc = 0
+    rcsl = resp.get('errorcode')
+
+    try:
+        for rcs in rcsl:
+            for rc in rcs:
+                frc = int(rc) or frc
+    except Exception:
+        # if invalid data returned, will be handled in next steps
+        pass
+
+    return frc
+
+
 @wrap_invalid_xcat_resp_data_error
 def load_xcat_resp(message):
     """Abstract information from xCAT REST response body.
@@ -418,7 +433,7 @@ def load_xcat_resp(message):
                 resp[k].append(d.get(k))
 
     err = resp.get('error')
-    if err != []:
+    if err != [] and _get_rc_from_xcat_response(resp) != 0:
         for e in err:
             if _is_warning_or_recoverable_issue(str(e)):
                 # ignore known warnings or errors:

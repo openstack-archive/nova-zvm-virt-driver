@@ -392,13 +392,13 @@ class ZVMDriverTestCases(ZVMTestCase):
         self.driver.destroy({}, self.instance, {}, {})
         self.mox.VerifyAll()
 
-    def test_destroy_failed(self):
-        rmvm_info = ["os000001: Deleting virtual server OS000001... Failed"]
-        det_res = self._gen_resp(info=rmvm_info, error=['error'])
-        fake_resp_list = [
-            ("GET", None, None, self._fake_instance_list_data()),
-            ("DELETE", None, None, det_res)]
-        self._set_fake_xcat_resp(fake_resp_list)
+    @mock.patch('nova.virt.zvm.instance.ZVMInstance.delete_userid')
+    @mock.patch('nova.virt.zvm.driver.ZVMDriver.instance_exists')
+    @mock.patch('nova.virt.zvm.utils.is_boot_from_volume')
+    def test_destroy_failed(self, is_bv, ext, del_uid):
+        is_bv.return_value = ('/dev/dasda', False)
+        ext.return_value = True
+        del_uid.side_effect = exception.ZVMXCATInternalError('err')
         self.assertRaises(exception.ZVMXCATInternalError,
                           self.driver.destroy, {}, self.instance, {}, {})
         self.mox.VerifyAll()
@@ -845,11 +845,9 @@ class ZVMDriverTestCases(ZVMTestCase):
         self.driver.reboot(self.context, self.instance, {}, "HARD")
         self.mox.VerifyAll()
 
-    def test_reboot_hard_failed(self):
-        info1 = ["os000001: Shutting down... Failed"]
-        info2 = ["os000001: Activating... Failed"]
-        self._set_fake_xcat_responses([self._gen_resp(info=[info1, info2],
-                                                      error=['(error)'])])
+    @mock.patch('nova.virt.zvm.instance.ZVMInstance.reset')
+    def test_reboot_hard_failed(self, inst_reset):
+        inst_reset.side_effect = exception.ZVMXCATInternalError('err')
         self.assertRaises(exception.ZVMXCATInternalError,
                           self.driver.reboot,
                           self.context, self.instance, {}, "HARD")
@@ -862,11 +860,9 @@ class ZVMDriverTestCases(ZVMTestCase):
         self.driver.reboot(self.context, self.instance, {}, "SOFT")
         self.mox.VerifyAll()
 
-    def test_reboot_soft_failed(self):
-        info1 = ["os000001: Shutting down... Failed\n"]
-        info2 = ["os000001: Activating... Failed\n"]
-        self._set_fake_xcat_responses([self._gen_resp(info=[info1, info2],
-                                                      error=['(error)'])])
+    @mock.patch('nova.virt.zvm.instance.ZVMInstance.reboot')
+    def test_reboot_soft_failed(self, inst_reboot):
+        inst_reboot.side_effect = exception.ZVMXCATInternalError('err')
         self.assertRaises(exception.ZVMXCATInternalError,
                           self.driver.reboot,
                           self.context, self.instance, {}, "SOFT")
@@ -886,10 +882,9 @@ class ZVMDriverTestCases(ZVMTestCase):
         self.driver.power_off(self.instance)
         self.mox.VerifyAll()
 
-    def test_power_off_failed(self):
-        info = ["os000001: Stopping OS000001... Failed\n"]
-        self._set_fake_xcat_responses([self._gen_resp(info=info,
-                                                      error=['error'])])
+    @mock.patch('nova.virt.zvm.instance.ZVMInstance.power_off')
+    def test_power_off_failed(self, poweroff):
+        poweroff.side_effect = nova_exception.InstancePowerOffFailure('err')
         self.assertRaises(nova_exception.InstancePowerOffFailure,
                           self.driver.power_off, self.instance)
 
@@ -2108,7 +2103,8 @@ class ZVMNetworkTestCases(ZVMTestCase):
         self.mox.VerifyAll()
 
     def test_add_instance_err(self):
-        self._set_fake_xcat_responses([{'data': [{'error': ['Error: err']}]}])
+        self._set_fake_xcat_responses([{'data': [{'error': ['Error: err'],
+                                                  'errorcode': ['1']}]}])
         self.assertRaises(exception.ZVMNetworkError,
                           self.networkop._add_instance_nic, 'fakehcp',
                           self.iname, '1000', 'fake')
@@ -2117,7 +2113,7 @@ class ZVMNetworkTestCases(ZVMTestCase):
     def test_add_instance_err_and_warn(self):
         self._set_fake_xcat_responses(
             [{'data': [
-                {'error': ['Error: err']},
+                {'error': ['Error: err'], 'errorcode': ['1']},
                 {'error': ['Warning: Permanently added zhcp host']}
                 ]}])
         self.assertRaises(exception.ZVMNetworkError,
@@ -2275,6 +2271,29 @@ class ZVMUtilsTestCases(ZVMTestCase):
             pass
 
         mock_log.error.assert_called_with('Parse %s encounter error', data)
+
+    def test_load_xcat_resp(self):
+        mesg = {"data": [{'data': ['data']},
+                         {'errorcode': ['0'], 'error': ['error']},
+                         {'errorcode': ['0']}]
+                }
+        mesg = jsonutils.dumps(mesg)
+        exp = {'data': [[u'data']],
+               'error': [[u'error']],
+               'errorcode': [[u'0'], [u'0']],
+               'info': [],
+               'node': []}
+
+        self.assertEqual(exp, zvmutils.load_xcat_resp(mesg))
+
+    def test_load_xcat_resp_error(self):
+        mesg = {"data": [{'data': ['data']},
+                         {'errorcode': ['0'], 'error': ['error']},
+                         {'errorcode': ['1']}]
+                }
+        mesg = jsonutils.dumps(mesg)
+        self.assertRaises(exception.ZVMXCATInternalError,
+                          zvmutils.load_xcat_resp, mesg)
 
 
 class ZVMConfigDriveTestCase(test.NoDBTestCase):
