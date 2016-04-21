@@ -533,7 +533,9 @@ def xdsh(node, commands):
     def xdsh_execute(node, commands):
         """Invoke xCAT REST API to execute command on node."""
         xdsh_commands = 'command=%s' % commands
-        body = [xdsh_commands]
+        # Add -q (quiet) option to ignore ssh warnings and banner msg
+        opt = 'options=-q'
+        body = [xdsh_commands, opt]
         url = XCATUrl().xdsh('/' + node)
         return xcat_request("PUT", url, body)
 
