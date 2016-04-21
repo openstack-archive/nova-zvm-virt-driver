@@ -719,7 +719,7 @@ class ZVMDriverTestCases(ZVMTestCase):
         res_fspace = self._gen_resp(info=["gpok164: Free Image "
                                           "Repository: 13.9G"])
         url_xdsh = self._app_auth('/xcatws/nodes/os000001/dsh')
-        body_cmd = ["command=df -h /"]
+        body_cmd = ["command=df -h /", "options=-q"]
         res_img_need = self._gen_resp(data=["Filesystem Size Used Avail Use% "
                                             "Mounted on /dev/dasda1 6.8G "
                                             "5.2G 1.3G  81% /"])
