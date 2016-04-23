@@ -19,7 +19,6 @@ import os
 import time
 import uuid
 
-from oslo_config import cfg
 from oslo_log import log as logging
 from oslo_serialization import jsonutils
 from oslo_service import loopingcall
@@ -40,6 +39,7 @@ from nova.image import glance
 from nova import utils
 from nova.virt import configdrive
 from nova.virt import driver
+from nova.virt.zvm import conf
 from nova.virt.zvm import configdrive as zvmconfigdrive
 from nova.virt.zvm import const
 from nova.virt.zvm import dist
@@ -54,136 +54,7 @@ from nova import volume
 
 LOG = logging.getLogger(__name__)
 
-zvm_opts = [
-    cfg.StrOpt('zvm_xcat_server',
-               default=None,
-               help='Host name or IP address of xCAT management_node'),
-    cfg.StrOpt('zvm_xcat_username',
-               default=None,
-               help='XCAT username'),
-    cfg.StrOpt('zvm_xcat_password',
-               default=None,
-               secret=True,
-               help='Password of the xCAT user'),
-    cfg.StrOpt('zvm_diskpool',
-               default=None,
-               help='Z/VM disk pool for ephemeral disks'),
-    cfg.StrOpt('zvm_host',
-               default=None,
-               help='Z/VM host that managed by xCAT MN.'),
-    cfg.StrOpt('zvm_xcat_group',
-               default='all',
-               help='XCAT group for OpenStack'),
-    cfg.StrOpt('zvm_scsi_pool',
-               default='xcatzfcp',
-               help='Default zfcp scsi disk pool'),
-    cfg.BoolOpt('zvm_multiple_fcp',
-                default=False,
-               help='Does use multiple FCP for attaching a volume'),
-    cfg.StrOpt('zvm_fcp_list',
-               default=None,
-               help='Configured fcp list can be used'),
-    cfg.StrOpt('zvm_zhcp_fcp_list',
-               default=None,
-               help='Configured fcp list dedicated to hcp'),
-    cfg.StrOpt('zvm_diskpool_type',
-               default='ECKD',
-               help='Default disk type for root disk, can be ECKD/FBA'),
-    cfg.BoolOpt('zvm_config_drive_inject_password',
-                default=False,
-                help='Sets the admin password in the config drive'),
-    cfg.StrOpt('zvm_vmrelocate_force',
-               default=None,
-               help='Force can be: (ARCHITECTURE) attempt relocation even '
-                    'though hardware architecture facilities or CP features '
-                    'are not available on destination system, '
-                    '(DOMAIN) attempt relocation even though VM would be '
-                    'moved outside of its domain, '
-                    'or (STORAGE) relocation should proceed even if CP '
-                    'determines that there are insufficient storage '
-                    'resources on destination system.'),
-    cfg.StrOpt('zvm_vmrelocate_immediate',
-               default='yes',
-               help='Immediate can be: (YES) VMRELOCATE command will do '
-                    'one early pass through virtual machine storage and '
-                    'then go directly to the quiesce stage, '
-                    'or (NO) specifies immediate processing.'),
-    cfg.StrOpt('zvm_vmrelocate_max_total',
-               default='nolimit',
-               help='Maximum wait time(seconds) for relocation to complete'),
-    cfg.StrOpt('zvm_vmrelocate_max_quiesce',
-               default='nolimit',
-               help='Maximum quiesce time(seconds) a VM may be stopped '
-                    'during a relocation attempt'),
-    cfg.IntOpt('zvm_reachable_timeout',
-               default=300,
-               help='Timeout(seconds) when start an instance.'),
-    cfg.IntOpt('zvm_xcat_connection_timeout',
-               default=3600,
-               help='XCAT connection read timeout(seconds)'),
-    cfg.IntOpt('zvm_console_log_size',
-               default=100,
-               help='Max console log size(kilobyte) get from xCAT'),
-    ]
-
-zvm_user_opts = [
-    cfg.StrOpt('zvm_user_profile',
-               default=None,
-               help='User profile for creating a z/VM userid'),
-    cfg.StrOpt('zvm_user_default_password',
-               default='dfltpass',
-               secret=True,
-               help='Default password for a new created z/VM user'),
-    cfg.StrOpt('zvm_user_default_privilege',
-               default='g',
-               help='Default privilege level for a new created z/VM user'),
-    cfg.StrOpt('zvm_user_root_vdev',
-               default='0100',
-               help='Virtual device number for ephemeral root disk'),
-    cfg.StrOpt('zvm_default_nic_vdev',
-               default='1000',
-               help='Virtual device number for default NIC address'),
-    cfg.StrOpt('zvm_user_adde_vdev',
-               default='0101',
-               help='Virtual device number for additional ephemeral disk'),
-    cfg.StrOpt('zvm_user_volume_vdev',
-               default='0200',
-               help='Virtual device number for persistent volume, '
-                    'if there are more then one volumes, will use next vdev'),
-    ]
-
-zvm_image_opts = [
-    cfg.StrOpt('zvm_image_tmp_path',
-               default='/var/lib/nova/images',
-               help='The path to store the z/VM image files'),
-    cfg.StrOpt('zvm_default_ephemeral_mntdir',
-               default='/mnt/ephemeral',
-               help='The path to which the ephemeral disk be mounted'),
-    cfg.StrOpt('zvm_image_default_password',
-               default='rootpass',
-               secret=True,
-               help='Default os root password for a new created vm'),
-    cfg.IntOpt('xcat_image_clean_period',
-               default=30,
-               help='The period(days) to clean up an image that not be used '
-                     'for deploy in one xCAT MN within the defined time'),
-    cfg.IntOpt('xcat_free_space_threshold',
-               default=50,
-               help='The threshold for xCAT free space, if snapshot or spawn '
-                     'check xCAT free space not enough for its image '
-                     'operations, it will prune image to meet the threshold'),
-    cfg.StrOpt('zvm_xcat_master',
-               default=None,
-               help='The xCAT MM node name'),
-    cfg.StrOpt('zvm_image_compression_level',
-               default=None,
-               help='The level of gzip compression used when capturing disk'),
-    ]
-
-CONF = cfg.CONF
-CONF.register_opts(zvm_opts)
-CONF.register_opts(zvm_user_opts)
-CONF.register_opts(zvm_image_opts)
+CONF = conf.CONF
 CONF.import_opt('host', 'nova.conf')
 CONF.import_opt('my_ip', 'nova.conf')
 CONF.import_opt('default_ephemeral_format', 'nova.virt.driver')
