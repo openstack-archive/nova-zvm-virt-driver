@@ -100,17 +100,59 @@ zvm_user_opts = [
                help='Default privilege level for a new created z/VM user'),
     cfg.StrOpt('zvm_user_root_vdev',
                default='0100',
-               help='Virtual device number for ephemeral root disk'),
+               help="""
+Virtual device number for root disk.
+
+When nova deploy an instance, it will create a root disk and several
+ephemeral or persistent disk, this value identify the address of the
+root disk. If the root disk is cinder volue, then MDISK will NOT be
+created.
+
+Possiable values:
+    Must be a string but contains integer value, must be great than 0 and
+    less than 65536(0xFFFF), and it must not conflict with other existing
+    address definition in the compute's configuration.
+
+Sample in user direct:
+    MDISK 0100 <disktype> <start> <end> <volumelabel> <readwrite>
+"""),
     cfg.StrOpt('zvm_default_nic_vdev',
                default='1000',
-               help='Virtual device number for default NIC address'),
+               help="""
+Virtual device number for default NIC address.
+
+This value is used to determine the first NIC address of created network,
+because each NIC need 3 addresses for control/read/write, so by default
+the first NIC's address is 1000 and the second one is 1003 and so on.
+
+Possible values:
+    Must be a string but contains integer value, must be great than 0 and
+    less than 65536(0xFFFF), and it must not conflict with other existing
+    address definition in the compute's configuration.
+
+Sample in user direct:
+    NICDEF 1000 TYPE QDIO LAN SYSTEM <vswitch1> MACID <macid1>
+    NICDEF 1003 TYPE QDIO LAN SYSTEM <vswitch2> MACID <macid2>
+"""),
     cfg.StrOpt('zvm_user_adde_vdev',
                default='0101',
-               help='Virtual device number for additional ephemeral disk'),
-    cfg.StrOpt('zvm_user_volume_vdev',
-               default='0200',
-               help='Virtual device number for persistent volume, '
-                    'if there are more then one volumes, will use next vdev'),
+               help="""
+Virtual device number for additional ephemeral disk.
+
+Nova allows user to deploy an instance with additional ephemeral disk,
+for each disk defined, zvm will create a disk based from the given address,
+for example the first ephemeral disk will be defined as 101 and the second
+as 102, and so on.
+
+Possible values:
+    Must be a string but contains integer value, must be great than 0 and
+    less than 65536(0xFFFF), and it must not conflict with other existing
+    address definition in the compute's configuration.
+
+Sample in user direct:
+    MDISK 0101 <disktype1> <start1> <end1> <volumelabel1> <readwrite1>
+    MDISK 0102 <disktype2> <start2> <end2> <volumelabel2> <readwrite2>
+"""),
     ]
 
 zvm_image_opts = [
