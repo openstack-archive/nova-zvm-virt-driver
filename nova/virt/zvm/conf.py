@@ -100,17 +100,71 @@ zvm_user_opts = [
                help='Default privilege level for a new created z/VM user'),
     cfg.StrOpt('zvm_user_root_vdev',
                default='0100',
-               help='Virtual device number for ephemeral root disk'),
+               help="""
+Virtual device number for root disk.
+
+When nova deploys an instance, it creates a root disk and several ephemeral
+or persistent disks. This value is the virtual device number of the root
+disk. If the root disk is a cinder volume instead, this value does not apply.
+
+Possible values:
+    An integer value, between 0 and 65536 (x'FFFF').
+    It should not conflict with other device numbers in the z/VM guest's
+    configuration, for example device numbers of the NICs or ephemeral or
+    persistent disks.
+
+Sample root disk in user directory:
+    MDISK 0100 <disktype> <start> <end> <volumelabel> <readwrite>
+
+Related values:
+    zvm_default_nic_vdev
+    zvm_user_adde_vdev
+"""),
     cfg.StrOpt('zvm_default_nic_vdev',
                default='1000',
-               help='Virtual device number for default NIC address'),
+               help="""
+Virtual device number for default NIC address.
+
+This value is the first NIC virtual device number,
+each NIC needs 3 numbers for control/read/write, so by default
+the first NIC's address is 1000, the second one is 1003 etc.
+
+Possible values:
+    An integer value, between 0 and 65536 (x'FFFF').
+    It should not conflict with other device numbers in the z/VM guest's
+    configuration, for example device numbers of the root or ephemeral or
+    persistent disks.
+
+Sample NIC definitions in the z/VM user directory:
+    NICDEF 1000 TYPE QDIO LAN SYSTEM <vswitch1> MACID <macid1>
+    NICDEF 1003 TYPE QDIO LAN SYSTEM <vswitch2> MACID <macid2>
+
+Related values:
+    zvm_user_root_vdev
+    zvm_user_adde_vdev
+"""),
     cfg.StrOpt('zvm_user_adde_vdev',
                default='0101',
-               help='Virtual device number for additional ephemeral disk'),
-    cfg.StrOpt('zvm_user_volume_vdev',
-               default='0200',
-               help='Virtual device number for persistent volume, '
-                    'if there are more then one volumes, will use next vdev'),
+               help="""
+Virtual device number for additional ephemeral disk.
+
+Nova allows a user to deploy an instance with one or more ephemeral disks.
+This value is the virtual device number of the first ephemeral disk.
+Other ephemeral disks will take subsequent numbers.
+
+Possible values:
+    An integer value, between 0 and 65536 (x'FFFF').
+    It should not conflict with other device numbers in the z/VM guest's
+    configuration, for example device numbers of the root disk or NICs.
+
+Sample ephemeral disk definitions in the z/VM user directory:
+    MDISK 0101 <disktype1> <start1> <end1> <volumelabel1> <readwrite1>
+    MDISK 0102 <disktype2> <start2> <end2> <volumelabel2> <readwrite2>
+
+Related values:
+    zvm_user_root_vdev
+    zvm_default_nic_vdev
+"""),
     ]
 
 zvm_image_opts = [
