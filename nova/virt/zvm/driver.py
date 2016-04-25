@@ -184,8 +184,8 @@ CONF = cfg.CONF
 CONF.register_opts(zvm_opts)
 CONF.register_opts(zvm_user_opts)
 CONF.register_opts(zvm_image_opts)
-CONF.import_opt('host', 'nova.netconf')
-CONF.import_opt('my_ip', 'nova.netconf')
+CONF.import_opt('host', 'nova.conf')
+CONF.import_opt('my_ip', 'nova.conf')
 CONF.import_opt('default_ephemeral_format', 'nova.virt.driver')
 
 ZVMInstance = zvminstance.ZVMInstance
