@@ -35,6 +35,9 @@ LOG = logging.getLogger(__name__)
 CONF = cfg.CONF
 
 
+CONF.import_opt('default_ephemeral_format', 'nova.conf')
+
+
 class ZVMInstance(object):
     '''OpenStack instance that running on of z/VM hypervisor.'''
 
