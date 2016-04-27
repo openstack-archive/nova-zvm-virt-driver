@@ -18,14 +18,43 @@ from oslo_config import cfg
 zvm_opts = [
     cfg.StrOpt('zvm_xcat_server',
                default=None,
-               help='Host name or IP address of xCAT management_node'),
+               help="""
+Host name or IP address of xCAT management_node.
+
+When nova compute service need to manage zVM, it need a
+xcat as its backend to talk to, you need to give the ip
+address or host name(which can be known from DNS of compute
+host) of the xcat server.
+
+Possible values: IP address(ipaddr) or host name(string)
+"""),
     cfg.StrOpt('zvm_xcat_username',
                default=None,
-               help='XCAT username'),
+               help="""
+The name of the xCAT REST API user.
+
+This is the name which will be authenticated by xcat side.
+when nova compute service send REST API to xcat, xcat
+will verify the user is authorized to access the given
+resource such as node, vm etc.
+
+Related:
+    zvm_xcat_password
+"""),
     cfg.StrOpt('zvm_xcat_password',
                default=None,
                secret=True,
-               help='Password of the xCAT user'),
+               help="""
+The password of the xCAT REST API user.
+
+This is the password which will be authenticated by xcat side.
+when nova compute service send REST API to xcat, xcat
+will verify the user is authorized to access the given
+resource such as node, vm etc with this password.
+
+Related:
+    zvm_xcat_username
+"""),
     cfg.StrOpt('zvm_diskpool',
                default=None,
                help='Z/VM disk pool for ephemeral disks'),
