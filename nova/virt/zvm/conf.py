@@ -28,7 +28,29 @@ zvm_opts = [
                help='Password of the xCAT user'),
     cfg.StrOpt('zvm_diskpool',
                default=None,
-               help='Z/VM disk pool for ephemeral disks'),
+               help="""
+zVM disk pool for ephemeral disks.
+
+The volume group name from your directory manager on your z/VM system,
+which will be used for ephemeral disks for new instances.
+A dollar sign ($) is not allowed in the name.
+
+Related:
+    zvm_diskpool_type
+"""),
+    cfg.StrOpt('zvm_diskpool_type',
+               default='ECKD',
+               help="""
+Disk type of the disk in the disk pool.
+
+The disks in the disk pool must all be the same type (ECKD or FBA).
+
+Related:
+    zvm_diskpool
+
+Possible values:
+    A string, either ECKD or FBA.
+"""),
     cfg.StrOpt('zvm_host',
                default=None,
                help='Z/VM host that managed by xCAT MN.'),
@@ -47,9 +69,6 @@ zvm_opts = [
     cfg.StrOpt('zvm_zhcp_fcp_list',
                default=None,
                help='Configured fcp list dedicated to hcp'),
-    cfg.StrOpt('zvm_diskpool_type',
-               default='ECKD',
-               help='Default disk type for root disk, can be ECKD/FBA'),
     cfg.BoolOpt('zvm_config_drive_inject_password',
                 default=False,
                 help='Sets the admin password in the config drive'),
