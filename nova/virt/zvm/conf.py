@@ -78,10 +78,38 @@ zvm_opts = [
                     'during a relocation attempt'),
     cfg.IntOpt('zvm_reachable_timeout',
                default=300,
-               help='Timeout(seconds) when start an instance.'),
+               help="""
+Timeout (seconds) to wait for an instance to start.
+
+The z/VM driver relies on SSH between the instance and xCAT for communication.
+So after an instance is logged on, it must have enough time to start SSH
+communication. The driver will keep rechecking SSH communication to the
+instance for this timeout. If it can not SSH to the instance, it will notify
+the user that starting the instance failed and put the instance in ERROR state.
+The underlying z/VM guest will then be deleted.
+
+Possible Values:
+    Any positive integer. Recommended to be at least 300 seconds (5 minutes),
+    but it will vary depending on instance and system load.
+    A value of 0 is used for debug. In this case the underlying z/VM guest
+    will not be deleted when the instance is marked in ERROR state.
+"""),
     cfg.IntOpt('zvm_xcat_connection_timeout',
                default=3600,
-               help='XCAT connection read timeout(seconds)'),
+               help="""
+Timeout (seconds) for an xCAT HTTP request.
+
+The z/VM driver communicates with xCAT via REST APIs.  This value states the
+maximum amount of time the z/VM driver will wait before timing out a REST API
+call. Some actions, like copying an image to the OpenStack compute node,
+may take a long time, so set this to the maximum time these long
+running tasks may take.
+
+Possible Values:
+    Any positive integer.
+    Recommended to be larger than 3600 (1 hour), depending on the size of
+    your images.
+"""),
     cfg.IntOpt('zvm_console_log_size',
                default=100,
                help='Max console log size(kilobyte) get from xCAT'),
