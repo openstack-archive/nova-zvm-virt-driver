@@ -23,8 +23,8 @@ def list_opts():
         # we keep this into DEFAULT.
         ('DEFAULT',
          itertools.chain(
-             nova.virt.zvm.driver.zvm_image_opts,
-             nova.virt.zvm.driver.zvm_opts,
-             nova.virt.zvm.driver.zvm_user_opts,
+             nova.virt.zvm.conf.zvm_image_opts,
+             nova.virt.zvm.conf.zvm_opts,
+             nova.virt.zvm.conf.zvm_user_opts,
          )),
     ]
