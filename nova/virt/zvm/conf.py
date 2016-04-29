@@ -78,10 +78,37 @@ zvm_opts = [
                     'during a relocation attempt'),
     cfg.IntOpt('zvm_reachable_timeout',
                default=300,
-               help='Timeout(seconds) when start an instance.'),
+               help="""
+Timeout(seconds) when start an instance.
+
+z/VM driver need xcat to be able to communicate with instance (currently
+using ssh), so there is a verification after power on action, if the instance
+is not able to be accessed by XCAT through SSH protocol, the driver will
+wait and recheck for the defined seconds, after that, driver will notify
+the user that instance power on failed and mark the instance as ERROR.
+
+Possiable Values:
+    A positive integer, it's highly recommend to set it to bigger than 300
+    and given enough time to driver to detect status of new deployed server.
+
+    Set this value to 0 means the node and virtual machine will not be deleted
+    after failure which is helpful to debug.
+"""),
     cfg.IntOpt('zvm_xcat_connection_timeout',
                default=3600,
-               help='XCAT connection read timeout(seconds)'),
+               help="""
+Timeout(seconds) for a specified xcat HTTP request.
+
+As openstack plugin is communcating with xcat through REST API interface,
+there might be some long actions such as copy image between xcat and openstack
+compute node. The default HTTP setting might lead to timeout in this kind of
+action, so the configuration can be used to decide maximum seconds that
+OpenStack services should wait for responses of HTTP requests made to xCAT.
+
+Possiable Values:
+    A positive integer, it's highly recommend to set it to bigger than 3600
+    and adjust based on the size of the image.
+"""),
     cfg.IntOpt('zvm_console_log_size',
                default=100,
                help='Max console log size(kilobyte) get from xCAT'),
