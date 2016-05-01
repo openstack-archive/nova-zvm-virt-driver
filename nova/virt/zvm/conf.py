@@ -163,14 +163,40 @@ Possible Values:
 zvm_user_opts = [
     cfg.StrOpt('zvm_user_profile',
                default=None,
-               help='User profile for creating a z/VM userid'),
+               help="""
+User profile for creating a z/VM userid.
+
+When nova deploys an instance, it is needed to include some default settings
+such as reader, punch device definition.
+
+Possible values:
+    A profile name(string) that pre-defined in z/VM.
+"""),
     cfg.StrOpt('zvm_user_default_password',
                default='dfltpass',
                secret=True,
-               help='Default password for a new created z/VM user'),
+               help="""
+Default password for a new created z/VM user.
+
+This is the password for any z/VM user IDs created when OpenStack deploys new
+virtual servers (also called nova instances), defined in the USER directory
+statement. The default value is dfltpass. You can change it as needed.
+
+Possible values:
+    A string.
+"""),
     cfg.StrOpt('zvm_user_default_privilege',
                default='g',
-               help='Default privilege level for a new created z/VM user'),
+               help="""
+Privilege level for a new created z/VM user.
+
+zVM virtual machine has a few possible privileges and with different
+privilege the virtual machine can be authorized to perform different
+CP command.
+
+Possible value:
+    A string, operator should only use 'g' unless it has special need.
+"""),
     cfg.StrOpt('zvm_user_root_vdev',
                default='0100',
                help="""
