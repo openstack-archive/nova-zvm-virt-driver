@@ -1829,18 +1829,6 @@ class ZVMDriver(driver.ComputeDriver):
         return
 
     def get_console_output(self, context, instance):
-        # Because bug 534, in Juno, xcat will make new instance punch
-        # console logs to ZHCP and it violate the current RACF setting
-        # plus we don't announce support this feature, temply disable it
-        # until we can solve that RACF issue.
-        # in nova/api/openstack/compute/contrib/console_output.py
-        # it will catch the exception like:
-        # except NotImplementedError:
-        #   msg = _("Unable to get console log, functionality not implemented")
-        #   raise webob.exc.HTTPNotImplemented(explanation=msg)
-        raise NotImplementedError
-
-    def _get_console_output(self, context, instance):
         """Get console output for an instance."""
 
         def append_to_log(log_data, log_path):
