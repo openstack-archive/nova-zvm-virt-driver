@@ -42,7 +42,7 @@ CONF.import_opt('default_ephemeral_format', 'nova.conf')
 class ZVMInstance(object):
     '''OpenStack instance that running on of z/VM hypervisor.'''
 
-    def __init__(self, instance=None):
+    def __init__(self, driver, instance=None):
         """Initialize instance attributes for database."""
         instance = instance or {}
         self._xcat_url = zvmutils.get_xcat_url()
@@ -50,6 +50,7 @@ class ZVMInstance(object):
         self._name = instance['name']
         self._volumeop = volumeop.VolumeOperator()
         self._dist_manager = dist.ListDistManager()
+        self._driver = driver
 
     def power_off(self, timeout=0, retry_interval=10):
         """Power off z/VM instance."""
@@ -210,6 +211,27 @@ class ZVMInstance(object):
                 exception.ZVMXCATCreateNodeFailed, node=self._name):
             zvmutils.xcat_request("POST", url, body)
 
+    def _create_user_id_body(self, boot_from_volume):
+        kwprofile = 'profile=%s' % CONF.zvm_user_profile
+        body = [kwprofile,
+                'password=%s' % CONF.zvm_user_default_password,
+                'cpu=%i' % self._instance['vcpus'],
+                'memory=%im' % self._instance['memory_mb'],
+                'privilege=%s' % CONF.zvm_user_default_privilege]
+
+        # if mkvm in lower version xcat won't support it
+        # they will ignore this param.
+        if not boot_from_volume:
+            body.append('ipl=%s' % CONF.zvm_user_root_vdev)
+
+        return body
+
+    def _check_set_ipl(self):
+        xcat_version = self._driver._xcat_version
+
+        if not zvmutils.xcat_support_mkvm_ipl_param(xcat_version):
+            self._set_ipl(CONF.zvm_user_root_vdev)
+
     def create_userid(self, block_device_info, image_meta, context,
                       os_image=None):
         """Create z/VM userid into user directory for a z/VM instance."""
@@ -220,12 +242,8 @@ class ZVMInstance(object):
         boot_from_volume = zvmutils.is_boot_from_volume(block_device_info)[1]
 
         eph_disks = block_device_info.get('ephemerals', [])
-        kwprofile = 'profile=%s' % CONF.zvm_user_profile
-        body = [kwprofile,
-                'password=%s' % CONF.zvm_user_default_password,
-                'cpu=%i' % self._instance['vcpus'],
-                'memory=%im' % self._instance['memory_mb'],
-                'privilege=%s' % CONF.zvm_user_default_privilege]
+
+        body = self._create_user_id_body(boot_from_volume)
 
         # image_meta passed from spawn is a dict, in resize is a object
         if isinstance(image_meta, dict):
@@ -259,7 +277,7 @@ class ZVMInstance(object):
                 self.add_mdisk(CONF.zvm_diskpool,
                                CONF.zvm_user_root_vdev,
                                size)
-                self._set_ipl(CONF.zvm_user_root_vdev)
+                self._check_set_ipl()
 
             # Add additional ephemeral disk
             if self._instance['ephemeral_gb'] != 0:

@@ -144,7 +144,7 @@ class ZVMDriver(driver.ComputeDriver):
 
         """
         inst_name = instance['name']
-        zvm_inst = ZVMInstance(instance)
+        zvm_inst = ZVMInstance(self, instance)
 
         try:
             return zvm_inst.get_info()
@@ -237,7 +237,7 @@ class ZVMDriver(driver.ComputeDriver):
         compute_node = CONF.zvm_host
         zhcp = self._get_hcp_info()['hostname']
 
-        zvm_inst = ZVMInstance(instance)
+        zvm_inst = ZVMInstance(self, instance)
         instance_path = self._pathutils.get_instance_path(compute_node,
                                                           zvm_inst._name)
         # Create network configuration files
@@ -557,7 +557,7 @@ class ZVMDriver(driver.ComputeDriver):
         inst_name = instance['name']
         root_mount_device, boot_from_volume = zvmutils.is_boot_from_volume(
                                                             block_device_info)
-        zvm_inst = ZVMInstance(instance)
+        zvm_inst = ZVMInstance(self, instance)
 
         if self.instance_exists(inst_name):
             LOG.info(_LI("Destroying instance %s") % inst_name,
@@ -615,7 +615,7 @@ class ZVMDriver(driver.ComputeDriver):
             encountered
 
         """
-        zvm_inst = ZVMInstance(instance)
+        zvm_inst = ZVMInstance(self, instance)
         if reboot_type == 'SOFT':
             zvm_inst.reboot()
         else:
@@ -668,7 +668,7 @@ class ZVMDriver(driver.ComputeDriver):
         if mountpoint:
             mountpoint = self._format_mountpoint(mountpoint)
         if self.instance_exists(instance['name']):
-            zvm_inst = ZVMInstance(instance)
+            zvm_inst = ZVMInstance(self, instance)
             is_active = zvm_inst.is_reachable()
 
             zvm_inst.attach_volume(self._volumeop, context, connection_info,
@@ -683,7 +683,7 @@ class ZVMDriver(driver.ComputeDriver):
         if mountpoint:
             mountpoint = self._format_mountpoint(mountpoint)
         if self.instance_exists(instance['name']):
-            zvm_inst = ZVMInstance(instance)
+            zvm_inst = ZVMInstance(self, instance)
             is_active = zvm_inst.is_reachable()
 
             zvm_inst.detach_volume(self._volumeop, connection_info, instance,
@@ -893,20 +893,20 @@ class ZVMDriver(driver.ComputeDriver):
     def pause(self, instance):
         """Pause the specified instance."""
         LOG.debug('Pausing %s' % instance['name'], instance=instance)
-        zvm_inst = ZVMInstance(instance)
+        zvm_inst = ZVMInstance(self, instance)
         zvm_inst.pause()
 
     def unpause(self, instance):
         """Unpause paused VM instance."""
         LOG.debug('Un-pausing %s' % instance['name'], instance=instance)
-        zvm_inst = ZVMInstance(instance)
+        zvm_inst = ZVMInstance(self, instance)
         zvm_inst.unpause()
 
     def power_off(self, instance, timeout=0, retry_interval=0):
         """Power off the specified instance."""
         LOG.debug('Stopping z/VM instance %s' % instance['name'],
                   instance=instance)
-        zvm_inst = ZVMInstance(instance)
+        zvm_inst = ZVMInstance(self, instance)
         zvm_inst.power_off(timeout, retry_interval)
 
     def power_on(self, context, instance, network_info,
@@ -914,7 +914,7 @@ class ZVMDriver(driver.ComputeDriver):
         """Power on the specified instance."""
         LOG.debug('Starting z/VM instance %s' % instance['name'],
                   instance=instance)
-        zvm_inst = ZVMInstance(instance)
+        zvm_inst = ZVMInstance(self, instance)
         zvm_inst.power_on()
 
     def get_available_resource(self, nodename=None):
@@ -1045,7 +1045,7 @@ class ZVMDriver(driver.ComputeDriver):
             LOG.error(msg, instance=instance_ref)
             raise nova_exception.MigrationError(reason=msg)
 
-        zvm_inst = ZVMInstance(instance_ref)
+        zvm_inst = ZVMInstance(self, instance_ref)
         source_xcat_mn = migrate_data.get('source_xcat_mn', '')
         userid = migrate_data.get('zvm_userid')
         hcp = self._get_hcp_info()['hostname']
@@ -1122,7 +1122,7 @@ class ZVMDriver(driver.ComputeDriver):
 
         if not same_mn:
             # Delete node definition at source xCAT MN
-            zvm_inst = ZVMInstance(instance_ref)
+            zvm_inst = ZVMInstance(self, instance_ref)
             self._networkop.clean_mac_switch_host(zvm_inst._name)
             zvm_inst.delete_xcat_node()
 
@@ -1455,7 +1455,7 @@ class ZVMDriver(driver.ComputeDriver):
                 mountpoint = self._format_mountpoint(mountpoint)
 
             if self.instance_exists(instance['name']):
-                zvm_inst = ZVMInstance(instance)
+                zvm_inst = ZVMInstance(self, instance)
                 is_active = zvm_inst.is_reachable()
                 try:
                     zvm_inst.detach_volume(self._volumeop, connection_info,
@@ -1467,7 +1467,7 @@ class ZVMDriver(driver.ComputeDriver):
 
     def _capture_disk_for_instance(self, context, instance):
         """Capture disk."""
-        zvm_inst = ZVMInstance(instance)
+        zvm_inst = ZVMInstance(self, instance)
         image_name = ''.join('rsz' + instance['name'])
         image_uuid = str(uuid.uuid4())
         image_href = image_uuid.replace('-', '_')
@@ -1559,7 +1559,7 @@ class ZVMDriver(driver.ComputeDriver):
 
         zhcp = self._get_hcp_info()['hostname']
 
-        new_inst = ZVMInstance(instance)
+        new_inst = ZVMInstance(self, instance)
         instance_path = self._pathutils.get_instance_path(
                             CONF.zvm_host, new_inst._name)
         if same_xcat_mn:
@@ -1579,7 +1579,7 @@ class ZVMDriver(driver.ComputeDriver):
             # Create a xCAT node poin
             old_instance = self._copy_instance(instance)
             old_instance['name'] = ''.join(('rsz', instance['name']))
-            old_inst = ZVMInstance(old_instance)
+            old_inst = ZVMInstance(self, old_instance)
 
             with self.cleanup_xcat_image_for_migration(image_name_xcat):
                 old_inst.copy_xcat_node(new_inst._name)
@@ -1727,7 +1727,7 @@ class ZVMDriver(driver.ComputeDriver):
         # Point to old instance
         old_instance = self._copy_instance(instance)
         old_instance['name'] = ''.join(('rsz', instance['name']))
-        old_inst = ZVMInstance(old_instance)
+        old_inst = ZVMInstance(self, old_instance)
 
         if self.instance_exists(old_inst._name):
             # Same xCAT MN:
@@ -1742,12 +1742,12 @@ class ZVMDriver(driver.ComputeDriver):
         """Finish reverting a resize, powering back on the instance."""
         new_instance = self._copy_instance(instance)
         new_instance['name'] = ''.join(('rsz', instance['name']))
-        zvm_inst = ZVMInstance(new_instance)
+        zvm_inst = ZVMInstance(self, new_instance)
         bdm = driver.block_device_info_get_mapping(block_device_info)
 
         if self.instance_exists(zvm_inst._name):
             # Same xCAT MN:
-            old_inst = ZVMInstance(instance)
+            old_inst = ZVMInstance(self, instance)
             old_inst.copy_xcat_node(new_instance['name'])
             zvm_inst.delete_xcat_node()
 
@@ -1873,7 +1873,7 @@ class ZVMDriver(driver.ComputeDriver):
             fp.close()
             return log_path
 
-        zvm_inst = ZVMInstance(instance)
+        zvm_inst = ZVMInstance(self, instance)
         logsize = CONF.zvm_console_log_size * units.Ki
         console_log = ""
 
