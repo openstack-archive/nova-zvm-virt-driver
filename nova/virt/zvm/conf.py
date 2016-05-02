@@ -100,27 +100,88 @@ Possible values:
                 help='Sets the admin password in the config drive'),
     cfg.StrOpt('zvm_vmrelocate_force',
                default=None,
-               help='Force can be: (ARCHITECTURE) attempt relocation even '
-                    'though hardware architecture facilities or CP features '
-                    'are not available on destination system, '
-                    '(DOMAIN) attempt relocation even though VM would be '
-                    'moved outside of its domain, '
-                    'or (STORAGE) relocation should proceed even if CP '
-                    'determines that there are insufficient storage '
-                    'resources on destination system.'),
+               help="""
+Specify the option of live migration force action.
+
+Refer to zVM manual for more info on zVM live migration.
+
+Possible values:
+    A string which is one of (ARCHITECTURE, DOMAIN, NONE, or STORAGE)
+
+    ARCHITECTURE:attempt live migration even though hardware architecture
+    facilities or CP features are not available on destination system.
+
+    DOMAIN:attempt live migration even though VM would be moved outside
+    of its domain
+
+    STORAGE:Live migration should proceed even if CP determines that there
+    are insufficient storage resources on destination system.
+
+    NONE:Indicates that no VMRELOCATE FORCE option will be used.
+    Live migration will fail if architecture, domain or storage warnings
+    or errors are encountered.
+
+Related values:
+    zvm_vmrelocate_immediate
+    zvm_vmrelocate_max_total
+    zvm_vmrelocate_max_quiesce
+"""),
     cfg.StrOpt('zvm_vmrelocate_immediate',
                default='yes',
-               help='Immediate can be: (YES) VMRELOCATE command will do '
-                    'one early pass through virtual machine storage and '
-                    'then go directly to the quiesce stage, '
-                    'or (NO) specifies immediate processing.'),
+               help="""
+Specify the option of live migration timing.
+
+Refer to zVM manual for more info on zVM live migration.
+
+Possible values:
+    A string which is one of (YES, NO)
+
+    YES: VMRELOCATE command will do one early pass through virtual machine
+         storage and then go directly to the quiesce stage.
+    NO:  specifies immediate processing.
+
+Related values:
+    zvm_vmrelocate_force
+    zvm_vmrelocate_max_total
+    zvm_vmrelocate_max_quiesce
+"""),
     cfg.StrOpt('zvm_vmrelocate_max_total',
                default='nolimit',
-               help='Maximum wait time(seconds) for relocation to complete'),
+               help="""
+Maximum wait time(seconds) for live migration to complete.
+
+Refer to zVM manual for more info on zVM live migration.
+
+Possible values:
+    A positive integer for the time (in seconds) that command issuer is
+    willing to wait for the entire live migration to complete.
+    specify 'nolimit' indicates that there is no limit on the total amount
+    of time the system should allow for this live migration.
+
+Related values:
+    zvm_vmrelocate_force
+    zvm_vmrelocate_immediate
+    zvm_vmrelocate_max_quiesce
+"""),
     cfg.StrOpt('zvm_vmrelocate_max_quiesce',
                default='nolimit',
-               help='Maximum quiesce time(seconds) a VM may be stopped '
-                    'during a relocation attempt'),
+               help="""
+Maximum quiesce time(seconds) a VM may be stopped during a
+live migration attempt.
+
+Refer to zVM manual for more info on zVM live migration.
+
+Possible values:
+    A positive integer for the time (in seconds) a virtual machine
+    may be stopped during a live migration attempt.
+    'nolimit' indicates that there is no limit on the amount of time
+    the system should allow for the quiesce phase of this live migration.
+
+Related values:
+    zvm_vmrelocate_force
+    zvm_vmrelocate_immediate
+    zvm_vmrelocate_max_total
+"""),
     cfg.IntOpt('zvm_reachable_timeout',
                default=300,
                help="""
