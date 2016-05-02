@@ -64,6 +64,11 @@ ZVM_DEFAULT_FCP_ID = 'auto'
 
 ZVM_IMAGE_SIZE_MAX = 10
 
+# This is the version that our plugin can work ,if xcat version
+# is lower than this version, we will warn user but not abort
+# the compute service.
+XCAT_MINIMUM_VERSION = '2.8.3.11'
+
 
 # It means we introduced 'version' concept at 2.8.3.7
 # later on, any new features especially backward incompatible

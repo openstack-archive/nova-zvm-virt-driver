@@ -91,6 +91,14 @@ class ZVMDriver(driver.ComputeDriver):
                          "driver, will re-try in %d seconds") % _slp)
                 time.sleep(_slp)
 
+        # TODO(jichenjc): update _xcat_version when xcat reboot
+        self._xcat_version = self._get_xcat_version()
+        if (not self.has_min_version(const.XCAT_MINIMUM_VERSION)):
+            LOG.warn(_LW("WARNING: the xcat version communicating with is "
+                         "%(xcat_version)s, but the minimum requested "
+                         "version by openstack zvm driver is %(minimum)s"),
+                         {'xcat_version': self._xcat_version,
+                          'minimum': const.XCAT_MINIMUM_VERSION})
         self._networkop = networkop.NetworkOperator()
         self._zvm_images = imageop.ZVMImages()
         self._pathutils = zvmutils.PathUtils()
@@ -1910,8 +1918,8 @@ class ZVMDriver(driver.ComputeDriver):
     def _version_check(self, req_ver=None, op=operator.lt):
         try:
             if req_ver is not None:
-                cur_ver = self._get_xcat_version()
-                if op(cur_ver, versionutils.convert_version_to_int(req_ver)):
+                if op(self._xcat_version,
+                      versionutils.convert_version_to_int(req_ver)):
                     return False
             return True
         except Exception:
