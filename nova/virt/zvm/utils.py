@@ -579,6 +579,11 @@ def xcat_support_chvm_smcli():
         const.XCAT_SUPPORT_CHVM_SMCLI_VERSION.split('.'))
 
 
+def xcat_support_mkvm_ipl_param(xcat_version):
+    return map(int, xcat_version.split('.')) >= map(int,
+        const.XCAT_MKVM_SUPPORT_IPL.split('.'))
+
+
 def get_userid(node_name):
     """Returns z/VM userid for the xCAT node."""
     url = XCATUrl().lsdef_node(''.join(['/', node_name]))

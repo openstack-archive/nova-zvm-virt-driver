@@ -1700,7 +1700,9 @@ class ZVMInstanceTestCases(ZVMTestCase):
         super(ZVMInstanceTestCases, self).setUp()
         self.flags(zvm_user_profile='fakeprof')
         self.instance['ephemeral_gb'] = 0
-        self._instance = instance.ZVMInstance(self.instance)
+        self.drv = mock.Mock()
+        self.drv._xcat_version = '100.100.100.100'
+        self._instance = instance.ZVMInstance(self.drv, self.instance)
 
     def test_create_xcat_node(self):
         info = ["1 object definitions have been created or modified."]
@@ -1818,7 +1820,6 @@ class ZVMInstanceTestCases(ZVMTestCase):
 
         zvmutils.xcat_request('POST', mox.IgnoreArg(), mox.IgnoreArg())
         self._instance.add_mdisk('fakedp', '0100', '3338')
-        self._instance._set_ipl('0100')
         self._instance.add_mdisk('fakedp', '0102', '2g', 'ext4')
         self._instance.add_mdisk('fakedp', '0103', '1g', 'ext3')
         self.mox.ReplayAll()
@@ -1855,7 +1856,6 @@ class ZVMInstanceTestCases(ZVMTestCase):
 
         zvmutils.xcat_request('POST', mox.IgnoreArg(), mox.IgnoreArg())
         self._instance.add_mdisk('fakedp', '0100', '5g')
-        self._instance._set_ipl('0100')
         self._instance.add_mdisk('fakedp', '0102', '200000', 'ext4')
         self._instance.add_mdisk('fakedp', '0103', '100000', 'ext3')
         self.mox.ReplayAll()
@@ -2049,7 +2049,7 @@ class ZVMInstanceTestCases(ZVMTestCase):
         _inst = fake_instance.fake_instance_obj(self.context, name='fake',
                     power_state=power_state.PAUSED, memory_mb='1024',
                     vcpus='2')
-        inst = instance.ZVMInstance(_inst)
+        inst = instance.ZVMInstance(self.drv, _inst)
 
         inst_info = inst.get_info()
         self.assertEqual(power_state.PAUSED, inst_info.state)
