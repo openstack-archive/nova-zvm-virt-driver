@@ -76,11 +76,29 @@ class ZVMDriver(driver.ComputeDriver):
         super(ZVMDriver, self).__init__(virtapi)
         self._xcat_url = zvmutils.XCATUrl()
 
-        self._host_stats = []
-
         # incremental sleep interval list
         _inc_slp = [5, 10, 20, 30, 60]
         _slp = 5
+
+        # TODO(jichenjc): update _xcat_version when xcat reboot
+        self._xcat_version = self._get_xcat_version()
+        version_ok = self.has_min_version(const.XCAT_MINIMUM_VERSION)
+        while (not version_ok):
+            LOG.warn(_LW("WARNING: the xcat version communicating with is "
+                         "%(xcat_version)s, but the minimum requested "
+                         "version by openstack zvm driver is %(minimum)s "
+                         "will sleep some time and check again"),
+                         {'xcat_version': self._xcat_version,
+                          'minimum': const.XCAT_MINIMUM_VERSION})
+            self._xcat_version = self._get_xcat_version()
+            version_ok = self.has_min_version(const.XCAT_MINIMUM_VERSION)
+
+            _slp = len(_inc_slp) != 0 and _inc_slp.pop(0) or _slp
+            time.sleep(_slp)
+
+        self._host_stats = []
+        _slp = 5
+
         while (self._host_stats == []):
             try:
                 self._host_stats = self.update_host_status()
@@ -1911,14 +1929,14 @@ class ZVMDriver(driver.ComputeDriver):
         with zvmutils.expect_invalid_xcat_resp_data(version_info):
             dict_str = version_info['data'][0][0]
             version = dict_str.split()[1]
-            version = versionutils.convert_version_to_int(version)
         return version
 
     def _version_check(self, req_ver=None, op=operator.lt):
         try:
             if req_ver is not None:
-                cur_ver = self._get_xcat_version()
-                if op(cur_ver, versionutils.convert_version_to_int(req_ver)):
+                cur = versionutils.convert_version_to_int(self._xcat_version)
+                req = versionutils.convert_version_to_int(req_ver)
+                if op(cur, req):
                     return False
             return True
         except Exception:
