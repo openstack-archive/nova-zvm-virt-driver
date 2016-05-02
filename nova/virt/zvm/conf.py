@@ -143,27 +143,98 @@ Possible values:
                 help='Sets the admin password in the config drive'),
     cfg.StrOpt('zvm_vmrelocate_force',
                default=None,
-               help='Force can be: (ARCHITECTURE) attempt relocation even '
-                    'though hardware architecture facilities or CP features '
-                    'are not available on destination system, '
-                    '(DOMAIN) attempt relocation even though VM would be '
-                    'moved outside of its domain, '
-                    'or (STORAGE) relocation should proceed even if CP '
-                    'determines that there are insufficient storage '
-                    'resources on destination system.'),
+               help="""
+Specify the z/VM Live Guest Relocation FORCE option.
+
+Refer to the z/VM CP Commands and Utilities book for more information on
+the z/VM VMRELOCATE command and z/VM Live Guest Relocation,
+which backs the live migration feature in the zvm nova driver.
+
+Possible values:
+   A string which is one of (ARCHITECTURE, DOMAIN, NONE, or STORAGE)
+
+   ARCHITECTURE:  attempt migration even though hardware architecture
+   facilities or z/VM CP features are not available on the destination
+   system.
+
+   DOMAIN:  attempt migration even though the destination system is
+   not in the z/VM guest's relocation domain.
+
+   STORAGE:  attempt migration even if there appears to be insufficient
+   storage resources on the destination system.
+
+   NONE:  No VMRELOCATE FORCE will be used.  Live migration will fail if
+   architecture, domain or storage warnings or errors are encountered.
+
+Related values:
+    zvm_vmrelocate_immediate
+    zvm_vmrelocate_max_total
+    zvm_vmrelocate_max_quiesce
+"""),
     cfg.StrOpt('zvm_vmrelocate_immediate',
                default='no',
-               help='Immediate can be: (YES) VMRELOCATE command will do '
-                    'one early pass through virtual machine storage and '
-                    'then go directly to the quiesce stage, '
-                    'or (NO) specifies immediate processing.'),
+               help="""
+Specify the option of live migration timing.
+
+Refer to zVM manual for more info on zVM live migration.
+
+Possible values:
+    A string which is one of (YES, NO)
+
+    YES: VMRELOCATE command will do one early pass through virtual machine
+         storage and then go directly to the quiesce stage.
+    NO:  specifies immediate processing.
+
+Related values:
+    zvm_vmrelocate_force
+    zvm_vmrelocate_max_total
+    zvm_vmrelocate_max_quiesce
+"""),
     cfg.StrOpt('zvm_vmrelocate_max_total',
                default='nolimit',
-               help='Maximum wait time(seconds) for relocation to complete'),
+               help="""
+Maximum time to wait, in seconds, for live migration to complete.
+If this time is exceeded, z/VM will cancel the migration and leave
+the z/VM guest running on the source system.
+
+Refer to the z/VM CP Commands and Utilities book for more information
+on the z/VM VMRELOCATE command and z/VM Live Guest Relocation,
+which backs the live migration feature in the zvm nova driver.
+
+Possible values:
+    A positive integer indicating the time in seconds to wait for
+    the migration to complete, or "nolimit" to indicate that there is no
+    time limit on the total amount of time the system should allow for
+    this live migration
+
+Related values:
+    zvm_vmrelocate_force
+    zvm_vmrelocate_immediate
+    zvm_vmrelocate_max_quiesce
+"""),
     cfg.StrOpt('zvm_vmrelocate_max_quiesce',
                default='nolimit',
-               help='Maximum quiesce time(seconds) a VM may be stopped '
-                    'during a relocation attempt'),
+               help="""
+Maximum time to wait, in seconds, for the quiesce time of a live migration
+to complete.  If this time is exceeded, z/VM will cancel the migration and
+leave the z/VM guest running on the source system.
+The quiesce time is the time during which the Linux guest will be unresponsive
+while its final state is transferred.
+
+Refer to the z/VM CP Commands and Utilities book for more information on the
+z/VM VMRELOCATE command and z/VM Live Guest Relocation,
+which backs the live migration feature in the zvm nova driver.
+
+Possible values:
+    A positive integer indicating the time in seconds to wait for the
+    quiesce time to complete, or "nolimit" to indicate that there is no time
+    limit on the quiesce time the system should allow for this live migration.
+
+Related values:
+    zvm_vmrelocate_force
+    zvm_vmrelocate_immediate
+    zvm_vmrelocate_max_total
+"""),
     cfg.IntOpt('zvm_reachable_timeout',
                default=300,
                help="""
