@@ -52,6 +52,19 @@ the REST API call is made.
 Related:
     zvm_xcat_username
 """),
+    cfg.StrOpt('zvm_xcat_master',
+               default=None,
+               help="""
+The xCAT management node (the node name in the xCAT definition).
+
+xCAT management node itself is a 'node' in xcat db, sometimes nova zvm driver
+need to interact with the node such as query disk free space of the xcat
+mangagement node, this node name will be used in the REST API call.
+
+Possible values:
+    A string specify the name of the xcat management node, it should pre-exist
+    in xcat db before usage
+"""),
     cfg.StrOpt('zvm_diskpool',
                default=None,
                help="""
@@ -260,9 +273,6 @@ zvm_image_opts = [
                help='The threshold for xCAT free space, if snapshot or spawn '
                      'check xCAT free space not enough for its image '
                      'operations, it will prune image to meet the threshold'),
-    cfg.StrOpt('zvm_xcat_master',
-               default=None,
-               help='The xCAT MM node name'),
     cfg.StrOpt('zvm_image_compression_level',
                default=None,
                help='The level of gzip compression used when capturing disk'),
