@@ -902,7 +902,7 @@ class ZVMDriverTestCases(ZVMTestCase):
         get_pst.side_effect = [0x00, 0x04]
         self.driver.power_off(self.instance, 60, 10)
         pst.assert_called_once_with("PUT", "softoff")
-        get_pst.assert_called()
+        self.assertTrue(get_pst.called)
 
     def test_power_off_failed(self):
         info = ["os000001: Stopping OS000001... Failed\n"]
