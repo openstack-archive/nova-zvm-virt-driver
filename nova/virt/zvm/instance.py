@@ -223,6 +223,9 @@ class ZVMInstance(object):
                 'memory=%im' % self._instance['memory_mb'],
                 'privilege=%s' % CONF.zvm_user_default_privilege]
 
+        if not boot_from_volume:
+            body.append('ipl=%s' % CONF.zvm_user_root_vdev)
+
         # image_meta passed from spawn is a dict, in resize is a object
         if isinstance(image_meta, dict):
             if 'name' in image_meta.keys():
@@ -248,7 +251,6 @@ class ZVMInstance(object):
                 self.add_mdisk(CONF.zvm_diskpool,
                                CONF.zvm_user_root_vdev,
                                size)
-                self._set_ipl(CONF.zvm_user_root_vdev)
 
             # Add additional ephemeral disk
             if self._instance['ephemeral_gb'] != 0:
