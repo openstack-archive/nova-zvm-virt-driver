@@ -1821,7 +1821,6 @@ class ZVMInstanceTestCases(ZVMTestCase):
 
         zvmutils.xcat_request('POST', mox.IgnoreArg(), mox.IgnoreArg())
         self._instance.add_mdisk('fakedp', '0100', '3338')
-        self._instance._set_ipl('0100')
         self._instance.add_mdisk('fakedp', '0102', '2g', 'ext4')
         self._instance.add_mdisk('fakedp', '0103', '1g', 'ext3')
         self.mox.ReplayAll()
@@ -1858,7 +1857,6 @@ class ZVMInstanceTestCases(ZVMTestCase):
 
         zvmutils.xcat_request('POST', mox.IgnoreArg(), mox.IgnoreArg())
         self._instance.add_mdisk('fakedp', '0100', '5g')
-        self._instance._set_ipl('0100')
         self._instance.add_mdisk('fakedp', '0102', '200000', 'ext4')
         self._instance.add_mdisk('fakedp', '0103', '100000', 'ext3')
         self.mox.ReplayAll()

@@ -209,6 +209,19 @@ class ZVMInstance(object):
                 exception.ZVMXCATCreateNodeFailed, node=self._name):
             zvmutils.xcat_request("POST", url, body)
 
+    def _create_user_id_body(self, boot_from_volume):
+        kwprofile = 'profile=%s' % CONF.zvm_user_profile
+        body = [kwprofile,
+                'password=%s' % CONF.zvm_user_default_password,
+                'cpu=%i' % self._instance['vcpus'],
+                'memory=%im' % self._instance['memory_mb'],
+                'privilege=%s' % CONF.zvm_user_default_privilege]
+
+        if not boot_from_volume:
+            body.append('ipl=%s' % CONF.zvm_user_root_vdev)
+
+        return body
+
     def create_userid(self, block_device_info, image_meta, os_image=None):
         """Create z/VM userid into user directory for a z/VM instance."""
         # We do not support boot from volume currently
@@ -218,12 +231,8 @@ class ZVMInstance(object):
         boot_from_volume = zvmutils.is_boot_from_volume(block_device_info)[1]
 
         eph_disks = block_device_info.get('ephemerals', [])
-        kwprofile = 'profile=%s' % CONF.zvm_user_profile
-        body = [kwprofile,
-                'password=%s' % CONF.zvm_user_default_password,
-                'cpu=%i' % self._instance['vcpus'],
-                'memory=%im' % self._instance['memory_mb'],
-                'privilege=%s' % CONF.zvm_user_default_privilege]
+
+        body = self._create_user_id_body(boot_from_volume)
 
         # image_meta passed from spawn is a dict, in resize is a object
         if isinstance(image_meta, dict):
@@ -254,7 +263,6 @@ class ZVMInstance(object):
                 self.add_mdisk(CONF.zvm_diskpool,
                                CONF.zvm_user_root_vdev,
                                size)
-                self._set_ipl(CONF.zvm_user_root_vdev)
 
             # Add additional ephemeral disk
             if self._instance['ephemeral_gb'] != 0:
