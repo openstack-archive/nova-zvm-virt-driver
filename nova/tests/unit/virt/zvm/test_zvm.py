@@ -251,30 +251,32 @@ class ZVMDriverTestCases(ZVMTestCase):
             self._fake_inst[k] = ''
             self._old_inst[k] = ''
 
-    def setUp(self):
+    @mock.patch.object(driver.ZVMDriver, 'update_host_status')
+    @mock.patch('nova.virt.zvm.driver.ZVMDriver._get_xcat_version')
+    def setUp(self, mock_version, mock_update):
         super(ZVMDriverTestCases, self).setUp()
         self._setup_fake_inst_obj()
-        with mock.patch.object(driver.ZVMDriver, 'update_host_status') as uhs:
-            uhs.return_value = [{
-                'host': 'fakehost',
-                'allowed_vm_type': 'zLinux',
-                'vcpus': 10,
-                'vcpus_used': 10,
-                'cpu_info': {'Architecture': 's390x', 'CEC model': '2097'},
-                'disk_total': 406105,
-                'disk_used': 367263,
-                'disk_available': 38842,
-                'host_memory_total': 16384,
-                'host_memory_free': 8096,
-                'hypervisor_type': 'zvm',
-                'hypervisor_version': '630',
-                'hypervisor_hostname': 'fakenode',
-                'supported_instances': [('s390x', 'zvm', 'hvm')],
-                'zhcp': {'hostname': 'fakehcp.fake.com',
-                         'nodename': 'fakehcp', 'userid': 'fakehcp'},
-                'ipl_time': 'IPL at 03/13/14 21:43:12 EDT',
-            }]
-            self.driver = driver.ZVMDriver(fake.FakeVirtAPI())
+        mock_update.return_value = [{
+            'host': 'fakehost',
+            'allowed_vm_type': 'zLinux',
+            'vcpus': 10,
+            'vcpus_used': 10,
+            'cpu_info': {'Architecture': 's390x', 'CEC model': '2097'},
+            'disk_total': 406105,
+            'disk_used': 367263,
+            'disk_available': 38842,
+            'host_memory_total': 16384,
+            'host_memory_free': 8096,
+            'hypervisor_type': 'zvm',
+            'hypervisor_version': '630',
+            'hypervisor_hostname': 'fakenode',
+            'supported_instances': [('s390x', 'zvm', 'hvm')],
+            'zhcp': {'hostname': 'fakehcp.fake.com',
+                     'nodename': 'fakehcp', 'userid': 'fakehcp'},
+            'ipl_time': 'IPL at 03/13/14 21:43:12 EDT',
+        }]
+        mock_version.return_value = '100.100.100.100'
+        self.driver = driver.ZVMDriver(fake.FakeVirtAPI())
         self.mox.UnsetStubs()
 
     def test_init_driver(self):
@@ -1658,21 +1660,17 @@ class ZVMDriverTestCases(ZVMTestCase):
         res = ["Version 2.8.3.5 (built Mon Apr 27 10:50:11 EDT 2015)"]
         self._set_fake_xcat_responses([self._gen_resp(data=res)])
         version = self.driver._get_xcat_version()
-        self.assertEqual(version, 2008003005)
+        self.assertEqual(version, '2.8.3.5')
 
-    @mock.patch('nova.virt.zvm.driver.ZVMDriver._get_xcat_version')
-    def test_has_min_version(self, fake_xcat_ver):
-        fake_xcat_ver.return_value = 1002003004
-
+    def test_has_min_version(self):
+        self.driver._xcat_version = '1.2.3.4'
         self.assertFalse(self.driver.has_min_version((1, 3, 3, 4)))
         self.assertTrue(self.driver.has_min_version((1, 1, 3, 5)))
         self.assertTrue(self.driver.has_min_version(None))
 
-    @mock.patch('nova.virt.zvm.driver.ZVMDriver._get_xcat_version')
-    def test_has_version(self, fake_xcat_ver):
-        fake_xcat_ver.return_value = 1002003004
-
+    def test_has_version(self):
         xcat_ver = (1, 2, 3, 4)
+        self.driver._xcat_version = '1.2.3.4'
         self.assertTrue(self.driver.has_version(xcat_ver))
 
         for xcat_ver_ in [(1, 1, 3, 4), (1, 3, 3, 2)]:
