@@ -1829,18 +1829,6 @@ class ZVMDriver(driver.ComputeDriver):
         return
 
     def get_console_output(self, context, instance):
-        # Because bug 534, in Juno, xcat will make new instance punch
-        # console logs to ZHCP and it violate the current RACF setting
-        # plus we don't announce support this feature, temply disable it
-        # until we can solve that RACF issue.
-        # in nova/api/openstack/compute/contrib/console_output.py
-        # it will catch the exception like:
-        # except NotImplementedError:
-        #   msg = _("Unable to get console log, functionality not implemented")
-        #   raise webob.exc.HTTPNotImplemented(explanation=msg)
-        raise NotImplementedError
-
-    def _get_console_output(self, context, instance):
         """Get console output for an instance."""
 
         def append_to_log(log_data, log_path):
@@ -1848,18 +1836,21 @@ class ZVMDriver(driver.ComputeDriver):
                          {'log_data': log_data, 'log_path': log_path})
             fp = open(log_path, 'a+')
             fp.write(log_data)
+            fp.close()
             return log_path
 
         zvm_inst = ZVMInstance(instance)
         logsize = CONF.zvm_console_log_size * units.Ki
         console_log = ""
+
         try:
             console_log = zvm_inst.get_console_log(logsize)
         except exception.ZVMXCATInternalError:
             # Ignore no console log avaiable error
-            LOG.warn(_LW("No new console log avaiable."))
+            LOG.info(_LI("No new console log avaiable."))
         log_path = self._pathutils.get_console_log_path(CONF.zvm_host,
                        zvm_inst._name)
+        # TODO(jichenjc): need consider shrink log file size
         append_to_log(console_log, log_path)
 
         log_fp = file(log_path, 'rb')
