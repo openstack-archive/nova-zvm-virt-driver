@@ -275,7 +275,18 @@ zvm_image_opts = [
                      'operations, it will prune image to meet the threshold'),
     cfg.StrOpt('zvm_image_compression_level',
                default=None,
-               help='The level of gzip compression used when capturing disk'),
+               help="""
+The level of gzip compression used when capturing disk.
+
+The snapshot image usually will consume disk space on xCAT MN host and
+compute host, in order to save disk space the image can be compressed.
+zvm driver use gzip to compress the image and gzip provided a set of compress
+zip level. For more information, please refer to zip level of gzip command.
+
+Possible values:
+    An integer between 0 and 9, set to 0 means no zip and set to None will
+    make zvm driver pick '6' which is default compress level of gzip.
+"""),
     ]
 
 CONF = cfg.CONF
