@@ -194,7 +194,7 @@ or persistent disks. This value is the virtual device number of the root
 disk. If the root disk is a cinder volume instead, this value does not apply.
 
 Possible values:
-    An integer value, between 0 and 65536 (x'FFFF').
+    An integer value in hex format, between 0 and 65536 (x'FFFF').
     It should not conflict with other device numbers in the z/VM guest's
     configuration, for example device numbers of the NICs or ephemeral or
     persistent disks.
@@ -216,7 +216,7 @@ each NIC needs 3 numbers for control/read/write, so by default
 the first NIC's address is 1000, the second one is 1003 etc.
 
 Possible values:
-    An integer value, between 0 and 65536 (x'FFFF').
+    An integer value in hex format, between 0 and 65536 (x'FFFF').
     It should not conflict with other device numbers in the z/VM guest's
     configuration, for example device numbers of the root or ephemeral or
     persistent disks.
@@ -239,7 +239,7 @@ This value is the virtual device number of the first ephemeral disk.
 Other ephemeral disks will take subsequent numbers.
 
 Possible values:
-    An integer value, between 0 and 65536 (x'FFFF').
+    An integer value in hex format, between 0 and 65536 (x'FFFF').
     It should not conflict with other device numbers in the z/VM guest's
     configuration, for example device numbers of the root disk or NICs.
 
