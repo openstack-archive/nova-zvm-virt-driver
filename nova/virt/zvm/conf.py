@@ -95,7 +95,16 @@ Possible values:
                help='Z/VM host that managed by xCAT MN.'),
     cfg.StrOpt('zvm_xcat_group',
                default='all',
-               help='XCAT group for OpenStack'),
+               help="""
+XCAT group for OpenStack.
+
+There is a 'group' field in xCAT side and it can divide nodes into
+different group and let GUI to select a group of nodes to display.
+Set this to 'all' is recommended for now.
+
+Possible values:
+    A string, by default and recommend to set it to 'all'.
+"""),
     cfg.StrOpt('zvm_scsi_pool',
                default='xcatzfcp',
                help='Default zfcp scsi disk pool'),
