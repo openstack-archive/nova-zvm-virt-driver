@@ -20,6 +20,7 @@ import shutil
 import six
 from six.moves import http_client as httplib
 import socket
+import ssl
 import time
 
 from oslo_config import cfg
@@ -30,7 +31,7 @@ from oslo_utils import excutils
 from nova import block_device
 from nova.compute import power_state
 from nova import exception as nova_exception
-from nova.i18n import _, _LE, _LI
+from nova.i18n import _, _LE, _LI, _LW
 from nova.virt import driver
 from nova.virt.zvm import const
 from nova.virt.zvm import dist
@@ -182,13 +183,68 @@ class XCATUrl(object):
         return self.PREFIX + self.VERSION + self.SUFFIX
 
 
+class HTTPSClientAuthConnection(httplib.HTTPSConnection):
+    """Class to make a HTTPS connection, with support for
+    full client-based SSL Authentication
+    :see http://code.activestate.com/recipes/
+            577548-https-httplib-client-connection-with-certificate-v/
+    """
+
+    def __init__(self, host, port, key_file, cert_file,
+                 ca_file, timeout=None):
+        httplib.HTTPSConnection.__init__(self, host, port,
+                                             key_file=key_file,
+                                             cert_file=cert_file)
+        self.key_file = key_file
+        self.cert_file = cert_file
+        self.ca_file = ca_file
+        self.timeout = timeout
+        self.insecure = False
+
+        if self.ca_file is None:
+            LOG.warn(_LW("no xcat ca file specified, this is considered "
+                         "not secure"))
+            self.insecure = True
+
+    def connect(self):
+        """Connect to a host on a given (SSL) port.
+
+        If ca_file is pointing somewhere, use it to check Server Certificate.
+        Redefined/copied and extended from httplib.py:1105 (Python 2.6.x).
+        This is needed to pass cert_reqs=ssl.CERT_REQUIRED as parameter to
+        ssl.wrap_socket(), which forces SSL to check server certificate against
+        our client certificate.
+        """
+
+        sock = socket.create_connection((self.host, self.port), self.timeout)
+        if self._tunnel_host:
+            self.sock = sock
+            self._tunnel()
+
+        if (self.ca_file is not None and
+            not os.path.exists(self.ca_file)):
+            LOG.warn(_LW("the ca file %(ca_file) specified does not exist!"),
+                         {'ca_file': self.ca_file})
+            self.insecure = True
+
+        if self.insecure is True:
+            self.sock = ssl.wrap_socket(sock, self.key_file, self.cert_file,
+                                        cert_reqs=ssl.CERT_NONE)
+        else:
+            self.sock = ssl.wrap_socket(sock, self.key_file, self.cert_file,
+                                        ca_certs=self.ca_file,
+                                        cert_reqs=ssl.CERT_REQUIRED)
+
+
 class XCATConnection(object):
     """Https requests to xCAT web service."""
 
     def __init__(self):
         """Initialize https connection to xCAT service."""
+        self.port = 443
         self.host = CONF.zvm_xcat_server
-        self.conn = httplib.HTTPSConnection(self.host,
+        self.conn = HTTPSClientAuthConnection(self.host, self.port,
+                        None, None, CONF.zvm_xcat_ca_file,
                         timeout=CONF.zvm_xcat_connection_timeout)
 
     def request(self, method, url, body=None, headers=None):
