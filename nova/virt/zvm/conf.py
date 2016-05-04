@@ -92,7 +92,13 @@ Possible values:
 """),
     cfg.StrOpt('zvm_host',
                default=None,
-               help='Z/VM host that managed by xCAT MN.'),
+               help="""
+Z/VM host that managed by xCAT MN.
+
+This option is deprecated and will be removed in the future release.
+please set CONF.host instead.
+
+"""),
     cfg.StrOpt('zvm_xcat_group',
                default='all',
                help='XCAT group for OpenStack'),

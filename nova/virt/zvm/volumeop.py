@@ -329,7 +329,7 @@ class SVCDriver(DriverAPI):
     def __init__(self):
         self._xcat_url = zvmutils.XCATUrl()
         self._path_utils = zvmutils.PathUtils()
-        self._host = CONF.zvm_host
+        self._host = CONF.host
         self._pool_name = CONF.zvm_scsi_pool
         self._fcp_pool = {}
         self._instance_fcp_map = {}
@@ -627,7 +627,7 @@ class SVCDriver(DriverAPI):
             LOG.warning(errmsg)
             return empty_connector
 
-        return {'zvm_fcp': fcp_list, 'wwpns': wwpns, 'host': CONF.zvm_host}
+        return {'zvm_fcp': fcp_list, 'wwpns': wwpns, 'host': CONF.host}
 
     def _get_wwpn(self, fcp_no):
         fcp = self._fcp_pool.get(fcp_no)

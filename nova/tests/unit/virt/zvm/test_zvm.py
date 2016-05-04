@@ -121,12 +121,11 @@ class ZVMTestCase(test.TestCase):
                                   'ephemeral_gb': 1,
                                   'image_ref': '0000-1111',
                                   'host': 'fakenode'})
-        self.flags(host='fakehost',
+        self.flags(host='fakenode',
                    my_ip='10.1.1.10',
                    zvm_xcat_server='10.10.10.10',
                    zvm_xcat_username='fake',
                    zvm_xcat_password='fake',
-                   zvm_host='fakenode',
                    zvm_diskpool='fakedp',
                    zvm_diskpool_type='FBA',
                    instance_name_template='os%06x',

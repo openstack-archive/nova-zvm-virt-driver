@@ -141,7 +141,7 @@ class ZVMDriver(driver.ComputeDriver):
         """Return the names of all the instances known to the virtualization
         layer, as a list.
         """
-        zvm_host = CONF.zvm_host
+        zvm_host = CONF.host
         hcp_base = self._get_hcp_info()['hostname']
 
         url = self._xcat_url.tabdump("/zvm")
@@ -213,7 +213,7 @@ class ZVMDriver(driver.ComputeDriver):
         if not boot_from_volume:
             self._zvm_images.zimage_check(image_meta)
 
-        compute_node = CONF.zvm_host
+        compute_node = CONF.host
         zhcp = self._get_hcp_info()['hostname']
 
         zvm_inst = ZVMInstance(instance)
@@ -896,7 +896,7 @@ class ZVMDriver(driver.ComputeDriver):
         :returns: Dictionary describing resources
 
         """
-        LOG.debug("Getting available resource for %s" % CONF.zvm_host)
+        LOG.debug("Getting available resource for %s" % CONF.host)
         stats = self.update_host_status()[0]
 
         mem_used = stats['host_memory_total'] - stats['host_memory_free']
@@ -1186,10 +1186,10 @@ class ZVMDriver(driver.ComputeDriver):
         manages several hypervisors, so will return a list of host
         status information.
         """
-        LOG.debug("Updating host status for %s" % CONF.zvm_host)
+        LOG.debug("Updating host status for %s" % CONF.host)
 
         caps = []
-        host = CONF.zvm_host
+        host = CONF.host
 
         info = self._get_host_inventory_info(host)
 
@@ -1528,7 +1528,7 @@ class ZVMDriver(driver.ComputeDriver):
 
         new_inst = ZVMInstance(instance)
         instance_path = self._pathutils.get_instance_path(
-                            CONF.zvm_host, new_inst._name)
+                            CONF.host, new_inst._name)
         if same_xcat_mn:
             # Same xCAT MN
             # cleanup networking, will re-configure later
@@ -1858,7 +1858,7 @@ class ZVMDriver(driver.ComputeDriver):
         except exception.ZVMXCATInternalError:
             # Ignore no console log avaiable error
             LOG.warn(_LW("No new console log avaiable."))
-        log_path = self._pathutils.get_console_log_path(CONF.zvm_host,
+        log_path = self._pathutils.get_console_log_path(CONF.host,
                        zvm_inst._name)
         append_to_log(console_log, log_path)
 
