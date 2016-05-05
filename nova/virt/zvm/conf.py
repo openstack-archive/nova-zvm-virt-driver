@@ -92,7 +92,17 @@ Possible values:
 """),
     cfg.StrOpt('zvm_host',
                default=None,
-               help='Z/VM host that managed by xCAT MN.'),
+               help="""
+Z/VM host that managed by xCAT MN.
+
+This variable identify the hypervisor name that managed by the compute
+service running on. It is required to be same to the system name of the
+z/VM in the z/VM system configuration file.
+
+Possible values:
+    A string, which is the system name of the z/VM that this compute
+    service managing.
+"""),
     cfg.StrOpt('zvm_xcat_group',
                default='all',
                help='XCAT group for OpenStack'),
