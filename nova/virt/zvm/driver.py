@@ -16,6 +16,7 @@ import contextlib
 import datetime
 import operator
 import os
+import six
 import time
 import uuid
 
@@ -84,11 +85,14 @@ class ZVMDriver(driver.ComputeDriver):
         while (self._host_stats == []):
             try:
                 self._host_stats = self.update_host_status()
-            except Exception:
+            except Exception as e:
                 # Ignore any exceptions and log as warning
                 _slp = len(_inc_slp) != 0 and _inc_slp.pop(0) or _slp
-                LOG.warn(_LW("Failed to get host stats while initializing zVM "
-                         "driver, will re-try in %d seconds") % _slp)
+                msg = _LW("Failed to get host stats while initializing zVM "
+                          "driver due to reason %(reason)s, will re-try in "
+                          "%(slp)d seconds")
+                LOG.warn(msg, {'reason': six.text_type(e),
+                               'slp': _slp})
                 time.sleep(_slp)
 
         self._networkop = networkop.NetworkOperator()
