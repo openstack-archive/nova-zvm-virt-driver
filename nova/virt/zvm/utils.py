@@ -44,6 +44,9 @@ CONF = cfg.CONF
 CONF.import_opt('instances_path', 'nova.compute.manager')
 
 
+_XCAT_URL = None
+
+
 class XCATUrl(object):
     """To return xCAT url for invoking xCAT REST API."""
 
@@ -221,6 +224,16 @@ class HTTPSClientAuthConnection(httplib.HTTPSConnection):
             self.sock = ssl.wrap_socket(sock, self.key_file, self.cert_file,
                                         ca_certs=self.ca_file,
                                         cert_reqs=ssl.CERT_REQUIRED)
+
+
+def get_xcat_url():
+    global _XCAT_URL
+
+    if _XCAT_URL is not None:
+        return _XCAT_URL
+
+    _XCAT_URL = XCATUrl()
+    return _XCAT_URL
 
 
 class XCATConnection(object):
@@ -541,7 +554,7 @@ def get_host():
 
 def get_xcat_version():
     """Return the version of xCAT"""
-    url = XCATUrl().version()
+    url = get_xcat_url().version()
     data = xcat_request('GET', url)['data']
 
     with expect_invalid_xcat_resp_data(data):
@@ -559,7 +572,7 @@ def xcat_support_chvm_smcli():
 
 def get_userid(node_name):
     """Returns z/VM userid for the xCAT node."""
-    url = XCATUrl().lsdef_node(''.join(['/', node_name]))
+    url = get_xcat_url().lsdef_node(''.join(['/', node_name]))
     info = xcat_request('GET', url)
 
     with expect_invalid_xcat_resp_data(info):
@@ -579,7 +592,7 @@ def xdsh(node, commands):
         # Add -q (quiet) option to ignore ssh warnings and banner msg
         opt = 'options=-q'
         body = [xdsh_commands, opt]
-        url = XCATUrl().xdsh('/' + node)
+        url = get_xcat_url().xdsh('/' + node)
         return xcat_request("PUT", url, body)
 
     with except_xcat_call_failed_and_reraise(
@@ -591,7 +604,7 @@ def xdsh(node, commands):
 
 def punch_file(node, fn, fclass):
     body = [" ".join(['--punchfile', fn, fclass, get_host()])]
-    url = XCATUrl().chvm('/' + node)
+    url = get_xcat_url().chvm('/' + node)
 
     try:
         xcat_request("PUT", url, body)
@@ -630,7 +643,7 @@ def process_eph_disk(instance_name, vdev=None, fmt=None, mntdir=None):
 
 
 def aemod_handler(instance_name, func_name, parms):
-    url = XCATUrl().chvm('/' + instance_name)
+    url = get_xcat_url().chvm('/' + instance_name)
     body = [" ".join(['--aemod', func_name, parms])]
 
     try:
@@ -750,7 +763,7 @@ def parse_os_version(os_version):
 def xcat_cmd_gettab(table, col, col_value, attr):
     addp = ("&col=%(col)s=%(col_value)s&attribute=%(attr)s" %
             {'col': col, 'col_value': col_value, 'attr': attr})
-    url = XCATUrl().gettab('/%s' % table, addp)
+    url = get_xcat_url().gettab('/%s' % table, addp)
     res_info = xcat_request("GET", url)
     with expect_invalid_xcat_resp_data(res_info):
         return res_info['data'][0][0]
@@ -760,7 +773,7 @@ def xcat_cmd_gettab_multi_attr(table, col, col_value, attr_list):
     attr_str = ''.join(["&attribute=%s" % attr for attr in attr_list])
     addp = ("&col=%(col)s=%(col_value)s&%(attr)s" %
             {'col': col, 'col_value': col_value, 'attr': attr_str})
-    url = XCATUrl().gettab('/%s' % table, addp)
+    url = get_xcat_url().gettab('/%s' % table, addp)
     res_data = xcat_request("GET", url)['data']
 
     outp = {}

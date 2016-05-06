@@ -32,7 +32,7 @@ class NetworkOperator(object):
     """Configuration check and manage MAC address."""
 
     def __init__(self):
-        self._xcat_url = zvmutils.XCATUrl()
+        self._xcat_url = zvmutils.get_xcat_url()
 
     def add_xcat_host(self, node, ip, host_name):
         """Add/Update hostname/ip bundle in xCAT MN nodes table."""
