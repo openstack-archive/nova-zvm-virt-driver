@@ -42,7 +42,7 @@ class ZVMInstance(object):
     def __init__(self, instance=None):
         """Initialize instance attributes for database."""
         instance = instance or {}
-        self._xcat_url = zvmutils.XCATUrl()
+        self._xcat_url = zvmutils.get_xcat_url()
         self._xcat_conn = zvmutils.XCATConnection()
         self._instance = instance
         self._name = instance['name']

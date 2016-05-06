@@ -42,7 +42,7 @@ QUEUE_BUFFER_SIZE = 10
 class ZVMImages(object):
 
     def __init__(self):
-        self._xcat_url = zvmutils.XCATUrl()
+        self._xcat_url = zvmutils.get_xcat_url()
         self._pathutils = zvmutils.PathUtils()
 
     def create_zvm_image(self, instance, image_name, image_href):
