@@ -844,7 +844,8 @@ class ZVMDriver(driver.ComputeDriver):
                 image_service.update(context,
                                      image_href,
                                      new_image_meta,
-                                     image_file)
+                                     image_file,
+                                     purge_props=False)
         except Exception:
             with excutils.save_and_reraise_exception():
                 self._zvm_images.delete_image_glance(image_service, context,

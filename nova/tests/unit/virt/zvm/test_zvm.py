@@ -85,7 +85,7 @@ class FakeImageService(object):
     def delete(self, *args):
         pass
 
-    def update(self, *args):
+    def update(self, *args, **kwargs):
         pass
 
 
