@@ -128,16 +128,81 @@ Possible values:
 """),
     cfg.StrOpt('zvm_scsi_pool',
                default='xcatzfcp',
-               help='Default zfcp scsi disk pool'),
+               help="""
+The name of an xCAT SCSI pool file.
+
+This is the name of the pool file in xCAT that will be created to maintain
+the list of volumes available and allocated to deployed servers.
+
+Possible values:
+    A string which contains a valid xCAT file name.
+    This can be an existing pool, or one that is to be created.
+"""),
     cfg.BoolOpt('zvm_multiple_fcp',
                 default=False,
-               help='Does use multiple FCP for attaching a volume'),
+                help="""
+Defines whether to use host side multipath.
+
+Defines whether to use host side multipath (which supports two paths to
+a persistent disk) when attaching a persistent disk, so that if one path
+fails, the instance can access the disk via the other path.
+
+To use the host side multipath feature, at least two sets of FCP devices
+corresponding to different CHPIDs must be configured in the zvm_fcp_list
+property.
+
+Related:
+    zvm_fcp_list
+    zvm_zhcp_fcp_list
+
+Possible values:
+    True or False.
+"""),
     cfg.StrOpt('zvm_fcp_list',
                default=None,
-               help='Configured fcp list can be used'),
+               help="""
+The list of FCPs used by virtual server instances.
+
+Required only if persistent disks are to be attached to virtual server
+instances. Each instance needs at least one FCP in order to attach a volume
+to itself and the number of FCP depends on the path connect between host and
+storage. Those FCPs should be available and online before OpenStack can use
+them. OpenStack will not check their status but use them directly, so if they
+are not ready, errors may be returned. Contact your z/VM system
+administrator if you do not know which FCPs you can use.
+
+Related:
+    zvm_multiple_fcp
+    zvm_zhcp_fcp_list
+
+Possible values:
+    A semicolon delimited string of either single FCP numbers or
+    ranges, e.g., 1f0e;2f02-2f1f;3f00.
+"""),
     cfg.StrOpt('zvm_zhcp_fcp_list',
                default=None,
-               help='Configured fcp list dedicated to hcp'),
+               help="""
+The list of FCPs used only by the xCAT ZHCP node.
+
+The FCP addresses may be specified as either an individual address or a
+range of addresses connected with a hyphen. Multiple values are
+specified with a semicolon connecting them. The purpose of this param
+is to ensure links between z/VM host and storage are pre-setup so further
+attach detach actions of virtual machines on same z/VM can proceed.
+
+The FCP addresses must be different from the ones specified for the
+zvm_fcp_list. Any FCPs that exist in both zvm_fcp_list and zvm_zhcp_fcp_list
+will lead to errors. Contact your z/VM system administrator if you do
+not know which FCPs you can use.
+
+Related:
+    zvm_fcp_list
+    zvm_multiple_fcp
+
+Possible values:
+    A string with hypon and semicolon, e.g 1f0e;2f02-2f1f;3f00.
+
+"""),
     cfg.BoolOpt('zvm_config_drive_inject_password',
                 default=False,
                 help='Sets the admin password in the config drive'),
