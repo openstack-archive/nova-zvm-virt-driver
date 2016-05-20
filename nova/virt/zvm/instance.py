@@ -15,6 +15,7 @@
 
 import binascii
 import datetime
+import time
 
 from oslo_config import cfg
 from oslo_log import log as logging
@@ -48,7 +49,7 @@ class ZVMInstance(object):
         self._volumeop = volumeop.VolumeOperator()
         self._dist_manager = dist.ListDistManager()
 
-    def power_off(self):
+    def power_off(self, timeout=0, retry_interval=10):
         """Power off z/VM instance."""
         try:
             self._power_state("PUT", "softoff")
@@ -63,6 +64,20 @@ class ZVMInstance(object):
                 msg = _("Failed to power off instance: %s") % err_str
                 LOG.error(msg)
                 raise nova_exception.InstancePowerOffFailure(reason=msg)
+
+        timeout = timeout or CONF.shutdown_timeout
+        retry_interval = retry_interval or 10
+        retry_count = timeout // retry_interval
+        while (retry_count > 0):
+            if self._get_power_stat() == power_state.SHUTDOWN:
+                # In shutdown state already
+                return
+            else:
+                time.sleep(retry_interval)
+                retry_count -= 1
+
+        LOG.warn(_LW("Failed to shutdown instance %(inst)s in %(time)d "
+                     "seconds") % {'inst': self._name, 'time': timeout})
 
     def power_on(self):
         """"Power on z/VM instance."""

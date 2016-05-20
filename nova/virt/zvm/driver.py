@@ -989,7 +989,7 @@ class ZVMDriver(driver.ComputeDriver):
         LOG.debug('Stopping z/VM instance %s' % instance['name'],
                   instance=instance)
         zvm_inst = ZVMInstance(instance)
-        zvm_inst.power_off()
+        zvm_inst.power_off(timeout, retry_interval)
 
     def power_on(self, context, instance, network_info,
                  block_device_info=None):
