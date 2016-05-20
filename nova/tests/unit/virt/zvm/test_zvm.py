@@ -884,20 +884,25 @@ class ZVMDriverTestCases(ZVMTestCase):
                           self.driver.reboot,
                           self.context, self.instance, {}, "SOFT")
 
-    def test_power_off(self):
-        info = ["os000001: Stopping OS000001... Done\n"]
-        self._set_fake_xcat_responses([self._generate_xcat_resp(info)])
-        self.driver.power_off(self.instance, 10, 10)
-        self.mox.VerifyAll()
+    @mock.patch('nova.virt.zvm.instance.ZVMInstance.power_off')
+    def test_power_off(self, poff):
+        self.driver.power_off(self.instance, 60, 10)
+        poff.assert_called_once_with(60, 10)
 
-    def test_power_off_inactive(self):
-        info = ["os000001: Stopping LINUX171... Failed\n"
-                "  Return Code: 200\n"
-                "  Reason Code: 12\n"
-                "  Description: Image not active\n"]
-        self._set_fake_xcat_responses([self._generate_xcat_resp(info)])
-        self.driver.power_off(self.instance)
-        self.mox.VerifyAll()
+    @mock.patch('nova.virt.zvm.instance.ZVMInstance._power_state')
+    def test_power_off_inactive(self, pst):
+        pst.side_effect = exception.ZVMXCATInternalError(
+                                        "Return Code: 200 Reason Code: 12")
+        self.driver.power_off(self.instance, 60, 10)
+        pst.assert_called_once_with("PUT", "softoff")
+
+    @mock.patch('nova.virt.zvm.instance.ZVMInstance._get_power_stat')
+    @mock.patch('nova.virt.zvm.instance.ZVMInstance._power_state')
+    def test_power_off_retry(self, pst, get_pst):
+        get_pst.side_effect = [0x00, 0x04]
+        self.driver.power_off(self.instance, 60, 10)
+        pst.assert_called_once_with("PUT", "softoff")
+        get_pst.assert_called()
 
     def test_power_off_failed(self):
         info = ["os000001: Stopping OS000001... Failed\n"]
