@@ -207,9 +207,23 @@ class ZVMInstance(object):
                 'cpu=%i' % self._instance['vcpus'],
                 'memory=%im' % self._instance['memory_mb'],
                 'privilege=%s' % CONF.zvm_user_default_privilege]
-        if 'name' in image_meta.keys():
-            kwimage = 'imagename=%s' % image_meta['name']
-            body.append(kwimage)
+
+        # image_meta passed from spawn is a dict, in resize is a object
+        try:
+            if isinstance(image_meta, dict):
+                if 'name' in image_meta.keys():
+                    kwimage = 'imagename=%s' % image_meta['name']
+                    body.append(kwimage)
+            else:
+                image_name = getattr(image_meta, 'name')
+                if not image_name:
+                    kwimage = 'imagename=%s' % image_name
+                    body.append(kwimage)
+        except Exception as err:
+            errmsg = _("Can't get image name from image_meta: %s") % err
+            LOG.error(errmsg)
+            raise exception.ZVMDriverError(msg=errmsg)
+
         url = self._xcat_url.mkvm('/' + self._name)
 
         try:
