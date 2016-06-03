@@ -67,7 +67,10 @@ class ZVMDriver(driver.ComputeDriver):
 
     capabilities = {
         "has_imagecache": True,
-        }
+        "supports_recreate": False,
+        "supports_migrate_to_same_host": True,
+        "supports_attach_interface": False
+    }
 
     def __init__(self, virtapi):
         super(ZVMDriver, self).__init__(virtapi)
