@@ -405,7 +405,7 @@ class ZVMDriver(driver.ComputeDriver):
         znetconfig += '\nrm -rf /tmp/znetconfig.sh\n'
         # Create a temp file in instance to execute above commands
         net_cmd_file = []
-        net_cmd_file.append(('/tmp/znetconfig.sh', znetconfig))
+        net_cmd_file.append(('/tmp/znetconfig.sh', znetconfig))  # nosec
         injected_files.extend(net_cmd_file)
         # injected_files.extend(('/tmp/znetconfig.sh', znetconfig))
 
