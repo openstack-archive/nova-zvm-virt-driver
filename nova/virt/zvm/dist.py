@@ -413,6 +413,25 @@ class sles12(sles):
     def get_change_passwd_command(self, admin_password):
         return "echo 'root:%s' | chpasswd" % admin_password
 
+    def get_scp_string(self, root, fcp, wwpn, lun):
+        return ("=root=%(root)s zfcp.allow_lun_scan=0 "
+                "zfcp.device=0.0.%(fcp)s,0x%(wwpn)s,0x%(lun)s") % {
+                'root': root, 'fcp': fcp, 'wwpn': wwpn, 'lun': lun}
+
+    def get_zipl_script_lines(self, image, ramdisk, root, fcp, wwpn, lun):
+        return ['#!/bin/bash\n',
+                ('echo -e "[defaultboot]\\n'
+                 'default=boot-from-volume\\n'
+                 '[boot-from-volume]\\n'
+                 'image=%(image)s\\n'
+                 'target = /boot/zipl\\n'
+                 'ramdisk=%(ramdisk)s\\n'
+                 'parameters=\\"root=%(root)s '
+                 'zfcp.device=0.0.%(fcp)s,0x%(wwpn)s,0x%(lun)s '
+                 'zfcp.allow_lun_scan=0\\""'
+                 '>/etc/zipl_volume.conf\n'
+                 'mkinitrd\n'
+
 
 class ListDistManager(object):
     def get_linux_dist(self, os_version):
