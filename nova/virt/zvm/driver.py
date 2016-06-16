@@ -397,17 +397,18 @@ class ZVMDriver(driver.ComputeDriver):
         if CONF.zvm_config_drive_inject_password:
             extra_md['admin_pass'] = admin_password
 
-        udev_settle = linuxdist.get_znetconfig_contents()
-        if len(commands) == 0:
-            znetconfig = '\n'.join(('# !/bin/sh', udev_settle))
-        else:
-            znetconfig = '\n'.join(('# !/bin/sh', commands, udev_settle))
-        znetconfig += '\nrm -rf /tmp/znetconfig.sh\n'
-        # Create a temp file in instance to execute above commands
-        net_cmd_file = []
-        net_cmd_file.append(('/tmp/znetconfig.sh', znetconfig))  # nosec
-        injected_files.extend(net_cmd_file)
-        # injected_files.extend(('/tmp/znetconfig.sh', znetconfig))
+        if len(commands) > 0:
+            udev_settle = linuxdist.get_znetconfig_contents()
+            if len(commands) == 0:
+                znetconfig = '\n'.join(('# !/bin/sh', udev_settle))
+            else:
+                znetconfig = '\n'.join(('# !/bin/sh', commands, udev_settle))
+            znetconfig += '\nrm -rf /tmp/znetconfig.sh\n'
+            # Create a temp file in instance to execute above commands
+            net_cmd_file = []
+            net_cmd_file.append(('/tmp/znetconfig.sh', znetconfig))  # nosec
+            injected_files.extend(net_cmd_file)
+            # injected_files.extend(('/tmp/znetconfig.sh', znetconfig))
 
         inst_md = instance_metadata.InstanceMetadata(instance,
                                                  content=injected_files,
