@@ -753,7 +753,10 @@ def xcat_cmd_gettab(table, col, col_value, attr):
     url = XCATUrl().gettab('/%s' % table, addp)
     res_info = xcat_request("GET", url)
     with expect_invalid_xcat_resp_data(res_info):
-        return res_info['data'][0][0]
+        if res_info['data']:
+            return res_info['data'][0][0]
+        else:
+            return ''
 
 
 def xcat_cmd_gettab_multi_attr(table, col, col_value, attr_list):
