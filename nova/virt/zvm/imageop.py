@@ -300,6 +300,9 @@ class ZVMImages(object):
         last_use_date_string = today_date.strftime("%Y-%m-%d")
         is_deletable = "auto:last_use_date:" + last_use_date_string
 
+        if 'image_comments' in image_meta['properties']:
+            image_comments = image_meta['properties']['image_comments']
+
         doc = Dom.Document()
         xcatimage = doc.createElement('xcatimage')
         doc.appendChild(xcatimage)
@@ -326,6 +329,9 @@ class ZVMImages(object):
                     'osvers': os_version,
                     'profile': image_profile,
                     'provmethod': prov_method}
+
+        if 'image_comments' in image_meta['properties']:
+            manifest['comments'] = image_comments
 
         for item in list(manifest.keys()):
             itemkey = doc.createElement(item)
@@ -825,3 +831,23 @@ class ZVMImages(object):
         menifest = zvmutils.xcat_cmd_gettab_multi_attr('osimage', 'imagename',
                                                     image_name_xcat, attr_list)
         return menifest
+
+    def get_image_comments(self, image_name):
+        """Get image comments from xcat osimage table"""
+        return zvmutils.xcat_cmd_gettab("osimage", "imagename",
+                                        image_name, "comments")
+
+    def set_image_comments(self, image_name):
+        """Set image comments in xcat osimage table"""
+        url = self._xcat_url.tabch('/osimage')
+        image_comments = "xcatconf4z"
+        body = ["imagename=" + image_name,
+                "osimage.comments=" + image_comments]
+
+        try:
+            zvmutils.xcat_request("PUT", url, body)
+        except Exception as err:
+            msg = (_('Fail to set comments for image %(image)s in xCAT '
+                    'with error %(err)s ') % {'image': image_name,
+                                              'err': err})
+            raise exception.ZVMImageError(msg=msg)
