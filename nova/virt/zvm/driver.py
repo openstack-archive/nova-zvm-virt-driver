@@ -273,6 +273,16 @@ class ZVMDriver(driver.ComputeDriver):
                 elif bundle_file_path is not None:
                     self._pathutils.clean_temp_folder(bundle_file_path)
 
+            deploy_image_name = self._zvm_images.get_imgname_xcat(
+                                        instance['image_ref'])
+            # Check if the existing old style images in xCAT set comments or
+            # not, set it if not
+            if 'image_comments' in image_meta['properties']:
+                image_comments = self._zvm_images.get_image_comments(
+                                        deploy_image_name)
+                if not image_comments:
+                    self._zvm_images.set_image_comments(deploy_image_name)
+
             # Create xCAT node and userid for the instance
             zvm_inst.create_xcat_node(zhcp)
             zvm_inst.create_userid(block_device_info, image_meta)
@@ -296,8 +306,6 @@ class ZVMDriver(driver.ComputeDriver):
             # Call nodeset restapi to deploy image on node
             if not boot_from_volume:
                 zvm_inst.update_node_info(image_meta)
-                deploy_image_name = self._zvm_images.get_imgname_xcat(
-                                        instance['image_ref'])
                 zvm_inst.deploy_node(deploy_image_name, transportfiles)
             else:
                 zvmutils.punch_configdrive_file(transportfiles, zvm_inst._name)
