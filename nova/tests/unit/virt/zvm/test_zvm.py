@@ -11,7 +11,6 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
-
 """Test suite for ZVMDriver."""
 
 import os
@@ -4477,9 +4476,15 @@ class ZVMDistManagerTestCases(test.TestCase):
             d = self.dist_manager.get_linux_dist(v)()
             self.assertIsInstance(d, dist.sles12)
 
+    def test_ubuntu16(self):
+        os_versions = ['ubuntu16', 'Ubuntu16.04', 'Ubuntu16.04.5']
+        for v in os_versions:
+            d = self.dist_manager.get_linux_dist(v)()
+            self.assertIsInstance(d, dist.ubuntu16)
+
     def test_invalid(self):
         os_versions = ['', 'sles 11.0', 'sles13.0', 'sles10', 'rhel8',
-                       'rhel 6', 'fake', 'SELS12.0']
+                       'rhel 6', 'fake', 'SELS12.0', 'Ubuntu17']
         for v in os_versions:
             self.assertRaises(exception.ZVMImageError,
                               self.dist_manager.get_linux_dist, v)
