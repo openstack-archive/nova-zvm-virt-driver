@@ -271,7 +271,7 @@ class ZVMImages(object):
         LOG.debug("Downloading image %s from glance image server" %
                   image_id)
         try:
-            images.fetch(context, image_id, target, user, project)
+            images.fetch(context, image_id, target)
         except Exception as err:
             emsg = zvmutils.format_exception_msg(err)
             msg = _("Download image file of image %(id)s failed with reason:"
