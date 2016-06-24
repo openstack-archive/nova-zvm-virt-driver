@@ -1,0 +1,8 @@
+Code-Review+2: Huang Rui <bjhuangr@cn.ibm.com>
+Workflow+1: Huang Rui <bjhuangr@cn.ibm.com>
+Verified+2: Jenkins
+Submitted-by: Jenkins
+Submitted-at: Fri, 24 Jun 2016 08:03:32 +0000
+Reviewed-on: https://review.openstack.org/332628
+Project: openstack/nova-zvm-virt-driver
+Branch: refs/heads/master
