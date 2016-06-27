@@ -249,14 +249,23 @@ Sample ephemeral disk definitions in the z/VM user directory:
 
 Related values:
     zvm_user_root_vdev
-    zvm_default_nic_vdev
+    vm_default_nic_vdev
 """),
     ]
 
 zvm_image_opts = [
     cfg.StrOpt('zvm_image_tmp_path',
                default='/var/lib/nova/images',
-               help='The path to store the z/VM image files'),
+               help="""
+The path at which images will be stored (snapshot, deploy, etc).
+
+The image used to deploy or image captured from instance need to be
+stored in local disk of compute node host. This configuration identifies
+the directory location.
+
+Possible values:
+    A path in host that running compute service.
+"""),
     cfg.StrOpt('zvm_default_ephemeral_mntdir',
                default='/mnt/ephemeral',
                help='The path to which the ephemeral disk be mounted'),
@@ -266,8 +275,16 @@ zvm_image_opts = [
                help='Default os root password for a new created vm'),
     cfg.IntOpt('xcat_image_clean_period',
                default=30,
-               help='The period(days) to clean up an image that not be used '
-                     'for deploy in one xCAT MN within the defined time'),
+               help="""
+Number of days an unused xCAT image will be retained before it is purged.
+
+The period(days) to clean up an image that not be used for deploy in one
+xCAT MN within the defined time.
+
+Possible values:
+    Any positive integer. Recommended value is 30 or higher to keep images
+    in xcat so the deploy don't need to download from openstack every time.
+"""),
     cfg.IntOpt('xcat_free_space_threshold',
                default=50,
                help='The threshold for xCAT free space, if snapshot or spawn '
