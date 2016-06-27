@@ -46,7 +46,6 @@ class ZVMInstance(object):
         """Initialize instance attributes for database."""
         instance = instance or {}
         self._xcat_url = zvmutils.XCATUrl()
-        self._xcat_conn = zvmutils.XCATConnection()
         self._instance = instance
         self._name = instance['name']
         self._volumeop = volumeop.VolumeOperator()
