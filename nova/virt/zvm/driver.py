@@ -57,7 +57,6 @@ LOG = logging.getLogger(__name__)
 CONF = conf.CONF
 CONF.import_opt('host', 'nova.conf')
 CONF.import_opt('my_ip', 'nova.conf')
-CONF.import_opt('default_ephemeral_format', 'nova.virt.driver')
 
 ZVMInstance = zvminstance.ZVMInstance
 
