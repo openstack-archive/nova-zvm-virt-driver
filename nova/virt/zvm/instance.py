@@ -209,7 +209,7 @@ class ZVMInstance(object):
                 exception.ZVMXCATCreateNodeFailed, node=self._name):
             zvmutils.xcat_request("POST", url, body)
 
-    def create_userid(self, block_device_info, image_meta):
+    def create_userid(self, block_device_info, image_meta, os_image=None):
         """Create z/VM userid into user directory for a z/VM instance."""
         # We do not support boot from volume currently
         LOG.debug("Creating the z/VM user entry for instance %s"
@@ -235,6 +235,9 @@ class ZVMInstance(object):
             if image_name:
                 kwimage = 'imagename=%s' % image_name
                 body.append(kwimage)
+
+        if os_image:
+            kwimage = 'osimage=%s' % os_image
 
         url = self._xcat_url.mkvm('/' + self._name)
 
