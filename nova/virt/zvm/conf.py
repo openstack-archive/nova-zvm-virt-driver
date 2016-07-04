@@ -206,7 +206,7 @@ Possible Values:
 
 zvm_user_opts = [
     cfg.StrOpt('zvm_user_profile',
-               default=None,
+               default='osdflt',
                help='User profile for creating a z/VM userid'),
     cfg.StrOpt('zvm_user_default_password',
                default='dfltpass',
