@@ -583,10 +583,12 @@ class ZVMDriverTestCases(ZVMTestCase):
         self.mox.StubOutWithMock(instance.ZVMInstance, 'create_xcat_node')
         self.mox.StubOutWithMock(self.driver, '_preset_instance_network')
         self.mox.StubOutWithMock(self.driver._zvm_images, 'image_exist_xcat')
+        self.mox.StubOutWithMock(self.driver._zvm_images, 'get_imgname_xcat')
+        self.mox.StubOutWithMock(self.driver._zvm_images, 'get_image_comments')
+        self.mox.StubOutWithMock(self.driver._zvm_images, 'set_image_comments')
         self.mox.StubOutWithMock(instance.ZVMInstance, 'create_userid')
         self.mox.StubOutWithMock(instance.ZVMInstance, 'update_node_info')
         self.mox.StubOutWithMock(self.driver._networkop, 'create_nic')
-        self.mox.StubOutWithMock(self.driver._zvm_images, 'get_imgname_xcat')
         self.mox.StubOutWithMock(instance.ZVMInstance, 'deploy_node')
         self.mox.StubOutWithMock(self.driver._pathutils, 'clean_temp_folder')
         self.mox.StubOutWithMock(zvmutils, 'punch_adminpass_file')
@@ -609,14 +611,14 @@ class ZVMDriverTestCases(ZVMTestCase):
 
         self.driver._zvm_images.image_exist_xcat(mox.IgnoreArg()).AndReturn(
                                                                     True)
+        self.driver._zvm_images.get_imgname_xcat(mox.IgnoreArg()).AndReturn(
+                                                                    'fakeimg')
         instance.ZVMInstance.create_xcat_node('fakehcp.fake.com')
         instance.ZVMInstance.create_userid(fake_bdi,
-            image_meta).AndReturn(None)
+            image_meta, 'fakeimg')
         self.driver._preset_instance_network('os000001', network_info)
         self.driver._networkop.create_nic(mox.IgnoreArg(), 'os000001',
             mox.IgnoreArg(), mox.IgnoreArg(), '1000')
-        self.driver._zvm_images.get_imgname_xcat(mox.IgnoreArg()).AndReturn(
-                                                                    'fakeimg')
         instance.ZVMInstance.update_node_info(image_meta)
         instance.ZVMInstance.deploy_node('fakeimg',
                                          '/temp/os000001/configdrive.tgz')

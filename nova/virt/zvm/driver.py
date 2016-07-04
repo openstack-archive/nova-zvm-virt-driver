@@ -259,6 +259,7 @@ class ZVMDriver(driver.ComputeDriver):
         spawn_start = time.time()
 
         try:
+            deploy_image_name = None
             if not boot_from_volume:
                 tmp_file_fn = None
                 bundle_file_path = None
@@ -288,7 +289,8 @@ class ZVMDriver(driver.ComputeDriver):
 
             # Create xCAT node and userid for the instance
             zvm_inst.create_xcat_node(zhcp)
-            zvm_inst.create_userid(block_device_info, image_meta)
+            zvm_inst.create_userid(block_device_info, image_meta,
+                                   deploy_image_name)
 
             # Setup network for z/VM instance
             self._preset_instance_network(zvm_inst._name, network_info)
