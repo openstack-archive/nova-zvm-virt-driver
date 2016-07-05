@@ -201,7 +201,9 @@ Possible Values:
 """),
     cfg.IntOpt('zvm_console_log_size',
                default=100,
-               help='Max console log size(kilobyte) get from xCAT'),
+               help="""
+Max console log size(kilobyte) get from xCAT
+"""),
     ]
 
 zvm_user_opts = [
