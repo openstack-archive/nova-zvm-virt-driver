@@ -404,6 +404,7 @@ class ZVMInstance(object):
             zvmutils.xcat_request("DELETE", url)
         except exception.ZVMXCATInternalError as err:
             emsg = err.format_message()
+            LOG.debug("error emsg in delete_userid: %s", emsg)
             if (emsg.__contains__("Return Code: 400") and
                     emsg.__contains__("Reason Code: 4")):
                 # zVM user definition not found, delete xCAT node directly
@@ -415,6 +416,8 @@ class ZVMInstance(object):
                 self._wait_for_unlock(zhcp_node)
                 zvmutils.xcat_request("DELETE", url)
             else:
+                LOG.debug("exception not able to handle in delete_userid "
+                          "%s", self._name)
                 raise err
         except exception.ZVMXCATRequestFailed as err:
             emsg = err.format_message()
