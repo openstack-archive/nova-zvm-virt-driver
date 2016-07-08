@@ -45,10 +45,10 @@ CONF.import_opt('instances_path', 'nova.compute.manager')
 
 
 class XCATUrl(object):
-    """To return xCAT url for invoking xCAT REST API."""
+    """To return xCAT URL for invoking xCAT REST API."""
 
     def __init__(self):
-        """Set constant that used to form xCAT url."""
+        """Set constant that used to form xCAT URL."""
         self.PREFIX = '/xcatws'
         self.SUFFIX = ('?userName=' + CONF.zvm_xcat_username +
                       '&password=' + CONF.zvm_xcat_password +
@@ -198,7 +198,7 @@ class HTTPSClientAuthConnection(httplib.HTTPSConnection):
         self.use_ca = True
 
         if self.ca_file is None:
-            LOG.debug("no xcat ca file specified, this is considered "
+            LOG.debug("no xCAT ca file specified, this is considered "
                       "not secure")
             self.use_ca = False
 
