@@ -45,10 +45,10 @@ CONF.import_opt('instances_path', 'nova.compute.manager')
 
 
 class XCATUrl(object):
-    """To return xCAT URL for invoking xCAT REST API."""
+    """To return xCAT URLs for invoking xCAT REST APIs."""
 
     def __init__(self):
-        """Set constant that used to form xCAT URL."""
+        """Set constants used to form xCAT URLs."""
         self.PREFIX = '/xcatws'
         self.SUFFIX = ('?userName=' + CONF.zvm_xcat_username +
                       '&password=' + CONF.zvm_xcat_password +
