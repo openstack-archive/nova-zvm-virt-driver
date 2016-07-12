@@ -615,7 +615,7 @@ class ZVMDriverTestCases(ZVMTestCase):
                                                                     'fakeimg')
         instance.ZVMInstance.create_xcat_node('fakehcp.fake.com')
         instance.ZVMInstance.create_userid(fake_bdi,
-            image_meta, 'fakeimg')
+            image_meta, {}, 'fakeimg')
         self.driver._preset_instance_network('os000001', network_info)
         self.driver._networkop.create_nic(mox.IgnoreArg(), 'os000001',
             mox.IgnoreArg(), mox.IgnoreArg(), '1000')
@@ -1244,7 +1244,7 @@ class ZVMDriverTestCases(ZVMTestCase):
         instance.ZVMInstance.copy_xcat_node(farg)
         instance.ZVMInstance.update_node_def(farg, farg)
         self.driver._preset_instance_network('os000001', farg)
-        instance.ZVMInstance.create_userid(farg, farg)
+        instance.ZVMInstance.create_userid(farg, farg, {})
         self.driver._add_nic_to_instance('os000001', farg, farg)
         self.driver._deploy_root_and_ephemeral(farg, farg)
         self.driver._zvm_images.delete_image_from_xcat(farg)
@@ -1300,7 +1300,7 @@ class ZVMDriverTestCases(ZVMTestCase):
         instance.ZVMInstance.copy_xcat_node(farg)
         instance.ZVMInstance.update_node_def(farg, farg)
         self.driver._preset_instance_network('os000001', farg)
-        instance.ZVMInstance.create_userid(farg, farg)
+        instance.ZVMInstance.create_userid(farg, farg, {})
         self.driver._add_nic_to_instance('os000001', farg, farg)
         self.driver._deploy_root_and_ephemeral(farg, farg)
         self.driver._zvm_images.delete_image_from_xcat(farg)
@@ -1359,7 +1359,7 @@ class ZVMDriverTestCases(ZVMTestCase):
         instance.ZVMInstance.copy_xcat_node(farg)
         instance.ZVMInstance.update_node_def(farg, farg)
         self.driver._preset_instance_network('os000001', farg)
-        instance.ZVMInstance.create_userid(farg, farg)
+        instance.ZVMInstance.create_userid(farg, farg, {})
         zvmutils.process_eph_disk('os000001')
         self.driver._add_nic_to_instance('os000001', farg, farg)
         self.driver._deploy_root_and_ephemeral(farg, farg)
@@ -1421,7 +1421,7 @@ class ZVMDriverTestCases(ZVMTestCase):
         instance.ZVMInstance.copy_xcat_node(farg)
         instance.ZVMInstance.update_node_def(farg, farg)
         self.driver._preset_instance_network('os000001', farg)
-        instance.ZVMInstance.create_userid(farg, farg)
+        instance.ZVMInstance.create_userid(farg, farg, {})
         self.driver._add_nic_to_instance('os000001', farg, farg)
         self.driver._deploy_root_and_ephemeral(farg, farg).AndRaise(
             exception.ZVMXCATDeployNodeFailed({'node': 'fn', 'msg': 'e'}))
@@ -1483,7 +1483,7 @@ class ZVMDriverTestCases(ZVMTestCase):
         self.driver._zvm_images.put_image_to_xcat(farg, farg)
         self.driver._zvm_images.clean_up_snapshot_time_path(farg)
         self.driver._preset_instance_network('os000001', farg)
-        instance.ZVMInstance.create_userid(farg, farg)
+        instance.ZVMInstance.create_userid(farg, farg, {})
         self.driver._add_nic_to_instance('os000001', farg, farg)
         self.driver._deploy_root_and_ephemeral(farg, farg)
         self.driver._zvm_images.delete_image_from_xcat(farg)
@@ -1751,7 +1751,7 @@ class ZVMInstanceTestCases(ZVMTestCase):
         self._set_fake_xcat_responses([self._generate_xcat_resp(info)])
         self.stubs.Set(self._instance, '_set_ipl', lambda *args: None)
         self.stubs.Set(self._instance, 'add_mdisk', lambda *args: None)
-        self._instance.create_userid({}, image_meta)
+        self._instance.create_userid({}, image_meta, {})
 
     def test_create_userid_different_image_dict(self):
         """Test Create userid with image dictionary that is different
@@ -1770,7 +1770,7 @@ class ZVMInstanceTestCases(ZVMTestCase):
         self._set_fake_xcat_responses([self._generate_xcat_resp(info)])
         self.stubs.Set(self._instance, '_set_ipl', lambda *args: None)
         self.stubs.Set(self._instance, 'add_mdisk', lambda *args: None)
-        self._instance.create_userid({}, image_meta)
+        self._instance.create_userid({}, image_meta, {})
 
     def test_create_userid_has_ephemeral(self):
         """Create userid with epheral disk added."""
@@ -1790,7 +1790,7 @@ class ZVMInstanceTestCases(ZVMTestCase):
                                        self._generate_xcat_resp(am_info),
                                        self._generate_xcat_resp(am_info)])
         self.stubs.Set(self._instance, '_set_ipl', lambda *args: None)
-        self._instance.create_userid({}, image_meta)
+        self._instance.create_userid({}, image_meta, {})
         self.mox.VerifyAll()
 
     def test_create_userid_with_eph_opts(self):
@@ -1826,7 +1826,7 @@ class ZVMInstanceTestCases(ZVMTestCase):
         self._instance.add_mdisk('fakedp', '0103', '1g', 'ext3')
         self.mox.ReplayAll()
 
-        self._instance.create_userid(fake_bdi, image_meta)
+        self._instance.create_userid(fake_bdi, image_meta, {})
         self.mox.VerifyAll()
 
     def test_create_userid_with_eph_opts_resize(self):
@@ -1863,7 +1863,7 @@ class ZVMInstanceTestCases(ZVMTestCase):
         self._instance.add_mdisk('fakedp', '0103', '100000', 'ext3')
         self.mox.ReplayAll()
 
-        self._instance.create_userid(fake_bdi, image_meta)
+        self._instance.create_userid(fake_bdi, image_meta, {})
         self.mox.VerifyAll()
 
     def test_update_node_info(self):
@@ -1903,7 +1903,7 @@ class ZVMInstanceTestCases(ZVMTestCase):
         zvmutils.xcat_request("DELETE", mox.IgnoreArg())
         self.mox.ReplayAll()
 
-        self._instance.delete_userid('fakehcp')
+        self._instance.delete_userid('fakehcp', {})
         self.mox.VerifyAll()
 
     def test_delete_userid_400012(self):
@@ -1917,7 +1917,7 @@ class ZVMInstanceTestCases(ZVMTestCase):
         zvmutils.xcat_request("DELETE", mox.IgnoreArg())
         self.mox.ReplayAll()
 
-        self._instance.delete_userid('fakehcp')
+        self._instance.delete_userid('fakehcp', {})
         self.mox.VerifyAll()
 
     def test_is_locked_true(self):
