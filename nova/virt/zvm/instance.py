@@ -209,7 +209,7 @@ class ZVMInstance(object):
                 exception.ZVMXCATCreateNodeFailed, node=self._name):
             zvmutils.xcat_request("POST", url, body)
 
-    def create_userid(self, block_device_info, image_meta, os_image=None):
+    def create_userid(self, block_device_info, image_meta, context, os_image=None):
         """Create z/VM userid into user directory for a z/VM instance."""
         # We do not support boot from volume currently
         LOG.debug("Creating the z/VM user entry for instance %s"
@@ -240,7 +240,7 @@ class ZVMInstance(object):
             kwimage = 'osimage=%s' % os_image
             body.append(kwimage)
 
-        url = self._xcat_url.mkvm('/' + self._name)
+        url = self._xcat_url.mkvm('/' + self._name, self._instance.uuid, context) 
 
         try:
             zvmutils.xcat_request("POST", url, body)
@@ -394,11 +394,11 @@ class ZVMInstance(object):
                                                      expiration)
         timer.start(interval=interval).wait()
 
-    def delete_userid(self, zhcp_node):
+    def delete_userid(self, zhcp_node, context): 
         """Delete z/VM userid for the instance.This will remove xCAT node
         at same time.
         """
-        url = self._xcat_url.rmvm('/' + self._name)
+        url = self._xcat_url.rmvm('/' + self._name, self._instance.uuid, context) 
 
         try:
             zvmutils.xcat_request("DELETE", url)
