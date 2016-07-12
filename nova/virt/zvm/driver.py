@@ -289,7 +289,7 @@ class ZVMDriver(driver.ComputeDriver):
 
             # Create xCAT node and userid for the instance
             zvm_inst.create_xcat_node(zhcp)
-            zvm_inst.create_userid(block_device_info, image_meta,
+            zvm_inst.create_userid(block_device_info, image_meta, context,
                                    deploy_image_name)
 
             # Setup network for z/VM instance
@@ -567,7 +567,7 @@ class ZVMDriver(driver.ComputeDriver):
                                  "destroying z/VM instance %s") % inst_name,
                              instance=instance)
 
-            zvm_inst.delete_userid(self._get_hcp_info()['nodename'])
+            zvm_inst.delete_userid(self._get_hcp_info()['nodename'],context)  
         else:
             LOG.warn(_LW('Instance %s does not exist') % inst_name,
                      instance=instance)
