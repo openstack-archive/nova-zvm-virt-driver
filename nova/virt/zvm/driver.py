@@ -289,7 +289,7 @@ class ZVMDriver(driver.ComputeDriver):
 
             # Create xCAT node and userid for the instance
             zvm_inst.create_xcat_node(zhcp)
-            zvm_inst.create_userid(block_device_info, image_meta,
+            zvm_inst.create_userid(block_device_info, image_meta, context,
                                    deploy_image_name)
 
             # Setup network for z/VM instance
@@ -567,7 +567,7 @@ class ZVMDriver(driver.ComputeDriver):
                                  "destroying z/VM instance %s") % inst_name,
                              instance=instance)
 
-            zvm_inst.delete_userid(self._get_hcp_info()['nodename'])
+            zvm_inst.delete_userid(self._get_hcp_info()['nodename'], context)
         else:
             LOG.warn(_LW('Instance %s does not exist') % inst_name,
                      instance=instance)
@@ -1602,7 +1602,7 @@ class ZVMDriver(driver.ComputeDriver):
         try:
             # Pre-config network and create zvm userid
             self._preset_instance_network(new_inst._name, network_info)
-            new_inst.create_userid(block_device_info, image_meta)
+            new_inst.create_userid(block_device_info, image_meta, context)
 
             if disk_eph_size_old == 0 and disk_eph_size_new > 0:
                 # Punch ephemeral disk info to the new instance
@@ -1624,7 +1624,8 @@ class ZVMDriver(driver.ComputeDriver):
                         emsg = zvmutils.format_exception_msg(e)
                         LOG.debug('clean_mac_switch_host error: %s' % emsg)
 
-                new_inst.delete_userid(self._get_hcp_info()['nodename'])
+                new_inst.delete_userid(self._get_hcp_info()['nodename'],
+                                       context)
                 new_inst.delete_xcat_node()
 
                 if same_xcat_mn:
