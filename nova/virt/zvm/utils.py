@@ -45,10 +45,10 @@ CONF.import_opt('instances_path', 'nova.compute.manager')
 
 
 class XCATUrl(object):
-    """To return xCAT url for invoking xCAT REST API."""
+    """To return xCAT URLs for invoking xCAT REST APIs."""
 
     def __init__(self):
-        """Set constant that used to form xCAT url."""
+        """Set constants used to form xCAT URLs."""
         self.PREFIX = '/xcatws'
         self.SUFFIX = ('?userName=' + CONF.zvm_xcat_username +
                       '&password=' + CONF.zvm_xcat_password +
@@ -73,12 +73,27 @@ class XCATUrl(object):
         self.BOOTSTAT = '/bootstate'
         self.XDSH = '/dsh'
         self.VERSION = '/version'
+        self.PCONTEXT = '&requestid='
+        self.PUUID = '&objectid='
 
     def _nodes(self, arg=''):
         return self.PREFIX + self.NODES + arg + self.SUFFIX
 
-    def _vms(self, arg=''):
-        return self.PREFIX + self.VMS + arg + self.SUFFIX
+    def _vms(self, arg='', vmuuid='', context=None):
+        rurl = self.PREFIX + self.VMS + arg + self.SUFFIX
+        rurl = self._append_context(rurl, context)
+        rurl = self._append_instanceid(rurl,vmuuid)
+        return rurl 
+
+    def _append_context(self, rurl, context=None):
+        if context is not None:
+            rurl = rurl + self.PCONTEXT + context.request_id
+        return rurl
+
+    def _append_instanceid(self, rurl, vmuuid):
+        if vmuuid :
+            rurl = rurl + self.PUUID + vmuuid
+        return rurl
 
     def _hv(self, arg=''):
         return self.PREFIX + self.HV + arg + self.SUFFIX
@@ -111,11 +126,13 @@ class XCATUrl(object):
     def chhv(self, arg=''):
         return self._hv(arg)
 
-    def mkvm(self, arg=''):
-        return self._vms(arg)
+    def mkvm(self, arg='', vmuuid='', context=None):
+        rurl = self._vms(arg, vmuuid, context)
+        return rurl
 
-    def rmvm(self, arg=''):
-        return self._vms(arg)
+    def rmvm(self, arg='', vmuuid='', context=None):
+        rurl = self._vms(arg, vmuuid, context)
+        return rurl
 
     def tabdump(self, arg='', addp=None):
         rurl = self.PREFIX + self.TABLES + arg + self.SUFFIX
