@@ -369,7 +369,7 @@ class ZVMInstance(object):
         zvmutils.xcat_request("PUT", url, body)
 
     def is_locked(self, zhcp_node):
-        cmd = "smcli Image_Lock_Query_DM -T %s" % self._name
+        cmd = "/opt/zhcp/bin/smcli Image_Lock_Query_DM -T %s" % self._name
         resp = zvmutils.xdsh(zhcp_node, cmd)
 
         return "is Unlocked..." not in str(resp)
