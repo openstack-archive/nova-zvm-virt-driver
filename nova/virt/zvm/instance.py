@@ -398,6 +398,19 @@ class ZVMInstance(object):
                                                      expiration)
         timer.start(interval=interval).wait()
 
+    def _delete_userid(self, url):
+        try:
+            zvmutils.xcat_request("DELETE", url)
+        except exception.ZVMXCATInternalError as err:
+            emsg = err.format_message()
+            LOG.debug("error emsg in delete_userid: %s", emsg)
+            if (emsg.__contains__("Return Code: 400") and
+                    emsg.__contains__("Reason Code: 4")):
+                # zVM user definition not found, delete xCAT node directly
+                self.delete_xcat_node()
+            else:
+                raise
+
     def delete_userid(self, zhcp_node, context):
         """Delete z/VM userid for the instance.This will remove xCAT node
         at same time.
@@ -408,20 +421,15 @@ class ZVMInstance(object):
                                   context)
 
         try:
-            zvmutils.xcat_request("DELETE", url)
+            self._delete_userid(url)
         except exception.ZVMXCATInternalError as err:
             emsg = err.format_message()
-            LOG.debug("error emsg in delete_userid: %s", emsg)
             if (emsg.__contains__("Return Code: 400") and
-                    emsg.__contains__("Reason Code: 4")):
-                # zVM user definition not found, delete xCAT node directly
-                self.delete_xcat_node()
-            elif (emsg.__contains__("Return Code: 400") and
-                    (emsg.__contains__("Reason Code: 16") or
-                     emsg.__contains__("Reason Code: 12"))):
+               (emsg.__contains__("Reason Code: 16") or
+                emsg.__contains__("Reason Code: 12"))):
                 # The vm or vm device was locked. Unlock before deleting
                 self._wait_for_unlock(zhcp_node)
-                zvmutils.xcat_request("DELETE", url)
+                self._delete_userid(url)
             else:
                 LOG.debug("exception not able to handle in delete_userid "
                           "%s", self._name)

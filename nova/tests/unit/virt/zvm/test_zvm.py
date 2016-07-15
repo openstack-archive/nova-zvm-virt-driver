@@ -1891,7 +1891,7 @@ class ZVMInstanceTestCases(ZVMTestCase):
         self.assertRaises(exception.ZVMXCATDeployNodeFailed,
                           self._instance.deploy_node, 'fakeimg', '/fake/file')
 
-    def test_delete_userid(self):
+    def test_delete_userid_is_locked(self):
         resp = {'error': [['Return Code: 400\nReason Code: 16\n']]}
 
         self.mox.StubOutWithMock(zvmutils, 'xcat_request')
@@ -1900,6 +1900,25 @@ class ZVMInstanceTestCases(ZVMTestCase):
             exception.ZVMXCATInternalError(msg=str(resp)))
         self._instance._wait_for_unlock('fakehcp')
         zvmutils.xcat_request("DELETE", mox.IgnoreArg())
+        self.mox.ReplayAll()
+
+        self._instance.delete_userid('fakehcp', {})
+        self.mox.VerifyAll()
+
+    def test_delete_userid_is_locked_and_notexist(self):
+        resp = {'error': [['Return Code: 400\nReason Code: 16\n']]}
+
+        self.mox.StubOutWithMock(self._instance, 'delete_xcat_node')
+        self.mox.StubOutWithMock(zvmutils, 'xcat_request')
+        self.mox.StubOutWithMock(self._instance, '_wait_for_unlock')
+        zvmutils.xcat_request("DELETE", mox.IgnoreArg()).AndRaise(
+            exception.ZVMXCATInternalError(msg=str(resp)))
+        self._instance._wait_for_unlock('fakehcp')
+
+        resp = {'error': [['Return Code: 400\nReason Code: 4\n']]}
+        zvmutils.xcat_request("DELETE", mox.IgnoreArg()).AndRaise(
+            exception.ZVMXCATInternalError(msg=str(resp)))
+        self._instance.delete_xcat_node()
         self.mox.ReplayAll()
 
         self._instance.delete_userid('fakehcp', {})
