@@ -131,7 +131,6 @@ class ZVMTestCase(test.TestCase):
                    instance_name_template='os%06x',
                    zvm_xcat_master='fakemn',
                    zvm_scsi_pool='fakesp',
-                   network_api_class='nova.network.neutronv2.api.API',
                    zvm_image_default_password='pass',
                    zvm_fcp_list="1FB0-1FB3",
                    zvm_zhcp_fcp_list="1FAF",
