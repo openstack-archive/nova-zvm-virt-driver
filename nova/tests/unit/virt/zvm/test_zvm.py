@@ -1942,8 +1942,8 @@ class ZVMInstanceTestCases(ZVMTestCase):
         resp = {'data': [['os000001: os000001 is locked']]}
 
         self.mox.StubOutWithMock(zvmutils, 'xdsh')
-        zvmutils.xdsh('fakehcp',
-                    "smcli Image_Lock_Query_DM -T os000001").AndReturn(resp)
+        execstr = "/opt/zhcp/bin/smcli Image_Lock_Query_DM -T os000001"
+        zvmutils.xdsh('fakehcp', execstr).AndReturn(resp)
         self.mox.ReplayAll()
 
         locked = self._instance.is_locked('fakehcp')
@@ -1955,8 +1955,8 @@ class ZVMInstanceTestCases(ZVMTestCase):
         resp = {'data': [['os000001: os000001 is Unlocked...']]}
 
         self.mox.StubOutWithMock(zvmutils, 'xdsh')
-        zvmutils.xdsh('fakehcp',
-                    "smcli Image_Lock_Query_DM -T os000001").AndReturn(resp)
+        execstr = "/opt/zhcp/bin/smcli Image_Lock_Query_DM -T os000001"
+        zvmutils.xdsh('fakehcp', execstr).AndReturn(resp)
         self.mox.ReplayAll()
 
         locked = self._instance.is_locked('fakehcp')
