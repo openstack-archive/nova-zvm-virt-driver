@@ -106,15 +106,15 @@ Possible values:
     cfg.StrOpt('zvm_host',
                default=None,
                help="""
-Z/VM host that managed by xCAT MN.
+z/VM host that managed by the compute node.
 
-This variable identify the hypervisor name that managed by the compute
-service running on. It is required to be same to the system name of the
-z/VM in the z/VM system configuration file.
+This is the name of the hypervisor that is managed by the compute service.
+Admin need to set set this name by refering to the z/VM system configuration
+file.
 
 Possible values:
-    A string, which is the system name of the z/VM that this compute
-    service managing.
+    A 1-8 character string, matching the z/VM system name this
+    compute service is managing.
 """),
     cfg.StrOpt('zvm_xcat_group',
                default='all',
@@ -202,7 +202,14 @@ Possible Values:
     cfg.IntOpt('zvm_console_log_size',
                default=100,
                help="""
-Max console log size(kilobyte) get from xCAT
+The maximum console log size, in kilobytes, allowed.
+
+Console logs must be transferred to OpenStack from z/VM side,
+so this controls how large each transferred console can be.
+
+Possible values:
+    Any positive integer, recommended to be at least 100 KB to
+    avoid unnecessary calls between z/VM and OpenStack.
 """),
     ]
 
@@ -311,12 +318,13 @@ Possible values:
                help="""
 Number of days an unused xCAT image will be retained before it is purged.
 
-The period(days) to clean up an image that not be used for deploy in one
-xCAT MN within the defined time.
+Copies of Glance images are kept in the xCAT MN to make deploys faster.
+Unused images are purged to reclaim disk space. If an image has been purged
+from xCAT, the next deploy will take slightly longer as it must be copied
+from OpenStack into xCAT.
 
 Possible values:
-    Any positive integer. Recommended value is 30 or higher to keep images
-    in xcat so the deploy don't need to download from openstack every time.
+    Any positive integer, recommended to be at least 30 (1 month).
 """),
     cfg.IntOpt('xcat_free_space_threshold',
                default=50,
@@ -328,14 +336,16 @@ Possible values:
                help="""
 The level of gzip compression used when capturing disk.
 
-The snapshot image usually will consume disk space on xCAT MN host and
-compute host, in order to save disk space the image can be compressed.
-zvm driver use gzip to compress the image and gzip provided a set of compress
-zip level. For more information, please refer to zip level of gzip command.
+A snapshotted image will consume disk space on xCAT MN host and the OpenStack
+compute host. To save disk space the image should be compressed.
+The zvm driver uses gzip to compress the image. gzip has a set of different
+levels depending on the speed and quality of compression.
+For more information, please refer to the -N option of the gzip command.
 
 Possible values:
-    An integer between 0 and 9, set to 0 means no zip and set to None will
-    make zvm driver pick '6' which is default compress level of gzip.
+    An integer between 0 and 9, where 0 is no compression and 9 is the best,
+    but slowest compression. A value of "None" will result in the default
+    compression level, which is currently '6' for gzip.
 """),
     ]
 
