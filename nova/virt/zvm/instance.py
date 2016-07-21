@@ -714,7 +714,7 @@ class ZVMInstance(object):
 
     def get_console_log(self, logsize):
         """get console log."""
-        url = self._xcat_url.rinv('/' + self._name, '&field=console'
+        url = self._xcat_url.rinv('/' + self._name, '&field=--console-output'
                                   '&field=%s') % logsize
 
         res_info = zvmutils.xcat_request("GET", url)
