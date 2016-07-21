@@ -90,7 +90,7 @@ class ZVMDriver(driver.ComputeDriver):
                 msg = _LW("Failed to get host stats while initializing zVM "
                           "driver due to reason %(reason)s, will re-try in "
                           "%(slp)d seconds")
-                LOG.warn(msg, {'reason': six.text_type(e),
+                LOG.warning(msg, {'reason': six.text_type(e),
                                'slp': _slp})
                 time.sleep(_slp)
 
@@ -111,8 +111,8 @@ class ZVMDriver(driver.ComputeDriver):
             self._volumeop.init_host(self._host_stats)
         except Exception as e:
             emsg = zvmutils.format_exception_msg(e)
-            LOG.warn(_LW("Exception raised while initializing z/VM driver: %s")
-                     % emsg)
+            LOG.warning(_LW("Exception raised while initializing z/VM driver: "
+                            "%s") % emsg)
 
     def get_info(self, instance):
         """Get the current status of an instance, by name (not ID!)
@@ -134,7 +134,7 @@ class ZVMDriver(driver.ComputeDriver):
             emsg = err.format_message()
             if (emsg.__contains__("Invalid nodes and/or groups") and
                     emsg.__contains__("Forbidden")):
-                LOG.warn(_LW("z/VM instance %s does not exist") % inst_name,
+                LOG.warning(_LW("z/VM instance %s does not exist") % inst_name,
                          instance=instance)
                 raise nova_exception.InstanceNotFound(instance_id=inst_name)
             else:
@@ -555,7 +555,7 @@ class ZVMDriver(driver.ComputeDriver):
                     zvm_inst.clean_volume_boot(context, instance, bdm,
                                                root_mount_device)
             except exception.ZVMBaseException as err:
-                LOG.warn(_LW("Failed to detach volume: %s") %
+                LOG.warning(_LW("Failed to detach volume: %s") %
                          err.format_message(), instance=instance)
 
             if network_info:
@@ -563,13 +563,13 @@ class ZVMDriver(driver.ComputeDriver):
                     for vif in network_info:
                         self._networkop.clean_mac_switch_host(inst_name)
                 except exception.ZVMNetworkError:
-                    LOG.warn(_LW("Clean MAC and VSWITCH failed while "
+                    LOG.warning(_LW("Clean MAC and VSWITCH failed while "
                                  "destroying z/VM instance %s") % inst_name,
                              instance=instance)
 
             zvm_inst.delete_userid(self._get_hcp_info()['nodename'], context)
         else:
-            LOG.warn(_LW('Instance %s does not exist') % inst_name,
+            LOG.warning(_LW('Instance %s does not exist') % inst_name,
                      instance=instance)
 
     def manage_image_cache(self, context, filtered_instances):
@@ -678,8 +678,8 @@ class ZVMDriver(driver.ComputeDriver):
             try:
                 self.power_on({}, instance, [])
             except nova_exception.InstancePowerOnFailure as err:
-                LOG.warn(_LW("Power On instance %(inst)s fail after capture, "
-                    "please check manually. The error is: %(err)s") %
+                LOG.warning(_LW("Power On instance %(inst)s fail after "
+                    "capture, please check manually. The error is: %(err)s") %
                     {'inst': instance['name'], 'err': err.format_message()},
                     instance=instance)
         if state == power_state.PAUSED:
@@ -688,7 +688,7 @@ class ZVMDriver(driver.ComputeDriver):
             except (exception.ZVMXCATRequestFailed,
                     exception.ZVMInvalidXCATResponseDataError,
                     exception.ZVMXCATInternalError) as err:
-                LOG.warn(_LW("Pause instance %(inst)s fail after capture, "
+                LOG.warning(_LW("Pause instance %(inst)s fail after capture, "
                     "please check manually. The error is: %(err)s") %
                     {'inst': instance['name'], 'err': err.format_message()},
                     instance=instance)
@@ -1444,7 +1444,7 @@ class ZVMDriver(driver.ComputeDriver):
                                            instance, mountpoint, is_active,
                                            rollback=False)
                 except exception.ZVMVolumeError:
-                    LOG.warn(_LW("Failed to detach volume from %s") %
+                    LOG.warning(_LW("Failed to detach volume from %s") %
                              instance['name'], instance=instance)
 
     def _capture_disk_for_instance(self, context, instance):
@@ -1638,7 +1638,7 @@ class ZVMDriver(driver.ComputeDriver):
 
                     if not self._is_nic_granted(new_inst._name):
                         msg = _LW("Failed to bind vswitch")
-                        LOG.warn(msg, instance=instance)
+                        LOG.warning(msg, instance=instance)
                     else:
                         if power_on:
                             new_inst.power_on()
@@ -1821,7 +1821,7 @@ class ZVMDriver(driver.ComputeDriver):
             """Wait until NIC is uncoupled from vswitch."""
             if (CONF.zvm_reachable_timeout and
                     timeutils.utcnow() > expiration):
-                LOG.warn(_LW("NIC update check failed."))
+                LOG.warning(_LW("NIC update check failed."))
                 raise loopingcall.LoopingCallDone()
 
             is_granted = True

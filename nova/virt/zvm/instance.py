@@ -60,7 +60,7 @@ class ZVMInstance(object):
             if ("Return Code: 200" in err_str and
                     "Reason Code: 12" in err_str):
                 # Instance already not active
-                LOG.warn(_LW("z/VM instance %s not active") % self._name)
+                LOG.warning(_LW("z/VM instance %s not active") % self._name)
                 return
             else:
                 msg = _("Failed to power off instance: %s") % err_str
@@ -78,7 +78,7 @@ class ZVMInstance(object):
                 time.sleep(retry_interval)
                 retry_count -= 1
 
-        LOG.warn(_LW("Failed to shutdown instance %(inst)s in %(time)d "
+        LOG.warning(_LW("Failed to shutdown instance %(inst)s in %(time)d "
                      "seconds") % {'inst': self._name, 'time': timeout})
 
     def power_on(self):
@@ -90,7 +90,8 @@ class ZVMInstance(object):
             if ("Return Code: 200" in err_str and
                     "Reason Code: 8" in err_str):
                 # Instance already not active
-                LOG.warn(_LW("z/VM instance %s already active") % self._name)
+                LOG.warning(_LW("z/VM instance %s already active")
+                            % self._name)
                 return
 
         self._wait_for_reachable()
@@ -108,7 +109,7 @@ class ZVMInstance(object):
             if ("Return Code: 200" in err_str and
                     "Reason Code: 12" in err_str):
                 # Be able to reset in power state of SHUTDOWN
-                LOG.warn(_LW("Reset z/VM instance %s from SHUTDOWN state") %
+                LOG.warning(_LW("Reset z/VM instance %s from SHUTDOWN state") %
                          self._name)
                 return
             else:
@@ -166,7 +167,7 @@ class ZVMInstance(object):
                 _instance_info.cpu_time_ns = cpu_time
 
             except exception.ZVMInvalidXCATResponseDataError:
-                LOG.warn(_LW("Failed to get inventory info for %s")
+                LOG.warning(_LW("Failed to get inventory info for %s")
                     % self._name)
                 _instance_info.state = power_stat
                 _instance_info.max_mem_kb = max_mem_kb
@@ -338,7 +339,7 @@ class ZVMInstance(object):
             emsg = err.format_message()
             msg = _LW("Failed to clean boot from volume "
                       "preparations: %s") % emsg
-            LOG.warn(msg)
+            LOG.warning(msg)
             raise exception.ZVMVolumeError(msg=msg)
 
     def _forge_hex_scpdata(self, fcp, wwpn, lun, volume_meta):
