@@ -1587,8 +1587,8 @@ class ZVMDriverTestCases(ZVMTestCase):
         self.mox.VerifyAll()
         self.assertEqual('fakenode: 00: zIPL boot menu', console_log)
 
-    def test_create_config_drive_non_tgz(self):
-        self.flags(config_drive_format='dummy')
+    def test_create_config_drive_non_iso9660(self):
+        self.flags(config_drive_format='vfat')
         linuxdist = dist.ListDistManager().get_linux_dist('rhel6')
         self.assertRaises(exception.ZVMConfigDriveError,
             self.driver._create_config_drive, '', self.instance, '', '', '',
