@@ -611,8 +611,11 @@ def xdsh(node, commands):
     return res_dict
 
 
-def punch_file(node, fn, fclass):
-    body = [" ".join(['--punchfile', fn, fclass, get_host()])]
+def punch_file(node, fn, fclass, remote_host=None):
+    if remote_host:
+        body = [" ".join(['--punchfile', fn, fclass, remote_host])]
+    else:
+        body = [" ".join(['--punchfile', fn, fclass])]
     url = XCATUrl().chvm('/' + node)
 
     try:
@@ -623,14 +626,15 @@ def punch_file(node, fn, fclass):
             LOG.error(_('Punch file to %(node)s failed: %(msg)s') %
                       {'node': node, 'msg': emsg})
     finally:
-        os.remove(fn)
+        if remote_host:
+            os.remove(fn)
 
 
 def punch_adminpass_file(instance_path, instance_name, admin_password,
                          linuxdist):
     adminpass_fn = ''.join([instance_path, '/adminpwd.sh'])
     _generate_adminpass_file(adminpass_fn, admin_password, linuxdist)
-    punch_file(instance_name, adminpass_fn, 'X')
+    punch_file(instance_name, adminpass_fn, 'X', get_host())
 
 
 def punch_xcat_auth_file(instance_path, instance_name):
@@ -638,7 +642,42 @@ def punch_xcat_auth_file(instance_path, instance_name):
     mn_pub_key = get_mn_pub_key()
     auth_fn = ''.join([instance_path, '/xcatauth.sh'])
     _generate_auth_file(auth_fn, mn_pub_key)
-    punch_file(instance_name, auth_fn, 'X')
+    punch_file(instance_name, auth_fn, 'X', get_host())
+
+
+def _generate_iucv_cmd_file(iucv_cmd_file_path, cmd):
+    lines = ['#!/bin/bash\n', cmd]
+    with open(iucv_cmd_file_path, 'w') as f:
+        f.writelines(lines)
+
+
+def punch_iucv_file(zhcp, xcat_iucv_path, instance_name):
+    """put iucvserver and iucvserverd files to reader."""
+    iucv_fn = ''.join([xcat_iucv_path, '/iucvserver'])
+    punch_file(instance_name, iucv_fn, 'X')
+    iucv_fn = ''.join([xcat_iucv_path, '/iucvserverd'])
+    punch_file(instance_name, iucv_fn, 'X')
+    iucv_cmd_file_path = '/tmp/iucv_cmd_file_path.sh'
+    cmd = '\n'.join((
+        "spoolid=`vmur li | awk '/iucvserver/{print \$2}'|tail -1",
+        "vmur re -f $spoolid /usr/bin/iucvserver",
+        "spoolid=`vmur li | awk '/iucvserverd/{print \$2}'|tail -1`",
+        "vmur re -f $spoolid /etc/init.d/iucvserverd",
+        "echo %s >/tmp/authorized_userid 2>&1" % zhcp,
+        "chconfig --add iucvserverd",
+        "service iucvserverd start"
+        ))
+    _generate_iucv_cmd_file(iucv_cmd_file_path, cmd)
+    punch_file(instance_name, iucv_cmd_file_path, 'X', get_host())
+
+
+def punch_iucv_authorized_file(instance_name, zhcp):
+    cmd = '\n'.join((
+        "echo %s >/tmp/authorized_userid 2>&1" % zhcp
+        ))
+    iucv_cmd_file_path = '/tmp/iucv_cmd_file_path.sh'
+    _generate_iucv_cmd_file(iucv_cmd_file_path, cmd)
+    punch_file(instance_name, iucv_cmd_file_path, 'X', get_host())
 
 
 def process_eph_disk(instance_name, vdev=None, fmt=None, mntdir=None):
@@ -666,13 +705,13 @@ def aemod_handler(instance_name, func_name, parms):
 
 
 def punch_configdrive_file(transportfiles, instance_name):
-    punch_file(instance_name, transportfiles, 'X')
+    punch_file(instance_name, transportfiles, 'X', get_host())
 
 
 def punch_zipl_file(instance_path, instance_name, lun, wwpn, fcp, volume_meta):
     zipl_fn = ''.join([instance_path, '/ziplset.sh'])
     _generate_zipl_file(zipl_fn, lun, wwpn, fcp, volume_meta)
-    punch_file(instance_name, zipl_fn, 'X')
+    punch_file(instance_name, zipl_fn, 'X', get_host())
 
 
 def generate_vdev(base, offset=1):
