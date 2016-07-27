@@ -337,8 +337,13 @@ class ZVMDriver(driver.ComputeDriver):
             zvmutils.punch_adminpass_file(instance_path, zvm_inst._name,
                                           admin_password, linuxdist)
 
-            # Unlock the instance
+            # Unlock the instance--will be drop when replace ssh to IUCV.
             zvmutils.punch_xcat_auth_file(instance_path, zvm_inst._name)
+
+            # Punch IUCV server files to reader.
+            zvmutils.punch_iucv_file(os_version, zhcp,
+                                     CONF.iucv_serverfile_path_on_xcat,
+                                     zvm_inst._name)
 
             # punch ephemeral disk info to the instance
             if instance['ephemeral_gb'] != 0:
@@ -1629,6 +1634,7 @@ class ZVMDriver(driver.ComputeDriver):
             # Add nic and deploy the image
             self._add_nic_to_instance(new_inst._name, network_info, new_userid)
             self._deploy_root_and_ephemeral(new_inst, image_name_xcat)
+            zvmutils.punch_iucv_authorized_file(new_inst._name, zhcp)
         except exception.ZVMBaseException:
             with excutils.save_and_reraise_exception():
                 self._zvm_images.delete_image_from_xcat(image_name_xcat)
