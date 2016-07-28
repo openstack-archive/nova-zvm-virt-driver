@@ -2281,6 +2281,11 @@ class ZVMUtilsTestCases(ZVMTestCase):
 
         mock_log.error.assert_called_with('Parse %s encounter error', data)
 
+    def test_convert_to_mb(self):
+        self.assertEqual(2355.2, zvmutils.convert_to_mb('2.3G'))
+        self.assertEqual(20, zvmutils.convert_to_mb('20M'))
+        self.assertEqual(1153433.6, zvmutils.convert_to_mb('1.1T'))
+
 
 class ZVMConfigDriveTestCase(test.NoDBTestCase):
 
