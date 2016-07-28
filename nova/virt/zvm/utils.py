@@ -334,6 +334,8 @@ def convert_to_mb(s):
     try:
         if s.endswith('G'):
             return float(s[:-1].strip()) * 1024
+        elif s.endswith('T'):
+            return float(s[:-1].strip()) * 1024 * 1024
         else:
             return float(s[:-1].strip())
     except (IndexError, ValueError, KeyError, TypeError) as e:
