@@ -171,53 +171,27 @@ class ZVMInstance(object):
         """Get the current status of an z/VM instance."""
         _instance_info = hardware.InstanceInfo()
 
-        power_stat = self._get_power_stat()
-        is_reachable = self.is_reachable()
+        try:
+            rec_list = self._get_rinv_info()
+        except exception.ZVMXCATInternalError:
+            raise nova_exception.InstanceNotFound(instance_id=self._name)
+
+        mem = self._get_current_memory(rec_list)
+        num_cpu = self._get_cpu_count(rec_list)
+        cpu_time = self._get_cpu_used_time(rec_list)
+        # if it's reachable, it must be RUNNING state
+        if ((power_stat == power_state.RUNNING) and
+            (self._instance['power_state'] == power_state.PAUSED)):
+            # return paused state only previous power state is paused
+            _instance_info.state = power_state.PAUSED
+        
+        _instance_info.state = power_state.RUNNING
+        _instance_info.max_mem_kb = max_mem_kb
+        _instance_info.mem_kb = mem
+        _instance_info.num_cpu = num_cpu
+        _instance_info.cpu_time_ns = cpu_time
 
         max_mem_kb = int(self._instance['memory_mb']) * 1024
-        if is_reachable:
-            try:
-                rec_list = self._get_rinv_info()
-            except exception.ZVMXCATInternalError:
-                raise nova_exception.InstanceNotFound(instance_id=self._name)
-
-            try:
-                mem = self._get_current_memory(rec_list)
-                num_cpu = self._get_cpu_count(rec_list)
-                cpu_time = self._get_cpu_used_time(rec_list)
-                _instance_info.state = power_stat
-                _instance_info.max_mem_kb = max_mem_kb
-                _instance_info.mem_kb = mem
-                _instance_info.num_cpu = num_cpu
-                _instance_info.cpu_time_ns = cpu_time
-
-            except exception.ZVMInvalidXCATResponseDataError:
-                LOG.warning(_LW("Failed to get inventory info for %s")
-                    % self._name)
-                _instance_info.state = power_stat
-                _instance_info.max_mem_kb = max_mem_kb
-                _instance_info.mem_kb = max_mem_kb
-                _instance_info.num_cpu = self._instance['vcpus']
-                _instance_info.cpu_time_ns = 0
-
-        else:
-            # Since xCAT rinv can't get info from a server that in power state
-            # of SHUTDOWN or PAUSED
-            if ((power_stat == power_state.RUNNING) and
-                    (self._instance['power_state'] == power_state.PAUSED)):
-                # return paused state only previous power state is paused
-                _instance_info.state = power_state.PAUSED
-                _instance_info.max_mem_kb = max_mem_kb
-                _instance_info.mem_kb = max_mem_kb
-                _instance_info.num_cpu = self._instance['vcpus']
-                _instance_info.cpu_time_ns = 0
-            else:
-                # otherwise return xcat returned state
-                _instance_info.state = power_stat
-                _instance_info.max_mem_kb = max_mem_kb
-                _instance_info.mem_kb = 0
-                _instance_info.num_cpu = self._instance['vcpus']
-                _instance_info.cpu_time_ns = 0
         return _instance_info
 
     def create_xcat_node(self, zhcp, userid=None):
