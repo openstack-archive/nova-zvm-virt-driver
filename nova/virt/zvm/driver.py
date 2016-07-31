@@ -266,9 +266,9 @@ class ZVMDriver(driver.ComputeDriver):
             admin_password = CONF.zvm_image_default_password
         transportfiles = None
         if configdrive.required_by(instance):
-            transportfiles = self._create_config_drive(instance_path,
-                instance, image_meta, injected_files, admin_password,
-                net_conf_cmds, linuxdist)
+            transportfiles = self._create_config_drive(context,
+                instance_path, instance, image_meta, injected_files,
+                admin_password, net_conf_cmds, linuxdist)
 
         LOG.info(_LI("The instance %(name)s is spawning at %(node)s") %
                  {'name': zvm_inst._name, 'node': compute_node},
@@ -408,9 +408,9 @@ class ZVMDriver(driver.ComputeDriver):
         if not boot_from_volume:
             self._zvm_images.update_last_use_date(deploy_image_name)
 
-    def _create_config_drive(self, instance_path, instance, image_meta,
-                             injected_files, admin_password, commands,
-                             linuxdist):
+    def _create_config_drive(self, context, instance_path, instance,
+                             image_meta, injected_files, admin_password,
+                             commands, linuxdist):
         if CONF.config_drive_format not in ['tgz', 'iso9660']:
             msg = (_("Invalid config drive format %s") %
                    CONF.config_drive_format)
@@ -439,7 +439,8 @@ class ZVMDriver(driver.ComputeDriver):
 
         inst_md = instance_metadata.InstanceMetadata(instance,
                                                  content=injected_files,
-                                                 extra_md=extra_md)
+                                                 extra_md=extra_md,
+                                                 request_context=context)
 
         configdrive_tgz = os.path.join(instance_path, 'cfgdrive.tgz')
 
