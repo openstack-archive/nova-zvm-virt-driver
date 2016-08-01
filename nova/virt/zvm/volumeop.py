@@ -29,7 +29,7 @@ from nova.objects import instance as instance_obj
 from nova.virt.zvm import const
 from nova.virt.zvm import exception
 from nova.virt.zvm import utils as zvmutils
-from nova import volume
+from nova.volume import cinder
 
 
 LOG = logging.getLogger(__name__)
@@ -334,7 +334,7 @@ class SVCDriver(DriverAPI):
         self._fcp_pool = {}
         self._instance_fcp_map = {}
         self._is_instance_fcp_map_locked = False
-        self._volume_api = volume.API()
+        self._volume_api = cinder.API()
 
         self._actions = {'attach_volume': 'addScsiVolume',
                         'detach_volume': 'removeScsiVolume',
