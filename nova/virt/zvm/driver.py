@@ -50,7 +50,7 @@ from nova.virt.zvm import instance as zvminstance
 from nova.virt.zvm import networkop
 from nova.virt.zvm import utils as zvmutils
 from nova.virt.zvm import volumeop
-from nova import volume
+from nova.volume import cinder
 
 
 LOG = logging.getLogger(__name__)
@@ -117,7 +117,7 @@ class ZVMDriver(driver.ComputeDriver):
         self._pathutils = zvmutils.PathUtils()
         self._networkutils = zvmutils.NetworkUtils()
         self._volumeop = volumeop.VolumeOperator()
-        self._volume_api = volume.API()
+        self._volume_api = cinder.API()
         self._dist_manager = dist.ListDistManager()
         self._image_api = image_api.API()
 
