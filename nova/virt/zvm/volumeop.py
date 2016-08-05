@@ -327,7 +327,7 @@ class SVCDriver(DriverAPI):
     _REMOVE = 3
 
     def __init__(self):
-        self._xcat_url = zvmutils.XCATUrl()
+        self._xcat_url = zvmutils.get_xcat_url()
         self._path_utils = zvmutils.PathUtils()
         self._host = CONF.zvm_host
         self._pool_name = CONF.zvm_scsi_pool

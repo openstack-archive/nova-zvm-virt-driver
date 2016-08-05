@@ -74,7 +74,7 @@ class ZVMDriver(driver.ComputeDriver):
 
     def __init__(self, virtapi):
         super(ZVMDriver, self).__init__(virtapi)
-        self._xcat_url = zvmutils.XCATUrl()
+        self._xcat_url = zvmutils.get_xcat_url()
 
         # incremental sleep interval list
         _inc_slp = [5, 10, 20, 30, 60]
