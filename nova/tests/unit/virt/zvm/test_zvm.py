@@ -787,6 +787,57 @@ class ZVMDriverTestCases(ZVMTestCase):
                           {}, self.instance, '0000-1111', self._fake_fun())
         self.mox.VerifyAll()
 
+    @mock.patch.object(glance, 'get_remote_image_service')
+    def test_snapshot_invalid_imagename(self, imgservice):
+        fake_image_meta = {
+        'checksum': '1a2bbbdbcc9c536a2688fc6278685dfb',
+        'container_format': 'bare',
+        'disk_format': 'raw',
+        'id': 'bef39792-1ae2',
+        'is_public': False,
+        u'name': u'\u6d4b\u8bd5',
+        'properties': {'architecture': 's390x',
+                       'image_file_name': 'abc',
+                       'image_type': 'linux',
+                       'os_name': 'Linux',
+                       'os_version': 'rhel6.2',
+                       'provisioning_method': 'netboot',
+                       'image_type_xcat': 'linux'},
+        'size': 578181045,
+        'status': 'active'}
+        mock_update = mock.MagicMock()
+        imgservice.return_value = (FakeImageService(fake_image_meta),
+                         'bef39792-1ae2')
+        self.assertRaises(exception.ZVMImageError,
+                         self.driver.snapshot, self.context, self.instance,
+                         'bef39792-1ae2', mock_update)
+
+    @mock.patch.object(glance, 'get_remote_image_service')
+    def test_snapshot_special_imagename(self, imgservice):
+        self.instance['power_state'] = 0x00
+        fake_image_meta = {
+        'checksum': '1a2bbbdbcc9c536a2688fc6278685dfb',
+        'container_format': 'bare',
+        'disk_format': 'raw',
+        'id': 'bef39792-1ae2',
+        'is_public': False,
+        u'name': u'image$%^&4-.test',
+        'properties': {'architecture': 's390x',
+                       'image_file_name': 'abc',
+                       'image_type': 'linux',
+                       'os_name': 'Linux',
+                       'os_version': 'rhel6.2',
+                       'provisioning_method': 'netboot',
+                       'image_type_xcat': 'linux'},
+        'size': 578181045,
+        'status': 'active'}
+        mock_update = mock.MagicMock()
+        imgservice.return_value = (FakeImageService(fake_image_meta),
+                                   'bef39792-1ae2')
+        self.assertRaises(nova_exception.InstanceNotReady,
+                          self.driver.snapshot, self.context, self.instance,
+                         'bef39792-1ae2', mock_update)
+
     @mock.patch.object(six.moves.builtins, 'open')
     def test_snapshot_all_in_one_mode(self, mock_open):
         fake_menifest = {'imagetype': 'linux',

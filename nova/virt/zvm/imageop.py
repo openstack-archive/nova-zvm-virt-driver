@@ -848,3 +848,10 @@ class ZVMImages(object):
                     'with error %(err)s ') % {'image': image_name,
                                               'err': err})
             raise exception.ZVMImageError(msg=msg)
+
+    def image_name_validate(self, image_name):
+        """Check if the specified image name is ASCII, prompt error if not"""
+        try:
+            return all(ord(s) < 128 for s in image_name)
+        except TypeError:
+            return False

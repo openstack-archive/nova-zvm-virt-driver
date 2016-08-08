@@ -220,6 +220,11 @@ class ZVMDriver(driver.ComputeDriver):
         # unique property can't be handled well
         # see bug 1537921 for detail info
         image_meta = self._image_api.get(context, image_meta.id)
+        image_name_support = self._zvm_images.image_name_validate(
+                                    image_meta['name'])
+        if not image_name_support:
+            msg = _("Not support deploy a image with non-ASCII image name.")
+            raise exception.ZVMImageError(msg=msg)
 
         root_mount_device, boot_from_volume = zvmutils.is_boot_from_volume(
                                                             block_device_info)
@@ -741,8 +746,14 @@ class ZVMDriver(driver.ComputeDriver):
                                                                     image_href)
         image_meta = image_service.show(context, image_href)
 
-        # remove user names special characters, this name will only be used
-        # to pass to xcat and combine with UUID in xcat.
+        # Don't support non-ascii image name, will remove special characters
+        # from image name, then combine with UUID as the image name in xcat
+        image_name_support = self._zvm_images.image_name_validate(
+                                    image_meta['name'])
+        if not image_name_support:
+            msg = _("Not support snapshot a vm with non-ASCII image name.")
+            raise exception.ZVMImageError(msg=msg)
+
         image_name = ''.join(i for i in image_meta['name'] if i.isalnum())
         image_name_xcat = None
 
