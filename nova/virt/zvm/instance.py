@@ -39,6 +39,30 @@ CONF = cfg.CONF
 CONF.import_opt('default_ephemeral_format', 'nova.conf')
 
 
+class CopiedInstance(object):
+    _KWS = ('name', 'image_ref', 'uuid', 'user_id', 'project_id',
+            'power_state', 'system_metadata', 'memory_mb', 'vcpus',
+            'root_gb', 'ephemeral_gb')
+
+    def __init__(self, inst_obj):
+        """Dictionary compatible instance object for zVM driver internal use.
+
+        :inst_obj: instance object of nova.objects.instance.Instance.
+        """
+        for k in self._KWS:
+            if inst_obj.get(k):
+                setattr(self, k, inst_obj[k])
+
+    def get(self, name):
+        return getattr(self, name, None)
+
+    def __setitem__(self, name, value):
+        setattr(self, name, value)
+
+    def __getitem__(self, name):
+        return getattr(self, name, None)
+
+
 class ZVMInstance(object):
     '''OpenStack instance that running on of z/VM hypervisor.'''
 
