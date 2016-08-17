@@ -1500,11 +1500,12 @@ class ZVMDriverTestCases(ZVMTestCase):
 
     def test_confirm_migration_same_mn(self):
         self.flags(zvm_xcat_server="10.10.10.10")
+        inst = instance.CopiedInstance(self._fake_inst)
         self.stubs.Set(self.driver, 'instance_exists', self._fake_fun(True))
         self.mox.StubOutWithMock(self.driver, 'destroy')
-        self.driver.destroy({}, self._old_inst)
+        self.driver.destroy({}, mox.IgnoreArg())
         self.mox.ReplayAll()
-        self.driver.confirm_migration([], self._fake_inst, [])
+        self.driver.confirm_migration([], inst, [])
         self.mox.VerifyAll()
 
     def test_confirm_migration_diff_mn(self):
@@ -4506,3 +4507,12 @@ class ZVMDistManagerTestCases(test.TestCase):
         for v in os_versions:
             self.assertRaises(exception.ZVMImageError,
                               self.dist_manager.get_linux_dist, v)
+
+
+class ZVMCopiedInstanceTestCases(test.TestCase):
+
+    def test_getattr_and_getitem(self):
+        _fake_instace = instance.CopiedInstance({'uuid': 'uuid'})
+        copied_inst = instance.CopiedInstance(_fake_instace)
+        self.assertEqual(copied_inst.uuid, 'uuid')
+        self.assertEqual(copied_inst['uuid'], 'uuid')
