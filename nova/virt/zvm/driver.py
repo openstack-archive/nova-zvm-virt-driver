@@ -1687,15 +1687,7 @@ class ZVMDriver(driver.ComputeDriver):
         self._wait_for_addnic(inst_name)
 
     def _copy_instance(self, instance):
-        keys = ('name', 'image_ref', 'uuid', 'user_id', 'project_id',
-                'power_state', 'system_metadata', 'memory_mb', 'vcpus',
-                'root_gb', 'ephemeral_gb')
-
-        inst_copy = {}
-        for key in keys:
-            inst_copy[key] = instance[key]
-
-        return inst_copy
+        return zvminstance.CopiedInstance(instance)
 
     def _attach_volume_to_instance(self, context, instance,
                                    block_device_mapping):
