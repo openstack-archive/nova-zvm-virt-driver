@@ -469,20 +469,11 @@ def _is_warning(err_str):
     return False
 
 
-def volume_in_mapping(mount_device, block_device_info):
+def _volume_in_mapping(mount_device, block_device_info):
     block_device_list = [block_device.strip_dev(vol['mount_device'])
                          for vol in
                          driver.block_device_info_get_mapping(
                              block_device_info)]
-    swap = driver.block_device_info_get_swap(block_device_info)
-    if driver.swap_is_usable(swap):
-        block_device_list.append(
-            block_device.strip_dev(swap['device_name']))
-    block_device_list += [block_device.strip_dev(ephemeral['device_name'])
-                          for ephemeral in
-                          driver.block_device_info_get_ephemerals(
-                              block_device_info)]
-
     LOG.debug("block_device_list %s", block_device_list)
     return block_device.strip_dev(mount_device) in block_device_list
 
@@ -494,9 +485,9 @@ def is_volume_root(root_device, mountpoint):
 
 
 def is_boot_from_volume(block_device_info):
-    root_mount_device = '/dev/' + const.ZVM_DEFAULT_ROOT_VOLUME
-    root_mount_device = root_mount_device.replace('/dev/s', '/dev/v')
-    boot_from_volume = volume_in_mapping(root_mount_device, block_device_info)
+    root_mount_device = driver.block_device_info_get_root(block_device_info)
+    boot_from_volume = _volume_in_mapping(root_mount_device,
+                                          block_device_info)
     return root_mount_device, boot_from_volume
 
 
