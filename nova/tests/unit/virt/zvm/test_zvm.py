@@ -585,8 +585,6 @@ class ZVMDriverTestCases(ZVMTestCase):
         self.mox.StubOutWithMock(self.driver, '_preset_instance_network')
         self.mox.StubOutWithMock(self.driver._zvm_images, 'image_exist_xcat')
         self.mox.StubOutWithMock(self.driver._zvm_images, 'get_imgname_xcat')
-        self.mox.StubOutWithMock(self.driver._zvm_images, 'get_image_comments')
-        self.mox.StubOutWithMock(self.driver._zvm_images, 'set_image_comments')
         self.mox.StubOutWithMock(instance.ZVMInstance, 'create_userid')
         self.mox.StubOutWithMock(instance.ZVMInstance, 'update_node_info')
         self.mox.StubOutWithMock(self.driver._networkop, 'create_nic')
@@ -607,7 +605,7 @@ class ZVMDriverTestCases(ZVMTestCase):
             mox.IgnoreArg(), network_info, mox.IgnoreArg()
             ).AndReturn(('/tmp/fakefile', 'fakecmd'))
         self.driver._create_config_drive('/temp/os000001', self.instance,
-            mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(),
+            mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(),
             mox.IgnoreArg()).AndReturn('/temp/os000001/configdrive.tgz')
 
         self.driver._zvm_images.image_exist_xcat(mox.IgnoreArg()).AndReturn(
@@ -1593,7 +1591,7 @@ class ZVMDriverTestCases(ZVMTestCase):
         linuxdist = dist.ListDistManager().get_linux_dist('rhel6')
         self.assertRaises(exception.ZVMConfigDriveError,
             self.driver._create_config_drive, '', self.instance, '', '', '',
-            linuxdist)
+            '', linuxdist)
 
     def test_get_hcp_info(self):
         hcp_info = self.driver._get_hcp_info()
