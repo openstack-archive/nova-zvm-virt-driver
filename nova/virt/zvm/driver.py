@@ -267,8 +267,8 @@ class ZVMDriver(driver.ComputeDriver):
         transportfiles = None
         if configdrive.required_by(instance):
             transportfiles = self._create_config_drive(instance_path,
-                instance, injected_files, admin_password, net_conf_cmds,
-                linuxdist)
+                instance, image_meta, injected_files, admin_password,
+                net_conf_cmds, linuxdist)
 
         LOG.info(_LI("The instance %(name)s is spawning at %(node)s") %
                  {'name': zvm_inst._name, 'node': compute_node},
@@ -297,13 +297,6 @@ class ZVMDriver(driver.ComputeDriver):
 
                 deploy_image_name = self._zvm_images.get_imgname_xcat(
                                         instance['image_ref'])
-                # Check if the existing old style images in xCAT set comments
-                # or not, set it if not
-                if 'image_comments' in image_meta['properties']:
-                    image_comments = self._zvm_images.get_image_comments(
-                                            deploy_image_name)
-                    if not image_comments:
-                        self._zvm_images.set_image_comments(deploy_image_name)
 
             # Create xCAT node and userid for the instance
             zvm_inst.create_xcat_node(zhcp)
@@ -333,12 +326,12 @@ class ZVMDriver(driver.ComputeDriver):
             else:
                 zvmutils.punch_configdrive_file(transportfiles, zvm_inst._name)
 
-            # Change vm's admin password during spawn
-            zvmutils.punch_adminpass_file(instance_path, zvm_inst._name,
-                                          admin_password, linuxdist)
-
-            # Unlock the instance
-            zvmutils.punch_xcat_auth_file(instance_path, zvm_inst._name)
+            if 'image_comments' not in image_meta['properties']:
+                # Change vm's admin password during spawn
+                zvmutils.punch_adminpass_file(instance_path, zvm_inst._name,
+                                              admin_password, linuxdist)
+                # Unlock the instance
+                zvmutils.punch_xcat_auth_file(instance_path, zvm_inst._name)
 
             # punch ephemeral disk info to the instance
             if instance['ephemeral_gb'] != 0:
@@ -415,8 +408,9 @@ class ZVMDriver(driver.ComputeDriver):
         if not boot_from_volume:
             self._zvm_images.update_last_use_date(deploy_image_name)
 
-    def _create_config_drive(self, instance_path, instance, injected_files,
-                             admin_password, commands, linuxdist):
+    def _create_config_drive(self, instance_path, instance, image_meta,
+                             injected_files, admin_password, commands,
+                             linuxdist):
         if CONF.config_drive_format not in ['tgz', 'iso9660']:
             msg = (_("Invalid config drive format %s") %
                    CONF.config_drive_format)
@@ -428,7 +422,9 @@ class ZVMDriver(driver.ComputeDriver):
         if CONF.zvm_config_drive_inject_password:
             extra_md['admin_pass'] = admin_password
 
-        udev_settle = linuxdist.get_znetconfig_contents()
+        udev_settle = ''
+        if 'image_comments' not in image_meta['properties']:
+            udev_settle = linuxdist.get_znetconfig_contents()
         if udev_settle:
             if len(commands) == 0:
                 znetconfig = '\n'.join(('# !/bin/sh', udev_settle))

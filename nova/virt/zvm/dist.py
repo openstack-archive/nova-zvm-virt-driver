@@ -507,7 +507,15 @@ class ubuntu(LinuxDist):
         pass
 
     def get_znetconfig_contents(self):
-        return ''
+        return '\n'.join(('cio_ignore -R',
+                          'znetconf -R -n',
+                          'sleep 2',
+                          'udevadm trigger',
+                          'udevadm settle',
+                          'sleep 2',
+                          'znetconf -A',
+                          'service network restart',
+                          'cio_ignore -u'))
 
     def _get_udev_configuration(self, device, dev_channel):
         return ''
@@ -526,7 +534,7 @@ class ubuntu(LinuxDist):
 class ubuntu16(ubuntu):
 
     def get_change_passwd_command(self, admin_password):
-        pass
+        return "echo 'root:%s' | chpasswd" % admin_password
 
 
 class ListDistManager(object):
