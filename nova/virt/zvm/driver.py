@@ -373,9 +373,9 @@ class ZVMDriver(driver.ComputeDriver):
             zvm_inst.power_on()
 
             # Update the root device name in instance table
-            root_device_name = '/dev/' + const.ZVM_DEFAULT_ROOT_VOLUME
+            root_device_name = '/dev/' + const.ZVM_DEFAULT_ROOT_DISK
             if boot_from_volume:
-                root_device_name = self._format_mountpoint(root_device_name)
+                root_device_name = root_mount_device
             instance.root_device_name = root_device_name
             instance.save()
 
