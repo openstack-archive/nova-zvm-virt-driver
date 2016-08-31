@@ -447,6 +447,9 @@ class ubuntu(LinuxDist):
         network_cfg_str += 'iface lo inet loopback\n'
 
         for vif in network_info:
+            network_hw_config_fname = self._get_device_filename(base_vdev)
+            network_hw_config_str = self._get_network_hw_config_str(base_vdev)
+            cfg_files.append((network_hw_config_fname, network_hw_config_str))
             network = vif['network']
             (cfg_str, dns_str) = self._generate_network_configuration(network,
                 base_vdev)
@@ -501,7 +504,15 @@ class ubuntu(LinuxDist):
         return ''
 
     def _get_device_filename(self, device_num):
-        pass
+        return '/etc/sysconfig/hardware/config-ccw-0.0.' + str(device_num)
+
+    def _get_network_hw_config_str(self, base_vdev):
+        ccwgroup_chans_str = ' '.join((
+                            '0.0.' + str(hex(int(base_vdev, 16)))[2:],
+                            '0.0.' + str(hex(int(base_vdev, 16) + 1))[2:],
+                            '0.0.' + str(hex(int(base_vdev, 16) + 2))[2:]))
+        return '\n'.join(('CCWGROUP_CHANS=(' + ccwgroup_chans_str + ')',
+                          'QETH_OPTIONS=layer2'))
 
     def _get_network_file_path(self):
         pass
@@ -514,7 +525,7 @@ class ubuntu(LinuxDist):
                           'udevadm settle',
                           'sleep 2',
                           'znetconf -A',
-                          'service network restart',
+                          '/etc/init.d/networking restart',
                           'cio_ignore -u'))
 
     def _get_udev_configuration(self, device, dev_channel):
