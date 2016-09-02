@@ -427,9 +427,9 @@ class ZVMDriver(driver.ComputeDriver):
             udev_settle = linuxdist.get_znetconfig_contents()
         if udev_settle:
             if len(commands) == 0:
-                znetconfig = '\n'.join(('# !/bin/sh', udev_settle))
+                znetconfig = '\n'.join(('#!/bin/bash', udev_settle))
             else:
-                znetconfig = '\n'.join(('# !/bin/sh', commands, udev_settle))
+                znetconfig = '\n'.join(('#!/bin/bash', commands, udev_settle))
             znetconfig += '\nrm -rf /tmp/znetconfig.sh\n'
             # Create a temp file in instance to execute above commands
             net_cmd_file = []
