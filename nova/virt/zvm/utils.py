@@ -735,7 +735,7 @@ def _generate_auth_file(fn, pub_key):
 
 def _generate_adminpass_file(fn, admin_password, linuxdist):
     pwd_str = linuxdist.get_change_passwd_command(admin_password)
-    lines = ['#! /bin/sh\n', pwd_str]
+    lines = ['#!/bin/bash\n', pwd_str]
     with open(fn, 'w') as f:
         f.writelines(lines)
 
