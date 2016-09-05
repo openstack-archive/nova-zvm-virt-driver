@@ -604,7 +604,8 @@ class ZVMDriverTestCases(ZVMTestCase):
         dist.LinuxDist.create_network_configuration_files(
             mox.IgnoreArg(), network_info, mox.IgnoreArg()
             ).AndReturn(('/tmp/fakefile', 'fakecmd'))
-        self.driver._create_config_drive('/temp/os000001', self.instance,
+        self.driver._create_config_drive(self.context,
+            '/temp/os000001', self.instance,
             mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(),
             mox.IgnoreArg()).AndReturn('/temp/os000001/configdrive.tgz')
 
@@ -1590,7 +1591,8 @@ class ZVMDriverTestCases(ZVMTestCase):
         self.flags(config_drive_format='vfat')
         linuxdist = dist.ListDistManager().get_linux_dist('rhel6')
         self.assertRaises(exception.ZVMConfigDriveError,
-            self.driver._create_config_drive, '', self.instance, '', '', '',
+            self.driver._create_config_drive, self.context,
+            '', self.instance, '', '', '',
             '', linuxdist)
 
     def test_get_hcp_info(self):
