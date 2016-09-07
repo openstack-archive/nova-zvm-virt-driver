@@ -89,6 +89,10 @@ XCAT_BUNDLE_USE_NOZIP = '2.8.3.7'
 
 XCAT_SUPPORT_CHVM_SMCLI_VERSION = '2.8.3.8'
 
-# e0a7bc3502e8635bf7a2954220a6406f563f3a1f added this
+# e0a7bc3502e8635bf7a2954220a6406f563f3a1f xcat change added this
 # support add --ipl as param to mkvm call
 XCAT_MKVM_SUPPORT_IPL = '2.8.3.11'
+
+# I1a6ff024609e50f3a20a4bac2d86f94f7152e3cf xcat change added this
+# rinv now can use 'cpumempowerstat' option
+XCAT_RINV_SUPPORT_CPUMEMPOWERSTAT = '2.8.3.13'

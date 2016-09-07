@@ -96,7 +96,7 @@ class ZVMInstance(object):
         retry_interval = retry_interval or 10
         retry_count = timeout // retry_interval
         while (retry_count > 0):
-            if self._get_power_stat() == power_state.SHUTDOWN:
+            if self._check_power_stat() == power_state.SHUTDOWN:
                 # In shutdown state already
                 return
             else:
@@ -168,16 +168,53 @@ class ZVMInstance(object):
                                              is_active, rollback)
 
     def get_info(self):
-        """Get the current status of an z/VM instance."""
+        cpumempowerstat_version = const.XCAT_RINV_SUPPORT_CPUMEMPOWERSTAT
+        # new version has cpumempowerstat support in order gain performance
+        if self._driver.has_min_version(cpumempowerstat_version):
+            return self._get_info_cpumempowerstat()
+        else:
+            return self._get_info_cpumem()
+
+    def _get_info_cpumempowerstat(self):
+        """Get current status of an z/VM instance through cpumempowerstat."""
+        _instance_info = hardware.InstanceInfo()
+        max_mem_kb = int(self._instance['memory_mb']) * 1024
+
+        try:
+            rec_list = self._get_rinv_info('cpumempowerstat')
+        except exception.ZVMXCATInternalError:
+            raise nova_exception.InstanceNotFound(instance_id=self._name)
+
+        mem = self._get_current_memory(rec_list)
+        num_cpu = self._get_guest_cpus(rec_list)
+        cpu_time = self._get_cpu_used_time(rec_list)
+        power_stat = self._get_power_stat(rec_list)
+
+        if ((power_stat == power_state.RUNNING) and
+            (self._instance['power_state'] == power_state.PAUSED)):
+            # return paused state only previous power state is paused
+            _instance_info.state = power_state.PAUSED
+        else:
+            _instance_info.state = power_stat
+
+        # TODO(jichenjc): set max mem through SMAPI result
+        _instance_info.max_mem_kb = max_mem_kb
+        _instance_info.mem_kb = mem
+        _instance_info.num_cpu = num_cpu
+        _instance_info.cpu_time_ns = cpu_time
+        return _instance_info
+
+    def _get_info_cpumem(self):
+        """Get current status of an z/VM instance through cpumem."""
         _instance_info = hardware.InstanceInfo()
 
-        power_stat = self._get_power_stat()
+        power_stat = self._check_power_stat()
         is_reachable = self.is_reachable()
 
         max_mem_kb = int(self._instance['memory_mb']) * 1024
         if is_reachable:
             try:
-                rec_list = self._get_rinv_info()
+                rec_list = self._get_rinv_info('cpumem')
             except exception.ZVMXCATInternalError:
                 raise nova_exception.InstanceNotFound(instance_id=self._name)
 
@@ -529,7 +566,7 @@ class ZVMInstance(object):
         url = self._xcat_url.rpower('/' + self._name)
         return zvmutils.xcat_request(method, url, body)
 
-    def _get_power_stat(self):
+    def _check_power_stat(self):
         """Get power status of a z/VM instance."""
         LOG.debug('Query power stat of %s' % self._name)
         res_dict = self._power_state("GET", "stat")
@@ -542,9 +579,10 @@ class ZVMInstance(object):
         power_stat = _get_power_string(res_dict)
         return zvmutils.mapping_power_stat(power_stat)
 
-    def _get_rinv_info(self):
+    def _get_rinv_info(self, command):
         """get rinv result and return in a list."""
-        url = self._xcat_url.rinv('/' + self._name, '&field=cpumem')
+        field = '&field=%s' % command
+        url = self._xcat_url.rinv('/' + self._name, field)
         LOG.debug('Remote inventory of %s' % self._name)
         res_info = zvmutils.xcat_request("GET", url)['info']
 
@@ -610,14 +648,38 @@ class ZVMInstance(object):
     @zvmutils.wrap_invalid_xcat_resp_data_error
     def _get_cpu_used_time(self, rec_list):
         """Return the cpu used time in."""
-        cpu_time = None
+        cpu_time = 0
 
         for rec in rec_list:
             if rec.__contains__("CPU Used Time: "):
                 tmp_list = rec.split()
                 cpu_time = tmp_list[4]
 
-        return int(cpu_time)
+        return float(cpu_time)
+
+    @zvmutils.wrap_invalid_xcat_resp_data_error
+    def _get_guest_cpus(self, rec_list):
+        """Return the processer count, used by cpumempowerstat"""
+        guest_cpus = 0
+
+        for rec in rec_list:
+            if rec.__contains__("Guest CPUs: "):
+                tmp_list = rec.split()
+                guest_cpus = tmp_list[3]
+
+        return int(guest_cpus)
+
+    @zvmutils.wrap_invalid_xcat_resp_data_error
+    def _get_power_stat(self, rec_list):
+        """Return the power stat, used by cpumempowerstat"""
+        power_stat = None
+
+        for rec in rec_list:
+            if rec.__contains__("Power state: "):
+                tmp_list = rec.split()
+                power_stat = tmp_list[3]
+
+        return zvmutils.mapping_power_stat(power_stat)
 
     def is_reachable(self):
         """Return True is the instance is reachable."""
