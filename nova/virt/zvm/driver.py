@@ -1691,12 +1691,12 @@ class ZVMDriver(driver.ComputeDriver):
             LOG.debug('Create xcat table value about nic: '
                        'ID is %(id)s, address is %(address)s, '
                         'vdev is %(vdev)s' %
-                        {'id': vif.id, 'address': vif.address,
+                        {'id': vif['id'], 'address': vif['address'],
                          'vdev': nic_vdev})
             self._networkop.create_xcat_table_about_nic(zhcpnode,
                                          inst_name,
-                                         vif.id,
-                                         vif.address,
+                                         vif['id'],
+                                         vif['address'],
                                          nic_vdev)
             nic_vdev = str(hex(int(nic_vdev, 16) + 3))[2:]
 
