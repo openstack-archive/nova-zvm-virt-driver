@@ -1679,6 +1679,35 @@ class ZVMDriverTestCases(ZVMTestCase):
 
         self.assertTrue(self.driver.has_version(None))
 
+    @mock.patch('nova.compute.utils.default_device_names_for_instance')
+    def test_default_device_names_for_instance(self, mock_dflt_names):
+        class Mock_Bdm(object):
+            def __init__(self, device_name):
+                self.device_name = device_name
+
+            def save(self):
+                pass
+
+        mock_dflt_names.return_value = None
+        fake_bd_list = [Mock_Bdm('/dev/da'), Mock_Bdm('/dev/db')]
+        expected = [Mock_Bdm('/dev/vda'), Mock_Bdm('/dev/vdb')]
+
+        self.driver.default_device_names_for_instance(mox.IgnoreArg(),
+                                                      '/dev/dasda',
+                                                      fake_bd_list)
+        self.assertEqual(expected[0].device_name, fake_bd_list[0].device_name)
+        self.assertEqual(expected[1].device_name, fake_bd_list[1].device_name)
+
+    @mock.patch('nova.compute.utils.get_device_name_for_instance')
+    def test_get_device_name_for_instance(self, mock_get_dev_name):
+        mock_get_dev_name.return_value = '/dev/da'
+        fake_bdo = {'device_name': None}
+        expected = '/dev/vda'
+
+        device_name = self.driver.get_device_name_for_instance(
+                          mox.IgnoreArg(), mox.IgnoreArg(), fake_bdo)
+        self.assertEqual(expected, device_name)
+
 
 class ZVMInstanceTestCases(ZVMTestCase):
     """Test cases for zvm.instance."""
