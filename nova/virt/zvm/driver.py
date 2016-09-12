@@ -14,6 +14,7 @@
 
 import contextlib
 import datetime
+import itertools
 import operator
 import os
 import time
@@ -31,6 +32,7 @@ from oslo_utils import versionutils
 from nova.api.metadata import base as instance_metadata
 from nova.compute import power_state
 from nova.compute import task_states
+from nova.compute import utils as compute_utils
 from nova.compute import vm_mode
 from nova.compute import vm_states
 from nova import exception as nova_exception
@@ -2037,3 +2039,23 @@ class ZVMDriver(driver.ComputeDriver):
 
     def has_version(self, req_ver=None):
         return self._version_check(req_ver=req_ver, op=operator.ne)
+
+    def default_device_names_for_instance(self, instance, root_device_name,
+                                          *block_device_lists):
+        """Generate missing device names for an instance.
+           Default are /dev/vdN.
+        """
+        compute_utils.default_device_names_for_instance(
+            instance, root_device_name, *block_device_lists)
+        for bdm in itertools.chain(*block_device_lists):
+            bdm.device_name = self._format_mountpoint(bdm.device_name)
+            bdm.save()
+
+    def get_device_name_for_instance(self, instance, bdms, block_device_obj):
+        """Validates (or generates) a device name for instance.
+           Default are /dev/vdN.
+        """
+        device_name = block_device_obj.get("device_name")
+        device_name = compute_utils.get_device_name_for_instance(
+                                        instance, bdms, device_name)
+        return self._format_mountpoint(device_name)
