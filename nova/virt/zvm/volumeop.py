@@ -360,7 +360,7 @@ class SVCDriver(DriverAPI):
         fcp_list = CONF.zvm_fcp_list
         if (fcp_list is None):
             errmsg = _("At least one fcp list should be given")
-            LOG.error(errmsg)
+            LOG.warning(errmsg)
             raise exception.ZVMVolumeError(msg=errmsg)
         self._init_fcp_pool(fcp_list)
         self._init_instance_fcp_map(fcp_list)
