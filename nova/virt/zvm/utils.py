@@ -89,11 +89,21 @@ class XCATUrl(object):
         return rurl
 
     def _append_context(self, rurl, context=None):
-        # The request ID is always optional.  When it is present, xCAT logs it
-        # so it's easier to link xCAT log entries to OpenStack log entries.
-        if isinstance(context, dict):
-            if 'request_id' in context.keys():
+        # The context is always optional, to allow incremental exploitation of
+        # the new parameter.  When it is present and it has a request ID, xCAT
+        # logs the request ID so it's easier to link xCAT log entries to
+        # OpenStack log entries.
+        if context is not None:
+            try:
                 rurl = rurl + self.PCONTEXT + context.request_id
+            except Exception as err:
+                # Cannot use format_message() in this context, because the
+                # Exception class does not implement that method.
+                msg = _("Failed to append request ID to URL %(url)s : %(err)s"
+                        ) % {'url': rurl, 'err': six.text_type(err)}
+                LOG.error(msg)
+                # Continue and return the original URL once the error is logged
+                # Failing the request over this is NOT desired.
         return rurl
 
     def _append_instanceid(self, rurl, vmuuid):
