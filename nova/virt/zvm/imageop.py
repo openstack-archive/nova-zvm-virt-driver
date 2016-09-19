@@ -30,7 +30,6 @@ from nova.i18n import _, _LW
 from nova.image import glance
 from nova import utils
 from nova.virt import images
-from nova.virt.zvm import const
 from nova.virt.zvm import exception
 from nova.virt.zvm import utils as zvmutils
 
@@ -627,33 +626,25 @@ class ZVMImages(object):
                 else:
                     return xcat_free_space_threshold
 
-    def get_imgcapture_needed(self, instance):
+    def get_imgcapture_needed(self, instance, user_dict):
         """Get the space needed on xCAT MN for an image capture."""
-        LOG.debug("Getting image capture needed size for %s",
+        LOG.debug("Getting %s root disk size as image capture max needed.",
                   instance['name'])
-
-        cmd = "df -h /"
-        result = None
-        result = zvmutils.xdsh(instance['name'], cmd)['data'][0]
-        imgcapture_needed_space = ""
         try:
-            result_data = result[0].split()
-            if (CONF.zvm_image_compression_level and
-                    int(CONF.zvm_image_compression_level) == 0):
-                imgcapture_needed_space = result_data[10]
-            else:
-                imgcapture_needed_space = result_data[11]
+            rdisk = ''.join(['MDISK ', CONF.zvm_user_root_vdev])
+            rdisk_dict = [mdisk for mdisk in user_dict
+                                    if (mdisk.__contains__(rdisk))]
+            if not rdisk_dict or not rdisk_dict[0]:
+                raise exception.ZVMImageError(msg="User direct info error")
 
-            if imgcapture_needed_space.endswith("G"):
-                imgcapture_needed_space_value = imgcapture_needed_space.rstrip(
-                                                                        "G")
-                return float(imgcapture_needed_space_value) * 2
-            elif imgcapture_needed_space.endswith("M"):
-                imgcapture_needed_space_value = imgcapture_needed_space.rstrip(
-                                                                        "M")
-                return (float(imgcapture_needed_space_value) / 1024) * 2
+            rdisk_list = rdisk_dict[0].split(' ')
+            # will get similar result USERID: MDISK 0100 3390 1 3338 0E3B MR
+            if rdisk_list[3] == '3390':
+                return int(rdisk_list[5]) * 737280 / 1024.0 / 1024 / 1024 * 2
+            elif rdisk_list[3] == '9336':
+                return int(rdisk_list[5]) * 512 / 1024.0 / 1024 / 1024 * 2
             else:
-                return const.ZVM_IMAGE_SIZE_MAX
+                raise exception.ZVMImageError(msg="Unknown disk type")
         except (IndexError, ValueError, TypeError) as err:
             raise exception.ZVMImageError(msg=err)
 
@@ -711,9 +702,9 @@ class ZVMImages(object):
         to_be_deleted_image_profile = []
 
         if len(image_list) <= 0:
-            msg = _("No image to be deleted, please create space manually "
+            msg = _LW("No image to be deleted, please create space manually "
                     "on xcat(%s).") % CONF.zvm_xcat_server
-            raise exception.ZVMImageError(msg=msg)
+            LOG.warning(msg)
         else:
             self._sort_image_by_use_date(image_list, 0, len(image_list) - 1)
             for img in image_list:
@@ -729,13 +720,13 @@ class ZVMImages(object):
                     if size_sum >= size_needed:
                         return to_be_deleted_image_profile
 
-        if size_sum >= current_needed:
-            return to_be_deleted_image_profile
-        else:
-            msg = _("xCAT MN space not enough for current image operation: "
+        if size_sum < current_needed:
+            msg = _LW("xCAT MN space not enough for current image operation: "
                     "%(n)d G needed,%(a)d G available") % {'n': current_needed,
                                                            'a': size_sum}
-            raise exception.ZVMImageError(msg=msg)
+            LOG.warning(msg)
+
+        return to_be_deleted_image_profile
 
     def prune_image_xcat(self, context, size_needed, current_needed):
         """Remove the images which meet remove criteria from xCAT."""

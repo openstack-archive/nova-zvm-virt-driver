@@ -624,6 +624,13 @@ def xcat_support_deployment_failure_diagnostics(xcat_version):
         const.XCAT_SUPPORT_COLLECT_DIAGNOSTICS_DEPLOYFAILED.split('.'))
 
 
+def xcat_support_iucv(xcat_version=None):
+    if xcat_version is None:
+        xcat_version = get_xcat_version()
+    return map(int, xcat_version.split('.')) >= map(int,
+        const.XCAT_SUPPORT_IUCV.split('.'))
+
+
 def get_userid(node_name):
     """Returns z/VM userid for the xCAT node."""
     url = get_xcat_url().lsdef_node(''.join(['/', node_name]))
@@ -655,8 +662,12 @@ def xdsh(node, commands):
     return res_dict
 
 
-def punch_file(node, fn, fclass):
-    body = [" ".join(['--punchfile', fn, fclass, get_host()])]
+def punch_file(node, fn, fclass, remote_host=None, del_src=True):
+    """punch file to reader. """
+    if remote_host:
+        body = [" ".join(['--punchfile', fn, fclass, remote_host])]
+    else:
+        body = [" ".join(['--punchfile', fn, fclass])]
     url = get_xcat_url().chvm('/' + node)
 
     try:
@@ -667,14 +678,15 @@ def punch_file(node, fn, fclass):
             LOG.error(_('Punch file to %(node)s failed: %(msg)s'),
                       {'node': node, 'msg': emsg})
     finally:
-        os.remove(fn)
+        if del_src:
+            os.remove(fn)
 
 
 def punch_adminpass_file(instance_path, instance_name, admin_password,
                          linuxdist):
     adminpass_fn = ''.join([instance_path, '/adminpwd.sh'])
     _generate_adminpass_file(adminpass_fn, admin_password, linuxdist)
-    punch_file(instance_name, adminpass_fn, 'X')
+    punch_file(instance_name, adminpass_fn, 'X', remote_host=get_host())
 
 
 def punch_xcat_auth_file(instance_path, instance_name):
@@ -682,7 +694,87 @@ def punch_xcat_auth_file(instance_path, instance_name):
     mn_pub_key = get_mn_pub_key()
     auth_fn = ''.join([instance_path, '/xcatauth.sh'])
     _generate_auth_file(auth_fn, mn_pub_key)
-    punch_file(instance_name, auth_fn, 'X')
+    punch_file(instance_name, auth_fn, 'X', remote_host=get_host())
+
+
+def _generate_iucv_cmd_file(iucv_cmd_file_path, cmd):
+    lines = ['#!/bin/bash\n', cmd]
+    with open(iucv_cmd_file_path, 'w') as f:
+        f.writelines(lines)
+
+
+def add_iucv_in_zvm_table(instance_name):
+    result = xcat_cmd_gettab('zvm', 'node', instance_name, "status")
+    if not result or not result[0]:
+        status = "IUCV=1"
+    else:
+        status = result[0][0] + ';IUCV=1'
+    xcat_cmd_settab('zvm', 'node', instance_name, "status", status)
+
+
+def punch_iucv_file(os_ver, zhcp, zhcp_userid, instance_name,
+                    instance_path):
+    """put iucv server and service files to reader."""
+    xcat_iucv_path = '/opt/zhcp/bin/IUCV'
+    # generate iucvserver file
+    iucv_server_fn = ''.join([xcat_iucv_path, '/iucvserv'])
+    iucv_server_path = '/usr/bin/iucvserv'
+    punch_path = '/var/opt/xcat/transport'
+    # generate iucvserver service and script file
+    iucv_service_path = ''
+    start_iucv_service_sh = ''
+    (distro, release) = dist.ListDistManager().parse_dist(os_ver)
+    if((distro == "rhel" and release < '7') or (
+                 distro == "sles" and release < '12')):
+        iucv_serverd_fn = ''.join([xcat_iucv_path, '/iucvserd'])
+        iucv_service_name = 'iucvserd'
+        iucv_service_path = '/etc/init.d/' + iucv_service_name
+        start_iucv_service_sh = 'chkconfig --add iucvserd 2>&1\n'
+        start_iucv_service_sh += 'service iucvserd  start 2>&1\n'
+    else:
+        iucv_serverd_fn = ''.join([xcat_iucv_path, '/iucvserd.service'])
+        iucv_service_name = 'iucvserd.service'
+        start_iucv_service_sh = 'systemctl enable iucvserd 2>&1\n'
+        start_iucv_service_sh += 'systemctl start iucvserd 2>&1\n'
+        if((distro == "rhel" and release >= '7') or (distro == "ubuntu")):
+            iucv_service_path = '/lib/systemd/system/' + iucv_service_name
+        if(distro == "sles" and release >= '12'):
+            iucv_service_path = '/usr/lib/systemd/system/' + iucv_service_name
+
+    iucv_cmd_file_path = instance_path + '/iucvexec.sh'
+    cmd = '\n'.join((
+        # if when execute this script, conf4z hasn't received iucv file.
+        "spoolid=`vmur li | awk '/iucvserv/{print \$2}'|tail -1`",
+        "vmur re -f $spoolid /usr/bin/iucvserv 2>&1 >/var/log/messages",
+        "spoolid=`vmur li | awk '/iucvserd/{print \$2}'|tail -1`",
+        "vmur re -f $spoolid %s  2>&1 >/var/log/messages" % iucv_service_path,
+        # if conf4z has received iucv files first.
+        "cp -rf %s/iucvserv %s 2>&1 >/var/log/messages" % (punch_path,
+                                                           iucv_server_path),
+        "cp -rf %s/%s %s 2>&1 >/var/log/messages" % (punch_path,
+                                        iucv_service_name, iucv_service_path),
+        "chmod +x %s %s" % (iucv_server_path, iucv_service_path),
+        "echo -n %s >/etc/iucv_authorized_userid 2>&1" % zhcp_userid,
+        start_iucv_service_sh
+        ))
+    _generate_iucv_cmd_file(iucv_cmd_file_path, cmd)
+    punch_file(instance_name, iucv_server_fn, 'X',
+                                   remote_host=zhcp, del_src=False)
+    punch_file(instance_name, iucv_serverd_fn, 'X',
+                                   remote_host=zhcp, del_src=False)
+    punch_file(instance_name, iucv_cmd_file_path, 'X', remote_host=get_host(),
+                                                     del_src=False)
+    # set VM's communicate type is IUCV
+    add_iucv_in_zvm_table(instance_name)
+
+
+def punch_iucv_authorized_file(instance_name, zhcp_userid):
+    cmd = "echo -n %s >/etc/iucv_authorized_userid 2>&1" % zhcp_userid
+    iucv_cmd_file_path = '/tmp/%s.sh' % instance_name[-8:]
+    _generate_iucv_cmd_file(iucv_cmd_file_path, cmd)
+    punch_file(instance_name, iucv_cmd_file_path, 'X', remote_host=get_host())
+    # set VM's communicate type is IUCV
+    add_iucv_in_zvm_table(instance_name)
 
 
 def process_eph_disk(instance_name, vdev=None, fmt=None, mntdir=None):
@@ -710,13 +802,13 @@ def aemod_handler(instance_name, func_name, parms):
 
 
 def punch_configdrive_file(transportfiles, instance_name):
-    punch_file(instance_name, transportfiles, 'X')
+    punch_file(instance_name, transportfiles, 'X', remote_host=get_host())
 
 
 def punch_zipl_file(instance_path, instance_name, lun, wwpn, fcp, volume_meta):
     zipl_fn = ''.join([instance_path, '/ziplset.sh'])
     _generate_zipl_file(zipl_fn, lun, wwpn, fcp, volume_meta)
-    punch_file(instance_name, zipl_fn, 'X')
+    punch_file(instance_name, zipl_fn, 'X', remote_host=get_host())
 
 
 def generate_vdev(base, offset=1):
@@ -823,6 +915,17 @@ def xcat_cmd_gettab(table, col, col_value, attr):
             return res_info['data'][0][0]
         else:
             return ''
+
+
+def xcat_cmd_settab(table, col, col_value, attr, value):
+    """Add status value for node in database table."""
+    commands = ("%(col)s=%(col_value)s %(table)s.%(attr)s=%(value)s" %
+              {'col': col, 'col_value': col_value,
+                         'attr': attr, 'table': table, 'value': value})
+    url = get_xcat_url().tabch("/%s" % table)
+    body = [commands]
+    with expect_invalid_xcat_resp_data():
+        return xcat_request("PUT", url, body)['data']
 
 
 def xcat_cmd_gettab_multi_attr(table, col, col_value, attr_list):
