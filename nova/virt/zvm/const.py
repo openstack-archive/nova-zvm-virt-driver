@@ -92,3 +92,6 @@ XCAT_SUPPORT_CHVM_SMCLI_VERSION = '2.8.3.8'
 # e0a7bc3502e8635bf7a2954220a6406f563f3a1f added this
 # support add --ipl as param to mkvm call
 XCAT_MKVM_SUPPORT_IPL = '2.8.3.11'
+
+# add IUCV support to replace ssh
+XCAT_SUPPORT_IUCV = '2.8.3.15'
