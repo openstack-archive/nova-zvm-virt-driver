@@ -103,3 +103,7 @@ XCAT_SUPPORT_COLLECT_DIAGNOSTICS_DEPLOYFAILED = '2.8.3.16'
 # Reasons for collecting diagnostics.
 # xCAT may adjust diagnostic contents based on the reason passed in.
 DIAGNOSTICS_RSN_DEPLOYMENT_TIMEOUT = 'OpenStackDeploymentTimeout'
+
+# add IUCV support to replace ssh
+XCAT_SUPPORT_IUCV = '2.8.3.15'
+

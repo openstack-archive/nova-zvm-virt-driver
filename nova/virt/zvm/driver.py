@@ -245,7 +245,9 @@ class ZVMDriver(driver.ComputeDriver):
             self._zvm_images.zimage_check(image_meta)
 
         compute_node = CONF.zvm_host
-        zhcp = self._get_hcp_info()['hostname']
+        hcp_info = self._get_hcp_info()
+        zhcp = hcp_info['hostname']
+        zhcp_userid = hcp_info['userid']
 
         zvm_inst = ZVMInstance(self, instance)
         instance_path = self._pathutils.get_instance_path(compute_node,
@@ -330,6 +332,10 @@ class ZVMDriver(driver.ComputeDriver):
                                               admin_password, linuxdist)
                 # Unlock the instance
                 zvmutils.punch_xcat_auth_file(instance_path, zvm_inst._name)
+                if zvmutils.xcat_support_iucv(self._xcat_version):
+                    # Punch IUCV server files to reader.
+                    zvmutils.punch_iucv_file(os_version, zhcp, zhcp_userid,
+                                            zvm_inst._name, instance_path)
 
             # punch ephemeral disk info to the instance
             if instance['ephemeral_gb'] != 0:
@@ -773,8 +779,9 @@ class ZVMDriver(driver.ComputeDriver):
             free_space_xcat = self._zvm_images.get_free_space_xcat(
                                   CONF.xcat_free_space_threshold,
                                   CONF.zvm_xcat_master)
+            user_dict = self._get_user_directory(instance['name'])
             imgcapture_needed = self._zvm_images.get_imgcapture_needed(
-                                    instance)
+                                    instance, user_dict)
             if (free_space_xcat - imgcapture_needed) < 0:
                 larger = max(CONF.xcat_free_space_threshold, imgcapture_needed)
                 size_needed = float(larger - free_space_xcat)
@@ -1568,7 +1575,9 @@ class ZVMDriver(driver.ComputeDriver):
 
         same_os = local_ip == source_ip
 
-        zhcp = self._get_hcp_info()['hostname']
+        hcp_info = self._get_hcp_info()
+        zhcp = hcp_info['hostname']
+        zhcp_userid = hcp_info['userid']
 
         new_inst = ZVMInstance(self, instance)
         instance_path = self._pathutils.get_instance_path(
@@ -1674,6 +1683,13 @@ class ZVMDriver(driver.ComputeDriver):
         bdm = driver.block_device_info_get_mapping(block_device_info)
         try:
             zvmutils.punch_xcat_auth_file(instance_path, new_inst._name)
+            if zvmutils.xcat_support_iucv(self._xcat_version):
+                if same_xcat_mn:
+                    zvmutils.punch_iucv_authorized_file(old_inst._name,
+                                                            zhcp_userid)
+                else:
+                    zvmutils.punch_iucv_authorized_file(new_inst._name,
+                                                            zhcp_userid)
             new_inst.power_on()
             self._attach_volume_to_instance(context, instance, bdm)
 
@@ -1756,6 +1772,8 @@ class ZVMDriver(driver.ComputeDriver):
             # Same xCAT MN:
             old_inst = ZVMInstance(self, instance)
             old_inst.copy_xcat_node(new_instance['name'])
+            if zvmutils.xcat_support_iucv(self._xcat_version):
+                zvmutils.add_iucv_in_zvm_table(instance['name'])
             zvm_inst.delete_xcat_node()
 
             self._reconfigure_networking(instance['name'], network_info,
