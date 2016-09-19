@@ -338,6 +338,13 @@ Possible values:
     cfg.StrOpt('zvm_default_ephemeral_mntdir',
                default='/mnt/ephemeral',
                help='The path to which the ephemeral disk be mounted'),
+    cfg.StrOpt('iucv_serverfile_path_on_xcat',
+               default='/opt/zhcp/bin/IUCV',
+               help="""
+               The path to which the iucvserver files saved on xcat,
+               it includes iucvserv, iucvserver's service file.
+               both of them will be punched to VM's reader during deploy.
+               """),
     cfg.StrOpt('zvm_image_default_password',
                default='rootpass',
                secret=True,

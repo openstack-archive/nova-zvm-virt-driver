@@ -503,6 +503,7 @@ class ZVMDriverTestCases(ZVMTestCase):
         self.stubs.Set(self.driver._networkop, 'create_nic', self._fake_fun())
         self.stubs.Set(zvmutils, 'punch_adminpass_file', self._fake_fun())
         self.stubs.Set(zvmutils, 'punch_xcat_auth_file', self._fake_fun())
+        self.stubs.Set(zvmutils, 'punch_iucv_file', self._fake_fun())
         self.stubs.Set(instance.ZVMInstance, 'power_on', self._fake_fun())
         self.stubs.Set(self.driver._zvm_images, 'update_last_use_date',
                        self._fake_fun())
@@ -542,6 +543,7 @@ class ZVMDriverTestCases(ZVMTestCase):
         self.stubs.Set(self.driver._networkop, 'create_nic', self._fake_fun())
         self.stubs.Set(zvmutils, 'punch_adminpass_file', self._fake_fun())
         self.stubs.Set(zvmutils, 'punch_xcat_auth_file', self._fake_fun())
+        self.stubs.Set(zvmutils, 'punch_iucv_file', self._fake_fun())
         self.stubs.Set(instance.ZVMInstance, 'power_on', self._fake_fun())
         self.stubs.Set(self.driver._zvm_images, 'update_last_use_date',
                        self._fake_fun())
@@ -592,6 +594,7 @@ class ZVMDriverTestCases(ZVMTestCase):
         self.mox.StubOutWithMock(self.driver._pathutils, 'clean_temp_folder')
         self.mox.StubOutWithMock(zvmutils, 'punch_adminpass_file')
         self.mox.StubOutWithMock(zvmutils, 'punch_xcat_auth_file')
+        self.mox.StubOutWithMock(zvmutils, 'punch_iucv_file')
         self.mox.StubOutWithMock(zvmutils, 'process_eph_disk')
         self.mox.StubOutWithMock(self.driver, '_wait_for_addnic')
         self.mox.StubOutWithMock(self.driver, '_is_nic_granted')
@@ -625,6 +628,8 @@ class ZVMDriverTestCases(ZVMTestCase):
         zvmutils.punch_adminpass_file(mox.IgnoreArg(), 'os000001', 'pass',
                                       mox.IgnoreArg())
         zvmutils.punch_xcat_auth_file(mox.IgnoreArg(), 'os000001')
+        zvmutils.punch_iucv_file('rhel6.2', 'fakehcp.fake.com',
+                                                        'fakehcp', 'os000001')
         zvmutils.process_eph_disk('os000001', mox.IgnoreArg(), mox.IgnoreArg(),
                                   mox.IgnoreArg())
         zvmutils.process_eph_disk('os000001', mox.IgnoreArg(), mox.IgnoreArg(),
@@ -703,13 +708,12 @@ class ZVMDriverTestCases(ZVMTestCase):
         self.mox.VerifyAll()
 
     def _set_reachable(self, stat):
-        return {"data": [{"node": [{"name": ["os000001"],
-                                    "data": [stat]}]}]}
+        return {"data": [{"info": ["os000001: reachable"]}]}
 
     def test_power_on(self):
         info = ["os000001: Activating OS000001... Done\n"]
         self._set_fake_xcat_responses([self._generate_xcat_resp(info),
-                                       self._set_reachable('sshd')])
+                                       self._set_reachable('reachable')])
         self.driver.power_on({}, self.instance, {})
 
     def _fake_manifest(self):
@@ -771,10 +775,6 @@ class ZVMDriverTestCases(ZVMTestCase):
         self.stubs.Set(self.driver, 'power_on', self._fake_fun())
         self.stubs.Set(glance, 'get_remote_image_service',
             self._fake_fun((FakeImageService(self._fake_image_meta()), 0)))
-        self.stubs.Set(self.driver._zvm_images, 'get_free_space_xcat',
-                       self._fake_fun(20.0))
-        self.stubs.Set(self.driver._zvm_images, 'get_imgcapture_needed',
-                       self._fake_fun(10.0))
         self.mox.StubOutWithMock(self.driver._zvm_images, 'create_zvm_image')
         self.driver._zvm_images.create_zvm_image(mox.IgnoreArg(),
             mox.IgnoreArg(), mox.IgnoreArg()).AndRaise(
@@ -800,10 +800,6 @@ class ZVMDriverTestCases(ZVMTestCase):
         self.stubs.Set(glance, 'get_remote_image_service',
             self._fake_fun((FakeImageService(self.fake_image_meta), 0)))
 
-        self.mox.StubOutWithMock(self.driver._zvm_images,
-                                 'get_free_space_xcat')
-        self.mox.StubOutWithMock(self.driver._zvm_images,
-                                 'get_imgcapture_needed')
         self.mox.StubOutWithMock(self.driver._zvm_images, 'create_zvm_image')
         self.mox.StubOutWithMock(self.driver._zvm_images,
                                  'update_last_use_date')
@@ -818,11 +814,6 @@ class ZVMDriverTestCases(ZVMTestCase):
         self.mox.StubOutWithMock(self.driver._zvm_images, 'get_image_menifest')
         self.mox.StubOutWithMock(self.driver._zvm_images,
                                  'delete_image_from_xcat')
-        self.driver._zvm_images.get_free_space_xcat(
-                        CONF.xcat_free_space_threshold,
-                        CONF.zvm_xcat_master).AndReturn(10.0)
-        self.driver._zvm_images.get_imgcapture_needed(
-                                                self.instance).AndReturn(5.0)
         self.driver._zvm_images.create_zvm_image(self.instance, 'fakeimg',
                                             'uuid').AndReturn('fakeimg-uuid')
         self.driver._zvm_images.update_last_use_date('fakeimg-uuid')
@@ -847,7 +838,7 @@ class ZVMDriverTestCases(ZVMTestCase):
         info1 = ["os000001: Shutting down... Done"]
         info2 = ["os000001: Activating... Done"]
         data = {"data": [{"info": info1}, {"info": info2}]}
-        self._set_fake_xcat_responses([data, self._set_reachable('sshd')])
+        self._set_fake_xcat_responses([data, self._set_reachable('reachable')])
         self.driver.reboot(self.context, self.instance, {}, "HARD")
         self.mox.VerifyAll()
 
@@ -855,7 +846,7 @@ class ZVMDriverTestCases(ZVMTestCase):
         info1 = ["os000001: Shutting down... Failed"]
         info2 = ["os000001: Activating... Done"]
         data = {"data": [{"info": info1}, {"info": info2}]}
-        self._set_fake_xcat_responses([data, self._set_reachable('sshd')])
+        self._set_fake_xcat_responses([data, self._set_reachable('reachable')])
         self.driver.reboot(self.context, self.instance, {}, "HARD")
         self.mox.VerifyAll()
 
@@ -872,7 +863,7 @@ class ZVMDriverTestCases(ZVMTestCase):
         info1 = ["os000001: Shutting down... Done"]
         info2 = ["os000001: Activating... Done"]
         data = {"data": [{"info": info1}, {"info": info2}]}
-        self._set_fake_xcat_responses([data, self._set_reachable('sshd')])
+        self._set_fake_xcat_responses([data, self._set_reachable('reachable')])
         self.driver.reboot(self.context, self.instance, {}, "SOFT")
         self.mox.VerifyAll()
 
@@ -1231,6 +1222,7 @@ class ZVMDriverTestCases(ZVMTestCase):
         self.mox.StubOutWithMock(self.driver._zvm_images,
                                  'delete_image_from_xcat')
         self.mox.StubOutWithMock(zvmutils, 'punch_xcat_auth_file')
+        self.mox.StubOutWithMock(zvmutils, 'punch_iucv_authorized_file')
         self.mox.StubOutWithMock(instance.ZVMInstance, 'power_on')
         self.mox.StubOutWithMock(zvmutils, 'xdsh')
         self.mox.StubOutWithMock(self.driver, '_attach_volume_to_instance')
@@ -1249,6 +1241,7 @@ class ZVMDriverTestCases(ZVMTestCase):
         self.driver._deploy_root_and_ephemeral(farg, farg)
         self.driver._zvm_images.delete_image_from_xcat(farg)
         zvmutils.punch_xcat_auth_file(mox.IgnoreArg(), 'os000001')
+        zvmutils.punch_iucv_authorized_file('rszos000001', 'fakehcp')
         instance.ZVMInstance.power_on()
         self.driver._attach_volume_to_instance(farg, self._fake_inst, [])
         self.mox.ReplayAll()
@@ -1288,6 +1281,7 @@ class ZVMDriverTestCases(ZVMTestCase):
         self.mox.StubOutWithMock(self.driver._zvm_images,
                                  'delete_image_from_xcat')
         self.mox.StubOutWithMock(zvmutils, 'punch_xcat_auth_file')
+        self.mox.StubOutWithMock(zvmutils, 'punch_iucv_authorized_file')
         self.mox.StubOutWithMock(instance.ZVMInstance, 'power_on')
         self.mox.StubOutWithMock(zvmutils, 'xdsh')
         self.mox.StubOutWithMock(self.driver, '_attach_volume_to_instance')
@@ -1305,6 +1299,7 @@ class ZVMDriverTestCases(ZVMTestCase):
         self.driver._deploy_root_and_ephemeral(farg, farg)
         self.driver._zvm_images.delete_image_from_xcat(farg)
         zvmutils.punch_xcat_auth_file(mox.IgnoreArg(), 'os000001')
+        zvmutils.punch_iucv_authorized_file('rszos000001', 'fakehcp')
         instance.ZVMInstance.power_on()
         self.driver._attach_volume_to_instance(farg, self._fake_inst, [])
         self.mox.ReplayAll()
@@ -1347,6 +1342,7 @@ class ZVMDriverTestCases(ZVMTestCase):
         self.mox.StubOutWithMock(self.driver._zvm_images,
                                  'delete_image_from_xcat')
         self.mox.StubOutWithMock(zvmutils, 'punch_xcat_auth_file')
+        self.mox.StubOutWithMock(zvmutils, 'punch_iucv_authorized_file')
         self.mox.StubOutWithMock(instance.ZVMInstance, 'power_on')
         self.mox.StubOutWithMock(self.driver, '_attach_volume_to_instance')
 
@@ -1365,6 +1361,7 @@ class ZVMDriverTestCases(ZVMTestCase):
         self.driver._deploy_root_and_ephemeral(farg, farg)
         self.driver._zvm_images.delete_image_from_xcat(farg)
         zvmutils.punch_xcat_auth_file(mox.IgnoreArg(), 'os000001')
+        zvmutils.punch_iucv_authorized_file('rszos000001', 'fakehcp')
         instance.ZVMInstance.power_on()
         self.driver._attach_volume_to_instance(farg, self._fake_inst, [])
         self.mox.ReplayAll()
@@ -1472,6 +1469,7 @@ class ZVMDriverTestCases(ZVMTestCase):
         self.mox.StubOutWithMock(self.driver._zvm_images,
                                  'delete_image_from_xcat')
         self.mox.StubOutWithMock(zvmutils, 'punch_xcat_auth_file')
+        self.mox.StubOutWithMock(zvmutils, 'punch_iucv_authorized_file')
         self.mox.StubOutWithMock(instance.ZVMInstance, 'power_on')
         self.mox.StubOutWithMock(self.driver, '_attach_volume_to_instance')
 
@@ -1488,6 +1486,7 @@ class ZVMDriverTestCases(ZVMTestCase):
         self.driver._deploy_root_and_ephemeral(farg, farg)
         self.driver._zvm_images.delete_image_from_xcat(farg)
         zvmutils.punch_xcat_auth_file(farg, farg)
+        zvmutils.punch_iucv_authorized_file('os000001', 'fakehcp')
         instance.ZVMInstance.power_on()
         self.driver._attach_volume_to_instance(farg, self._fake_inst, [])
         self.mox.ReplayAll()
@@ -1523,6 +1522,8 @@ class ZVMDriverTestCases(ZVMTestCase):
     def test_finish_revert_migration_same_mn(self):
         self.flags(zvm_xcat_server="10.10.10.10")
         self.stubs.Set(instance.ZVMInstance, 'copy_xcat_node',
+                       self._fake_fun())
+        self.stubs.Set(zvmutils, 'add_iucv_in_zvm_table',
                        self._fake_fun())
         self.stubs.Set(instance.ZVMInstance, 'delete_xcat_node',
                        self._fake_fun())

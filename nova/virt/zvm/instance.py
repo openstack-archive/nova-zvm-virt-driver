@@ -619,20 +619,14 @@ class ZVMInstance(object):
 
         return int(cpu_time)
 
+    @zvmutils.wrap_invalid_xcat_resp_data_error
     def is_reachable(self):
-        """Return True is the instance is reachable."""
-        url = self._xcat_url.nodestat('/' + self._name)
-        LOG.debug('Get instance status of %s' % self._name)
-        res_dict = zvmutils.xcat_request("GET", url)
-
-        with zvmutils.expect_invalid_xcat_resp_data(res_dict):
-            status = res_dict['node'][0][0]['data'][0]
-
-        if status is not None:
-            if status.__contains__('sshd'):
-                return True
-
-        return False
+        """Check whether IUCV connection works well."""
+        LOG.debug("Check whether VM is reachable.")
+        result = self._power_state("PUT", "isreachable")
+        if 'unreachable' in result['info'][0][0]:
+            return False
+        return True
 
     def _wait_for_reachable(self):
         """Called at an interval until the instance is reachable."""
