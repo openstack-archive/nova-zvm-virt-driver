@@ -500,14 +500,14 @@ class ZVMDriverTestCases(ZVMTestCase):
         self.stubs.Set(instance.ZVMInstance, 'deploy_node', self._fake_fun())
         self.stubs.Set(self.driver._pathutils, 'clean_temp_folder',
                        self._fake_fun())
-        self.stubs.Set(self.driver._networkop, 'create_nic', self._fake_fun())
+        self.stubs.Set(self.driver, '_add_nic_to_table', self._fake_fun())
         self.stubs.Set(zvmutils, 'punch_adminpass_file', self._fake_fun())
         self.stubs.Set(zvmutils, 'punch_xcat_auth_file', self._fake_fun())
         self.stubs.Set(instance.ZVMInstance, 'power_on', self._fake_fun())
         self.stubs.Set(self.driver._zvm_images, 'update_last_use_date',
                        self._fake_fun())
-        self.stubs.Set(self.driver, '_wait_for_addnic', self._fake_fun())
-        self.stubs.Set(self.driver, '_is_nic_granted', self._fake_fun(True))
+        self.stubs.Set(self.driver, '_wait_and_get_nic_direct',
+                       self._fake_fun())
         self.stubs.Set(self.driver._image_api, 'get', self.fake_image_get)
         self.stubs.Set(self.instance, 'save', self._fake_fun())
         self.driver.spawn({}, self.instance, self.fake_imgmeta_obj(), ['fake'],
@@ -539,14 +539,14 @@ class ZVMDriverTestCases(ZVMTestCase):
         self.stubs.Set(instance.ZVMInstance, 'deploy_node', self._fake_fun())
         self.stubs.Set(self.driver._pathutils, 'clean_temp_folder',
                        self._fake_fun())
-        self.stubs.Set(self.driver._networkop, 'create_nic', self._fake_fun())
+        self.stubs.Set(self.driver, '_add_nic_to_table', self._fake_fun())
         self.stubs.Set(zvmutils, 'punch_adminpass_file', self._fake_fun())
         self.stubs.Set(zvmutils, 'punch_xcat_auth_file', self._fake_fun())
         self.stubs.Set(instance.ZVMInstance, 'power_on', self._fake_fun())
         self.stubs.Set(self.driver._zvm_images, 'update_last_use_date',
                        self._fake_fun())
-        self.stubs.Set(self.driver, '_wait_for_addnic', self._fake_fun())
-        self.stubs.Set(self.driver, '_is_nic_granted', self._fake_fun(True))
+        self.stubs.Set(self.driver, '_wait_and_get_nic_direct',
+                       self._fake_fun())
         self.stubs.Set(os, 'remove', self._fake_fun())
         self.stubs.Set(zvmutils, 'get_host', self._fake_fun("fake@10.1.1.10"))
         self._set_fake_xcat_resp([
@@ -587,14 +587,14 @@ class ZVMDriverTestCases(ZVMTestCase):
         self.mox.StubOutWithMock(self.driver._zvm_images, 'get_imgname_xcat')
         self.mox.StubOutWithMock(instance.ZVMInstance, 'create_userid')
         self.mox.StubOutWithMock(instance.ZVMInstance, 'update_node_info')
-        self.mox.StubOutWithMock(self.driver._networkop, 'create_nic')
+        self.stubs.Set(self.driver, '_add_nic_to_table', self._fake_fun())
         self.mox.StubOutWithMock(instance.ZVMInstance, 'deploy_node')
         self.mox.StubOutWithMock(self.driver._pathutils, 'clean_temp_folder')
         self.mox.StubOutWithMock(zvmutils, 'punch_adminpass_file')
         self.mox.StubOutWithMock(zvmutils, 'punch_xcat_auth_file')
         self.mox.StubOutWithMock(zvmutils, 'process_eph_disk')
-        self.mox.StubOutWithMock(self.driver, '_wait_for_addnic')
-        self.mox.StubOutWithMock(self.driver, '_is_nic_granted')
+        self.stubs.Set(self.driver, '_wait_and_get_nic_direct',
+                       self._fake_fun())
         self.mox.StubOutWithMock(instance.ZVMInstance, 'power_on')
         self.mox.StubOutWithMock(self.driver._zvm_images,
                                  'update_last_use_date')
@@ -617,8 +617,7 @@ class ZVMDriverTestCases(ZVMTestCase):
         instance.ZVMInstance.create_userid(fake_bdi,
             image_meta, mox.IgnoreArg(), 'fakeimg')
         self.driver._preset_instance_network('os000001', network_info)
-        self.driver._networkop.create_nic(mox.IgnoreArg(), 'os000001',
-            mox.IgnoreArg(), mox.IgnoreArg(), '1000')
+        self.driver._add_nic_to_table('os000001', 'fake')
         instance.ZVMInstance.update_node_info(image_meta)
         instance.ZVMInstance.deploy_node('fakeimg',
                                          '/temp/os000001/configdrive.tgz')
@@ -629,8 +628,7 @@ class ZVMDriverTestCases(ZVMTestCase):
                                   mox.IgnoreArg())
         zvmutils.process_eph_disk('os000001', mox.IgnoreArg(), mox.IgnoreArg(),
                                   mox.IgnoreArg())
-        self.driver._wait_for_addnic('os000001').AndReturn(True)
-        self.driver._is_nic_granted('os000001').AndReturn(True)
+        self.driver._wait_and_get_nic_direct('os000001')
         instance.ZVMInstance.power_on()
         self.driver._pathutils.clean_temp_folder(mox.IgnoreArg())
         self.driver._zvm_images.update_last_use_date(mox.IgnoreArg())
@@ -676,6 +674,8 @@ class ZVMDriverTestCases(ZVMTestCase):
                        self._fake_fun())
         self.stubs.Set(self.driver, '_preset_instance_network',
                        self._fake_fun())
+        self.stubs.Set(self.driver, '_add_nic_to_table',
+                       self._fake_fun())
         self.stubs.Set(self.driver._zvm_images, 'image_exist_xcat',
                        self._fake_fun(False))
         self.stubs.Set(dist.LinuxDist,
@@ -683,7 +683,6 @@ class ZVMDriverTestCases(ZVMTestCase):
                        self._fake_fun(("/tmp/fakefile", "fakecmd")))
         self.stubs.Set(self.driver, '_import_image_to_xcat', self._fake_fun())
         self.stubs.Set(instance.ZVMInstance, 'create_userid', self._fake_fun())
-        self.stubs.Set(self.driver._networkop, 'create_nic', self._fake_fun())
         self.stubs.Set(instance.ZVMInstance, 'update_node_info',
                        self._fake_fun())
         self.stubs.Set(self.driver._zvm_images, 'get_imgname_xcat',
@@ -1226,8 +1225,9 @@ class ZVMDriverTestCases(ZVMTestCase):
         self.mox.StubOutWithMock(instance.ZVMInstance, 'update_node_def')
         self.mox.StubOutWithMock(self.driver, '_preset_instance_network')
         self.mox.StubOutWithMock(instance.ZVMInstance, 'create_userid')
-        self.mox.StubOutWithMock(self.driver, '_add_nic_to_instance')
+        self.mox.StubOutWithMock(self.driver, '_add_nic_to_table')
         self.mox.StubOutWithMock(self.driver, '_deploy_root_and_ephemeral')
+        self.mox.StubOutWithMock(self.driver, '_wait_and_get_nic_direct')
         self.mox.StubOutWithMock(self.driver._zvm_images,
                                  'delete_image_from_xcat')
         self.mox.StubOutWithMock(zvmutils, 'punch_xcat_auth_file')
@@ -1245,8 +1245,9 @@ class ZVMDriverTestCases(ZVMTestCase):
         instance.ZVMInstance.update_node_def(farg, farg)
         self.driver._preset_instance_network('os000001', farg)
         instance.ZVMInstance.create_userid(farg, farg, farg)
-        self.driver._add_nic_to_instance('os000001', farg, farg)
+        self.driver._add_nic_to_table('os000001', farg)
         self.driver._deploy_root_and_ephemeral(farg, farg)
+        self.driver._wait_and_get_nic_direct('os000001', self._fake_inst)
         self.driver._zvm_images.delete_image_from_xcat(farg)
         zvmutils.punch_xcat_auth_file(mox.IgnoreArg(), 'os000001')
         instance.ZVMInstance.power_on()
@@ -1283,8 +1284,9 @@ class ZVMDriverTestCases(ZVMTestCase):
         self.mox.StubOutWithMock(instance.ZVMInstance, 'update_node_def')
         self.mox.StubOutWithMock(self.driver, '_preset_instance_network')
         self.mox.StubOutWithMock(instance.ZVMInstance, 'create_userid')
-        self.mox.StubOutWithMock(self.driver, '_add_nic_to_instance')
+        self.mox.StubOutWithMock(self.driver, '_add_nic_to_table')
         self.mox.StubOutWithMock(self.driver, '_deploy_root_and_ephemeral')
+        self.mox.StubOutWithMock(self.driver, '_wait_and_get_nic_direct')
         self.mox.StubOutWithMock(self.driver._zvm_images,
                                  'delete_image_from_xcat')
         self.mox.StubOutWithMock(zvmutils, 'punch_xcat_auth_file')
@@ -1301,8 +1303,9 @@ class ZVMDriverTestCases(ZVMTestCase):
         instance.ZVMInstance.update_node_def(farg, farg)
         self.driver._preset_instance_network('os000001', farg)
         instance.ZVMInstance.create_userid(farg, farg, farg)
-        self.driver._add_nic_to_instance('os000001', farg, farg)
+        self.driver._add_nic_to_table('os000001', farg)
         self.driver._deploy_root_and_ephemeral(farg, farg)
+        self.driver._wait_and_get_nic_direct('os000001', self._fake_inst)
         self.driver._zvm_images.delete_image_from_xcat(farg)
         zvmutils.punch_xcat_auth_file(mox.IgnoreArg(), 'os000001')
         instance.ZVMInstance.power_on()
@@ -1342,8 +1345,9 @@ class ZVMDriverTestCases(ZVMTestCase):
         self.mox.StubOutWithMock(self.driver, '_preset_instance_network')
         self.mox.StubOutWithMock(instance.ZVMInstance, 'create_userid')
         self.mox.StubOutWithMock(zvmutils, 'process_eph_disk')
-        self.mox.StubOutWithMock(self.driver, '_add_nic_to_instance')
+        self.mox.StubOutWithMock(self.driver, '_add_nic_to_table')
         self.mox.StubOutWithMock(self.driver, '_deploy_root_and_ephemeral')
+        self.mox.StubOutWithMock(self.driver, '_wait_and_get_nic_direct')
         self.mox.StubOutWithMock(self.driver._zvm_images,
                                  'delete_image_from_xcat')
         self.mox.StubOutWithMock(zvmutils, 'punch_xcat_auth_file')
@@ -1361,8 +1365,9 @@ class ZVMDriverTestCases(ZVMTestCase):
         self.driver._preset_instance_network('os000001', farg)
         instance.ZVMInstance.create_userid(farg, farg, farg)
         zvmutils.process_eph_disk('os000001')
-        self.driver._add_nic_to_instance('os000001', farg, farg)
+        self.driver._add_nic_to_table('os000001', farg)
         self.driver._deploy_root_and_ephemeral(farg, farg)
+        self.driver._wait_and_get_nic_direct('os000001', self._fake_inst)
         self.driver._zvm_images.delete_image_from_xcat(farg)
         zvmutils.punch_xcat_auth_file(mox.IgnoreArg(), 'os000001')
         instance.ZVMInstance.power_on()
@@ -1402,14 +1407,14 @@ class ZVMDriverTestCases(ZVMTestCase):
         self.mox.StubOutWithMock(instance.ZVMInstance, 'update_node_def')
         self.mox.StubOutWithMock(self.driver, '_preset_instance_network')
         self.mox.StubOutWithMock(instance.ZVMInstance, 'create_userid')
-        self.mox.StubOutWithMock(self.driver, '_add_nic_to_instance')
+        self.mox.StubOutWithMock(self.driver, '_add_nic_to_table')
         self.mox.StubOutWithMock(self.driver, '_deploy_root_and_ephemeral')
+        self.mox.StubOutWithMock(self.driver, '_wait_and_get_nic_direct')
         self.mox.StubOutWithMock(self.driver._zvm_images,
                                  'delete_image_from_xcat')
         self.mox.StubOutWithMock(instance.ZVMInstance, 'delete_userid')
         self.mox.StubOutWithMock(instance.ZVMInstance, 'delete_xcat_node')
         self.mox.StubOutWithMock(self.driver, '_reconfigure_networking')
-        self.mox.StubOutWithMock(self.driver, '_is_nic_granted')
         self.mox.StubOutWithMock(instance.ZVMInstance, 'power_on')
 
         farg = mox.IgnoreArg()
@@ -1422,7 +1427,7 @@ class ZVMDriverTestCases(ZVMTestCase):
         instance.ZVMInstance.update_node_def(farg, farg)
         self.driver._preset_instance_network('os000001', farg)
         instance.ZVMInstance.create_userid(farg, farg, farg)
-        self.driver._add_nic_to_instance('os000001', farg, farg)
+        self.driver._add_nic_to_table('os000001', farg)
         self.driver._deploy_root_and_ephemeral(farg, farg).AndRaise(
             exception.ZVMXCATDeployNodeFailed({'node': 'fn', 'msg': 'e'}))
         self.driver._zvm_images.delete_image_from_xcat(farg)
@@ -1430,8 +1435,8 @@ class ZVMDriverTestCases(ZVMTestCase):
         instance.ZVMInstance.delete_xcat_node()
         instance.ZVMInstance.copy_xcat_node(farg)
         instance.ZVMInstance.delete_xcat_node()
-        self.driver._reconfigure_networking(farg, network_info, farg)
-        self.driver._is_nic_granted(farg).AndReturn(True)
+        self.driver._reconfigure_networking(farg, network_info, farg,
+                                            self._fake_inst)
         instance.ZVMInstance.power_on()
         self.mox.ReplayAll()
 
@@ -1467,8 +1472,9 @@ class ZVMDriverTestCases(ZVMTestCase):
                                  'clean_up_snapshot_time_path')
         self.mox.StubOutWithMock(self.driver, '_preset_instance_network')
         self.mox.StubOutWithMock(instance.ZVMInstance, 'create_userid')
-        self.mox.StubOutWithMock(self.driver, '_add_nic_to_instance')
+        self.mox.StubOutWithMock(self.driver, '_add_nic_to_table')
         self.mox.StubOutWithMock(self.driver, '_deploy_root_and_ephemeral')
+        self.mox.StubOutWithMock(self.driver, '_wait_and_get_nic_direct')
         self.mox.StubOutWithMock(self.driver._zvm_images,
                                  'delete_image_from_xcat')
         self.mox.StubOutWithMock(zvmutils, 'punch_xcat_auth_file')
@@ -1484,8 +1490,9 @@ class ZVMDriverTestCases(ZVMTestCase):
         self.driver._zvm_images.clean_up_snapshot_time_path(farg)
         self.driver._preset_instance_network('os000001', farg)
         instance.ZVMInstance.create_userid(farg, farg, farg)
-        self.driver._add_nic_to_instance('os000001', farg, farg)
+        self.driver._add_nic_to_table('os000001', farg)
         self.driver._deploy_root_and_ephemeral(farg, farg)
+        self.driver._wait_and_get_nic_direct('os000001', self._fake_inst)
         self.driver._zvm_images.delete_image_from_xcat(farg)
         zvmutils.punch_xcat_auth_file(farg, farg)
         instance.ZVMInstance.power_on()
@@ -1529,21 +1536,17 @@ class ZVMDriverTestCases(ZVMTestCase):
 
         self.mox.StubOutWithMock(self.driver, 'instance_exists')
         self.mox.StubOutWithMock(self.driver, '_preset_instance_network')
-        self.mox.StubOutWithMock(self.driver, '_add_nic_to_instance')
-        self.mox.StubOutWithMock(self.driver, '_wait_for_nic_update')
-        self.mox.StubOutWithMock(self.driver, '_wait_for_addnic')
-        self.mox.StubOutWithMock(self.driver, '_is_nic_granted')
+        self.mox.StubOutWithMock(self.driver, '_add_nic_to_table')
+        self.mox.StubOutWithMock(self.driver, '_wait_and_get_nic_direct')
         self.mox.StubOutWithMock(self.driver, '_attach_volume_to_instance')
         self.mox.StubOutWithMock(self.driver, 'power_on')
 
         self.driver.instance_exists('rszos000001').AndReturn(True)
         self.driver._preset_instance_network('os000001',
             self._fake_network_info()).AndReturn(None)
-        self.driver._add_nic_to_instance('os000001',
-            self._fake_network_info(), None).AndReturn(None)
-        self.driver._wait_for_nic_update('os000001').AndReturn(None)
-        self.driver._wait_for_addnic('os000001').AndReturn(None)
-        self.driver._is_nic_granted('os000001').AndReturn(True)
+        self.driver._add_nic_to_table('os000001',
+            self._fake_network_info()).AndReturn(None)
+        self.driver._wait_and_get_nic_direct('os000001', self._fake_inst)
         self.driver._attach_volume_to_instance({}, mox.IgnoreArg(),
             []).AndReturn(None)
         self.driver.power_on({}, mox.IgnoreArg(), []).AndReturn(None)
@@ -2161,42 +2164,6 @@ class ZVMNetworkTestCases(ZVMTestCase):
     def test_makehosts(self):
         self._set_fake_xcat_responses([{'data': [{'data': ['mac']}]}])
         self.networkop.makehosts()
-
-    def test_add_instance_nic(self):
-        self._set_fake_xcat_responses([{'data': [{'data': ['Done']}]}])
-        self.networkop._add_instance_nic('fakehcp', self.iname, '1000', 'fake')
-        self.mox.VerifyAll()
-
-    def test_add_instance_nic_by_chvm(self):
-        self._set_fake_xcat_responses([{'data': [{'data': ['Done']}]}])
-        self.networkop._add_instance_nic_by_chvm(self.iname, '1000', 'macid')
-        self.mox.VerifyAll()
-
-    def test_add_instance_err(self):
-        self._set_fake_xcat_responses([{'data': [{'error': ['Error: err']}]}])
-        self.assertRaises(exception.ZVMNetworkError,
-                          self.networkop._add_instance_nic, 'fakehcp',
-                          self.iname, '1000', 'fake')
-        self.mox.VerifyAll()
-
-    def test_add_instance_err_and_warn(self):
-        self._set_fake_xcat_responses(
-            [{'data': [
-                {'error': ['Error: err']},
-                {'error': ['Warning: Permanently added zhcp host']}
-                ]}])
-        self.assertRaises(exception.ZVMNetworkError,
-                          self.networkop._add_instance_nic, 'fakehcp',
-                          self.iname, '1000', 'fake')
-        self.mox.VerifyAll()
-
-    def test_add_instance_ignore_warn(self):
-        self._set_fake_xcat_responses(
-            [{'data': [
-                {'data': [{'error': ['Warning: Permanently added zhcp host']}]}
-                ]}])
-        self.networkop._add_instance_nic('fakehcp', self.iname, '1000', 'fake')
-        self.mox.VerifyAll()
 
     def test_add_instance_ignore_recoverable_issue(self):
         data = 'Return Code: 596\n Reason Code: 1186'
