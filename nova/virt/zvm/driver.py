@@ -317,6 +317,14 @@ class ZVMDriver(driver.ComputeDriver):
                                   attached to the instance.
 
         """
+        # For zVM instance, limit the maximum length of instance name to be 8
+        if len(instance['name']) > 8:
+            msg = (_("Don't support spawn vm on zVM hypervisor with instance "
+                "name: %s, please change your instance_name_template to make "
+                "sure the length of instance name is not longer than 8 "
+                "characters") % instance['name'])
+            raise nova_exception.InvalidInput(reason=msg)
+
         root_mount_device, boot_from_volume = zvmutils.is_boot_from_volume(
                                                             block_device_info)
         bdm = driver.block_device_info_get_mapping(block_device_info)
