@@ -92,3 +92,10 @@ XCAT_SUPPORT_CHVM_SMCLI_VERSION = '2.8.3.8'
 # e0a7bc3502e8635bf7a2954220a6406f563f3a1f added this
 # support add --ipl as param to mkvm call
 XCAT_MKVM_SUPPORT_IPL = '2.8.3.11'
+
+# xCAT version that supports collection of diagnostics for failed deployments
+XCAT_SUPPORT_COLLECT_DIAGNOSTICS_DEPLOYFAILED = '2.8.3.12'
+
+# Reasons for collecting diagnostics.
+# xCAT may adjust diagnostic contents based on the reason passed in.
+DIAGNOSTICS_RSN_DEPLOYMENT_TIMEOUT = 'OpenStackDeploymentTimeout'
