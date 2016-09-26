@@ -15,6 +15,7 @@
 
 import binascii
 import datetime
+import six
 import time
 
 from oslo_config import cfg
@@ -122,6 +123,10 @@ class ZVMInstance(object):
         if not self._reachable:
             LOG.error(_("Failed to power on instance %s: timeout"), self._name)
             raise nova_exception.InstancePowerOnFailure(reason="timeout")
+
+    def is_powered_off(self):
+        """Return True if the instance is powered off."""
+        return self._get_power_stat() == power_state.SHUTDOWN
 
     def reset(self):
         """Hard reboot z/VM instance."""
@@ -822,3 +827,49 @@ class ZVMInstance(object):
             log_data = res_info['info'][0][0]
 
         return log_data
+
+    def collect_diagnostics(self, context, reason):
+        xcat_version = self._driver._xcat_version
+
+        if zvmutils.xcat_support_deployment_failure_diagnostics(xcat_version):
+            # Diagnostics request is only supported >= xCAT 2.3.8.16
+            # On older versions of xCAT, do nothing.  If the request is issued
+            # on an older version, xCAT will treat it as an error.
+            url = self._xcat_url.mkdiag('/', self._name, self._instance.uuid,
+                                        context)
+            # Some body properties will appear to duplicate information
+            # carried elsewhere, for example the request ID which is a URL
+            # query parameter as well.  This is intentional.  The request body
+            # is considered opaque to xCAT, data there is simply passed through
+            # into the diagnostics blob as "upstream context".  Other parts
+            # of the request, such as the URL query parameters, are NOT opaque
+            # and xCAT uses them to filter the data that is captured.
+            body = ['reason=%s' % reason,
+                    'openstack_nova_instance_uuid=%s' % self._instance.uuid]
+            if context is not None:
+                try:
+                    body.append('openstack_request_id=%s' % context.request_id)
+                except Exception as err:
+                    # Cannot use format_message() in this context, because the
+                    # Exception class does not implement that method.
+                    msg = _("Failed to add request ID to message body: %(err)s"
+                            ) % {'err': six.text_type(err)}
+                    LOG.error(msg)
+                    # Continue and return the original URL once the error is
+                    # logged. Failing the request over this is NOT desired.
+            try:
+                zvmutils.xcat_request("POST", url, body)
+            except (exception.ZVMXCATRequestFailed,
+                    exception.ZVMInvalidXCATResponseDataError,
+                    exception.ZVMXCATInternalError,
+                    exception.ZVMDriverError) as err:
+                msg = _("Failed to collect deployment timeout diagnostics: %s"
+                        ) % err.format_message()
+                LOG.error(msg)
+        else:
+            msg = _("Skipping diagnostics collection; xCAT version %(actual)s "
+                    "does not support that function.  The first xCAT version "
+                    "supporting that function is %(required)s."
+                    ) % {'actual': xcat_version, 'required':
+                         const.XCAT_SUPPORT_COLLECT_DIAGNOSTICS_DEPLOYFAILED}
+            LOG.debug(msg)

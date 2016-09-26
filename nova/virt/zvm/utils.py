@@ -78,6 +78,8 @@ class XCATUrl(object):
         self.VERSION = '/version'
         self.PCONTEXT = '&requestid='
         self.PUUID = '&objectid='
+        self.DIAGLOGS = '/logs/diagnostics'
+        self.PNODERANGE = '&nodeRange='
 
     def _nodes(self, arg=''):
         return self.PREFIX + self.NODES + arg + self.SUFFIX
@@ -113,8 +115,20 @@ class XCATUrl(object):
             rurl = rurl + self.PUUID + vmuuid
         return rurl
 
+    def _append_nodeRange(self, rurl, nodeRange):
+        if nodeRange:
+            rurl = rurl + self.PNODERANGE + nodeRange
+        return rurl
+
     def _hv(self, arg=''):
         return self.PREFIX + self.HV + arg + self.SUFFIX
+
+    def _diag_logs(self, arg='', nodeRange='', vmuuid='', context=None):
+        rurl = self.PREFIX + self.DIAGLOGS + arg + self.SUFFIX
+        rurl = self._append_nodeRange(rurl, nodeRange)
+        rurl = self._append_context(rurl, context)
+        rurl = self._append_instanceid(rurl, vmuuid)
+        return rurl
 
     def rpower(self, arg=''):
         return self.PREFIX + self.NODES + arg + self.POWER + self.SUFFIX
@@ -216,6 +230,10 @@ class XCATUrl(object):
 
     def version(self):
         return self.PREFIX + self.VERSION + self.SUFFIX
+
+    def mkdiag(self, arg='', nodeRange='', vmuuid='', context=None):
+        rurl = self._diag_logs(arg, nodeRange, vmuuid, context)
+        return rurl
 
 
 class HTTPSClientAuthConnection(httplib.HTTPSConnection):
@@ -600,10 +618,17 @@ def xcat_support_mkvm_ipl_param(xcat_version):
         const.XCAT_MKVM_SUPPORT_IPL.split('.'))
 
 
+def xcat_support_deployment_failure_diagnostics(xcat_version):
+    """Return true if xCAT version supports deployment failure diagnostics"""
+    return map(int, xcat_version.split('.')) >= map(int,
+        const.XCAT_SUPPORT_COLLECT_DIAGNOSTICS_DEPLOYFAILED.split('.'))
+
+
 def get_userid(node_name):
     """Returns z/VM userid for the xCAT node."""
     url = get_xcat_url().lsdef_node(''.join(['/', node_name]))
     info = xcat_request('GET', url)
+
     with expect_invalid_xcat_resp_data(info):
         for s in info['info'][0]:
             if s.__contains__('userid='):
