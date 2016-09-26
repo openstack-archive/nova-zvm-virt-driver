@@ -386,6 +386,7 @@ class ZVMDriverTestCases(ZVMTestCase):
         rmvm_info = ["os000001: Deleting virtual server OS000001... Done"]
         fake_resp_list = [
             ("GET", None, None, self._fake_instance_list_data()),
+            ("GET", None, None, self._fake_reachable_data('sshd')),
             ("DELETE", None, None, self._gen_resp(info=rmvm_info))]
         self._set_fake_xcat_resp(fake_resp_list)
         self.driver.destroy({}, self.instance, {}, {})
@@ -396,6 +397,7 @@ class ZVMDriverTestCases(ZVMTestCase):
         det_res = self._gen_resp(info=rmvm_info, error=['error'])
         fake_resp_list = [
             ("GET", None, None, self._fake_instance_list_data()),
+            ("GET", None, None, self._fake_reachable_data('sshd')),
             ("DELETE", None, None, det_res)]
         self._set_fake_xcat_resp(fake_resp_list)
         self.assertRaises(exception.ZVMXCATInternalError,
