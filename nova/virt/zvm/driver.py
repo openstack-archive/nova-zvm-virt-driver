@@ -555,6 +555,25 @@ class ZVMDriver(driver.ComputeDriver):
             LOG.info(_LI("Destroying instance %s"), inst_name,
                      instance=instance)
 
+            # Collect diagnostics when the instance is unreachable, since this
+            # is most often caused by a deployment failure but the deployment
+            # artifacts are often needed to debug the root cause.
+            if zvm_inst.is_reachable():
+                LOG.debug(("Node %s is reachable, "
+                          "skipping diagnostics collection"), inst_name,
+                          instance=instance)
+            elif zvm_inst.is_powered_off():
+                LOG.debug(("Node %s is powered off, "
+                          "skipping diagnostics collection"), inst_name,
+                          instance=instance)
+            else:
+                LOG.debug(("Node %s is powered on but unreachable, "
+                          "collecting diagnostics for failed deployment"),
+                          inst_name,
+                          instance=instance)
+                zvm_inst.collect_diagnostics(context,
+                                    const.DIAGNOSTICS_RSN_DEPLOYMENT_TIMEOUT)
+
             bdm = driver.block_device_info_get_mapping(block_device_info)
             try:
                 bdm_det = list(bdm)
