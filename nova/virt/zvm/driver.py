@@ -1817,6 +1817,10 @@ class ZVMDriver(driver.ComputeDriver):
                                 res_info["errorcode"][0] != '0'):
                                 # we didn't found the definition
                                 return
+                else:
+                    # in this case, the nic switch info is not ready yet
+                    # need another loop to check until time out or find it
+                    return
 
             except exception.ZVMBaseException as e:
                 # Ignore any zvm driver exceptions
