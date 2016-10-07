@@ -128,7 +128,7 @@ class ZVMInstance(object):
 
     def is_powered_off(self):
         """Return True if the instance is powered off."""
-        return self._get_power_stat() == power_state.SHUTDOWN
+        return self._check_power_stat() == power_state.SHUTDOWN
 
     def reset(self):
         """Hard reboot z/VM instance."""
