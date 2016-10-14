@@ -2238,7 +2238,7 @@ class ZVMUtilsTestCases(ZVMTestCase):
                 'error': []}
         self.mox.StubOutWithMock(zvmutils.LOG, 'info')
         msg = ("Warning from xCAT: %s")
-        zvmutils.LOG.info(msg % str(resp['node']))
+        zvmutils.LOG.info(msg, str(resp['node']))
         self.mox.ReplayAll()
 
         zvmutils._log_warnings(resp)

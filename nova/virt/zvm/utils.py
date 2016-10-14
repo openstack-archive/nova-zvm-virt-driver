@@ -299,7 +299,7 @@ class XCATConnection(object):
                   "Request-method:%(method)s "
                   "URL:%(url)s "
                   "Headers:%(headers)s "
-                  "Body:%(body)s" %
+                  "Body:%(body)s",
                   {'xcat_server': CONF.zvm_xcat_server,
                    'method': method,
                    'url': url.replace(_rep_ptn, ''),  # hide password in log
@@ -327,7 +327,7 @@ class XCATConnection(object):
             'reason': res.reason,
             'message': msg}
 
-        LOG.debug("xCAT response: %s" % str(resp))
+        LOG.debug("xCAT response: %s", str(resp))
 
         # Only "200" or "201" returned from xCAT can be considered
         # as good status
@@ -395,7 +395,7 @@ def ignore_errors():
         yield
     except Exception as err:
         emsg = format_exception_msg(err)
-        LOG.debug("Ignore an error: %s" % emsg)
+        LOG.debug("Ignore an error: %s", emsg)
         pass
 
 
@@ -517,7 +517,7 @@ def _log_warnings(resp):
     for msg in (resp['info'], resp['node'], resp['data']):
         msgstr = str(msg)
         if 'warn' in msgstr.lower():
-            LOG.info(_LI("Warning from xCAT: %s") % msgstr)
+            LOG.info(_LI("Warning from xCAT: %s"), msgstr)
 
 
 def _is_warning_or_recoverable_issue(err_str):
@@ -612,7 +612,7 @@ def get_userid(node_name):
 
 def xdsh(node, commands):
     """"Run command on xCAT node."""
-    LOG.debug('Run command %(cmd)s on xCAT node %(node)s' %
+    LOG.debug('Run command %(cmd)s on xCAT node %(node)s',
               {'cmd': commands, 'node': node})
 
     def xdsh_execute(node, commands):
@@ -640,7 +640,7 @@ def punch_file(node, fn, fclass):
     except Exception as err:
         emsg = format_exception_msg(err)
         with excutils.save_and_reraise_exception():
-            LOG.error(_('Punch file to %(node)s failed: %(msg)s') %
+            LOG.error(_('Punch file to %(node)s failed: %(msg)s'),
                       {'node': node, 'msg': emsg})
     finally:
         os.remove(fn)
@@ -681,7 +681,7 @@ def aemod_handler(instance_name, func_name, parms):
         emsg = format_exception_msg(err)
         with excutils.save_and_reraise_exception():
             LOG.error(_LE('Invoke AE method function: %(func)s on %(node)s '
-                          'failed with reason: %(msg)s') %
+                          'failed with reason: %(msg)s'),
                      {'func': func_name, 'node': instance_name, 'msg': emsg})
 
 
@@ -852,12 +852,12 @@ def looping_call(f, sleep=5, inc_sleep=0, max_sleep=60, timeout=600,
         except exceptions:
             retry = not expired
             if retry:
-                LOG.debug("Will re-try %(fname)s in %(itv)d seconds" %
+                LOG.debug("Will re-try %(fname)s in %(itv)d seconds",
                           {'fname': f.__name__, 'itv': sleep})
                 time.sleep(sleep)
                 sleep = min(sleep + inc_sleep, max_sleep)
             else:
-                LOG.debug("Looping call %s timeout" % f.__name__)
+                LOG.debug("Looping call %s timeout", f.__name__)
             continue
         retry = False
 
@@ -870,7 +870,7 @@ class PathUtils(object):
     def _get_image_tmp_path(self):
         image_tmp_path = os.path.normpath(CONF.zvm_image_tmp_path)
         if not os.path.exists(image_tmp_path):
-            LOG.debug('Creating folder %s for image temp files' %
+            LOG.debug('Creating folder %s for image temp files',
                      image_tmp_path)
             os.makedirs(image_tmp_path)
         return image_tmp_path
@@ -879,7 +879,7 @@ class PathUtils(object):
         bundle_tmp_path = os.path.join(self._get_image_tmp_path(), "spawn_tmp",
                                        tmp_file_fn)
         if not os.path.exists(bundle_tmp_path):
-            LOG.debug('Creating folder %s for image bundle temp file' %
+            LOG.debug('Creating folder %s for image bundle temp file',
                       bundle_tmp_path)
             os.makedirs(bundle_tmp_path)
         return bundle_tmp_path
@@ -891,21 +891,21 @@ class PathUtils(object):
         snapshot_folder = os.path.join(self._get_image_tmp_path(),
                                        "snapshot_tmp")
         if not os.path.exists(snapshot_folder):
-            LOG.debug("Creating the snapshot folder %s" % snapshot_folder)
+            LOG.debug("Creating the snapshot folder %s", snapshot_folder)
             os.makedirs(snapshot_folder)
         return snapshot_folder
 
     def _get_punch_path(self):
         punch_folder = os.path.join(self._get_image_tmp_path(), "punch_tmp")
         if not os.path.exists(punch_folder):
-            LOG.debug("Creating the punch folder %s" % punch_folder)
+            LOG.debug("Creating the punch folder %s", punch_folder)
             os.makedirs(punch_folder)
         return punch_folder
 
     def get_spawn_folder(self):
         spawn_folder = os.path.join(self._get_image_tmp_path(), "spawn_tmp")
         if not os.path.exists(spawn_folder):
-            LOG.debug("Creating the spawn folder %s" % spawn_folder)
+            LOG.debug("Creating the spawn folder %s", spawn_folder)
             os.makedirs(spawn_folder)
         return spawn_folder
 
@@ -918,7 +918,7 @@ class PathUtils(object):
         snapshot_time_path = os.path.join(self._get_snapshot_path(),
                                           self.make_time_stamp())
         if not os.path.exists(snapshot_time_path):
-            LOG.debug('Creating folder %s for image bundle temp file' %
+            LOG.debug('Creating folder %s for image bundle temp file',
                       snapshot_time_path)
             os.makedirs(snapshot_time_path)
         return snapshot_time_path
@@ -935,7 +935,7 @@ class PathUtils(object):
         instance_folder = os.path.join(self._get_instances_path(), os_node,
                                        instance_name)
         if not os.path.exists(instance_folder):
-            LOG.debug("Creating the instance path %s" % instance_folder)
+            LOG.debug("Creating the instance path %s", instance_folder)
             os.makedirs(instance_folder)
         return instance_folder
 
@@ -986,7 +986,7 @@ class NetworkUtils(object):
             (cfg_str, cmd_str, dns_str,
                 route_str) = self.generate_network_configration(network,
                                                 base_vdev, device_num, os_type)
-            LOG.debug('Network configure file content is: %s' % cfg_str)
+            LOG.debug('Network configure file content is: %s', cfg_str)
             target_net_conf_file_name = file_path + file_name
             cfg_files.append((target_net_conf_file_name, cfg_str))
             udev_cfg_str += self.generate_udev_configuration(device_num,

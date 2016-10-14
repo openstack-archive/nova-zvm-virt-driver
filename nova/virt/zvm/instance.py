@@ -85,7 +85,7 @@ class ZVMInstance(object):
             if ("Return Code: 200" in err_str and
                     "Reason Code: 12" in err_str):
                 # Instance already not active
-                LOG.warning(_LW("z/VM instance %s not active") % self._name)
+                LOG.warning(_LW("z/VM instance %s not active"), self._name)
                 return
             else:
                 msg = _("Failed to power off instance: %s") % err_str
@@ -104,7 +104,7 @@ class ZVMInstance(object):
                 retry_count -= 1
 
         LOG.warning(_LW("Failed to shutdown instance %(inst)s in %(time)d "
-                     "seconds") % {'inst': self._name, 'time': timeout})
+                     "seconds"), {'inst': self._name, 'time': timeout})
 
     def power_on(self):
         """"Power on z/VM instance."""
@@ -115,14 +115,12 @@ class ZVMInstance(object):
             if ("Return Code: 200" in err_str and
                     "Reason Code: 8" in err_str):
                 # Instance already not active
-                LOG.warning(_LW("z/VM instance %s already active")
-                            % self._name)
+                LOG.warning(_LW("z/VM instance %s already active"), self._name)
                 return
 
         self._wait_for_reachable()
         if not self._reachable:
-            LOG.error(_("Failed to power on instance %s: timeout") %
-                      self._name)
+            LOG.error(_("Failed to power on instance %s: timeout"), self._name)
             raise nova_exception.InstancePowerOnFailure(reason="timeout")
 
     def reset(self):
@@ -134,7 +132,7 @@ class ZVMInstance(object):
             if ("Return Code: 200" in err_str and
                     "Reason Code: 12" in err_str):
                 # Be able to reset in power state of SHUTDOWN
-                LOG.warning(_LW("Reset z/VM instance %s from SHUTDOWN state") %
+                LOG.warning(_LW("Reset z/VM instance %s from SHUTDOWN state"),
                          self._name)
                 return
             else:
@@ -229,8 +227,8 @@ class ZVMInstance(object):
                 _instance_info.cpu_time_ns = cpu_time
 
             except exception.ZVMInvalidXCATResponseDataError:
-                LOG.warning(_LW("Failed to get inventory info for %s")
-                    % self._name)
+                LOG.warning(_LW("Failed to get inventory info for %s"),
+                            self._name)
                 _instance_info.state = power_stat
                 _instance_info.max_mem_kb = max_mem_kb
                 _instance_info.mem_kb = max_mem_kb
@@ -259,7 +257,7 @@ class ZVMInstance(object):
 
     def create_xcat_node(self, zhcp, userid=None):
         """Create xCAT node for z/VM instance."""
-        LOG.debug("Creating xCAT node for %s" % self._name)
+        LOG.debug("Creating xCAT node for %s", self._name)
 
         user_id = userid or self._name
         body = ['userid=%s' % user_id,
@@ -297,8 +295,7 @@ class ZVMInstance(object):
                       os_image=None):
         """Create z/VM userid into user directory for a z/VM instance."""
         # We do not support boot from volume currently
-        LOG.debug("Creating the z/VM user entry for instance %s"
-                      % self._name)
+        LOG.debug("Creating the z/VM user entry for instance %s", self._name)
 
         boot_from_volume = zvmutils.is_boot_from_volume(block_device_info)[1]
 
@@ -459,17 +456,15 @@ class ZVMInstance(object):
         return "is Unlocked..." not in str(resp)
 
     def _wait_for_unlock(self, zhcp_node, interval=60, timeout=300):
-        LOG.debug("Waiting for unlock instance %s" % self._name)
+        LOG.debug("Waiting for unlock instance %s", self._name)
 
         def _wait_unlock(expiration):
             if timeutils.utcnow() > expiration:
-                LOG.debug("Waiting for unlock instance %s timeout" %
-                          self._name)
+                LOG.debug("Waiting for unlock instance %s timeout", self._name)
                 raise loopingcall.LoopingCallDone()
 
             if not self.is_locked(zhcp_node):
-                LOG.debug("Instance %s is unlocked" %
-                         self._name)
+                LOG.debug("Instance %s is unlocked", self._name)
                 raise loopingcall.LoopingCallDone()
 
         expiration = timeutils.utcnow() + datetime.timedelta(seconds=timeout)
@@ -568,7 +563,7 @@ class ZVMInstance(object):
 
     def _check_power_stat(self):
         """Get power status of a z/VM instance."""
-        LOG.debug('Query power stat of %s' % self._name)
+        LOG.debug('Query power stat of %s', self._name)
         res_dict = self._power_state("GET", "stat")
 
         @zvmutils.wrap_invalid_xcat_resp_data_error
@@ -583,7 +578,7 @@ class ZVMInstance(object):
         """get rinv result and return in a list."""
         field = '&field=%s' % command
         url = self._xcat_url.rinv('/' + self._name, field)
-        LOG.debug('Remote inventory of %s' % self._name)
+        LOG.debug('Remote inventory of %s', self._name)
         res_info = zvmutils.xcat_request("GET", url)['info']
 
         with zvmutils.expect_invalid_xcat_resp_data(res_info):
@@ -684,7 +679,7 @@ class ZVMInstance(object):
     def is_reachable(self):
         """Return True is the instance is reachable."""
         url = self._xcat_url.nodestat('/' + self._name)
-        LOG.debug('Get instance status of %s' % self._name)
+        LOG.debug('Get instance status of %s', self._name)
         res_dict = zvmutils.xcat_request("GET", url)
 
         with zvmutils.expect_invalid_xcat_resp_data(res_dict):
@@ -711,7 +706,7 @@ class ZVMInstance(object):
                               exception.ZVMRetryException)
 
     def update_node_info(self, image_meta):
-        LOG.debug("Update the node info for instance %s" % self._name)
+        LOG.debug("Update the node info for instance %s", self._name)
 
         image_name = ''.join(i for i in image_meta['name'] if i.isalnum())
         image_id = image_meta['id']
@@ -732,7 +727,7 @@ class ZVMInstance(object):
             zvmutils.xcat_request("PUT", url, body)
 
     def update_node_info_resize(self, image_name_xcat):
-        LOG.debug("Update the nodetype for instance %s" % self._name)
+        LOG.debug("Update the nodetype for instance %s", self._name)
 
         name_section = image_name_xcat.split("-")
         os_type = name_section[0]
@@ -758,7 +753,7 @@ class ZVMInstance(object):
         return res_info['data'][0][0]
 
     def update_node_provmethod(self, provmethod):
-        LOG.debug("Update the nodetype for instance %s" % self._name)
+        LOG.debug("Update the nodetype for instance %s", self._name)
 
         body = ['nodetype.provmethod=%s' % provmethod]
 
@@ -780,7 +775,7 @@ class ZVMInstance(object):
             zvmutils.xcat_request("PUT", url, body)
 
     def deploy_node(self, image_name, transportfiles=None, vdev=None):
-        LOG.debug("Begin to deploy image on instance %s" % self._name)
+        LOG.debug("Begin to deploy image on instance %s", self._name)
         vdev = vdev or CONF.zvm_user_root_vdev
         remote_host_info = zvmutils.get_host()
         body = ['netboot',
@@ -799,7 +794,7 @@ class ZVMInstance(object):
 
     def copy_xcat_node(self, source_node_name):
         """Create xCAT node from an existing z/VM instance."""
-        LOG.debug("Creating xCAT node %s from existing node" % self._name)
+        LOG.debug("Creating xCAT node %s from existing node", self._name)
 
         url = self._xcat_url.lsdef_node('/' + source_node_name)
         res_info = zvmutils.xcat_request("GET", url)['info'][0]

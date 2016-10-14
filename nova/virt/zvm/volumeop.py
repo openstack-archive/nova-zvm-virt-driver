@@ -50,7 +50,7 @@ class VolumeOperator(object):
         try:
             self._svc_driver.init_host(host_stats)
         except (exception.ZVMDriverError, exception.ZVMVolumeError) as err:
-            LOG.warning(_LW("Initialize zhcp failed. Reason: %s") %
+            LOG.warning(_LW("Initialize zhcp failed. Reason: %s"),
                         err.format_message())
 
     def attach_volume_to_instance(self, context, connection_info, instance,
@@ -66,7 +66,7 @@ class VolumeOperator(object):
             raise exception.ZVMDriverError(msg=errmsg)
 
         LOG.debug("Attach a volume to an instance. conn_info: %(info)s; " +
-                    "instance: %(name)s; mountpoint: %(point)s" %
+                    "instance: %(name)s; mountpoint: %(point)s",
                   {'info': connection_info, 'name': instance['name'],
                    'point': mountpoint})
 
@@ -92,7 +92,7 @@ class VolumeOperator(object):
             raise exception.ZVMDriverError(msg=errmsg)
 
         LOG.debug("Detach a volume from an instance. conn_info: %(info)s; " +
-                    "instance: %(name)s; mountpoint: %(point)s" %
+                    "instance: %(name)s; mountpoint: %(point)s",
                   {'info': connection_info, 'name': instance['name'],
                    'point': mountpoint})
 
@@ -701,7 +701,7 @@ class SVCDriver(DriverAPI):
 
     def _extract_connection_info(self, context, connection_info):
         with wrap_internal_errors():
-            LOG.debug("Extract connection_info: %s" % connection_info)
+            LOG.debug("Extract connection_info: %s", connection_info)
 
             lun = connection_info['data']['target_lun']
             lun = "%04x000000000000" % int(lun)
@@ -908,7 +908,7 @@ class SVCDriver(DriverAPI):
 
         """
 
-        LOG.debug("Expand FCP list %s" % fcp_list)
+        LOG.debug("Expand FCP list %s", fcp_list)
 
         if not fcp_list:
             return set()

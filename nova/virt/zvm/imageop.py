@@ -63,7 +63,7 @@ class ZVMImages(object):
                 raise exception.ZVMImageError(msg=msg)
 
         url = self._xcat_url.imgcapture()
-        LOG.debug('Capturing %s start' % instance['name'])
+        LOG.debug('Capturing %s start', instance['name'])
 
         with zvmutils.except_xcat_call_failed_and_reraise(
                 exception.ZVMImageError):
@@ -152,7 +152,7 @@ class ZVMImages(object):
         except (exception.ZVMXCATInternalError,
                 exception.ZVMInvalidXCATResponseDataError,
                 exception.ZVMXCATRequestFailed):
-            LOG.warning(_LW("Failed to delete image file %s from xCAT") %
+            LOG.warning(_LW("Failed to delete image file %s from xCAT"),
                      image_name_xcat)
 
     def _delete_image_object_from_xcat(self, image_name_xcat):
@@ -169,7 +169,7 @@ class ZVMImages(object):
         except (exception.ZVMXCATInternalError,
                 exception.ZVMInvalidXCATResponseDataError,
                 exception.ZVMXCATRequestFailed):
-            LOG.warning(_LW("Failed to delete image definition %s from xCAT") %
+            LOG.warning(_LW("Failed to delete image definition %s from xCAT"),
                      image_name_xcat)
 
     def get_image_file_path_from_image_name(self, image_name_xcat):
@@ -251,7 +251,7 @@ class ZVMImages(object):
         repository.
         """
         LOG.debug("Checking if the image %s exists or not in xCAT "
-                    "MN's image repository " % image_id)
+                    "MN's image repository ", image_id)
         image_uuid = image_id.replace('-', '_')
         parm = '&criteria=profile=~' + image_uuid
         url = self._xcat_url.lsdef_image(addp=parm)
@@ -268,7 +268,7 @@ class ZVMImages(object):
             return False
 
     def fetch_image(self, context, image_id, target, user, project):
-        LOG.debug("Downloading image %s from glance image server" %
+        LOG.debug("Downloading image %s from glance image server",
                   image_id)
         try:
             images.fetch(context, image_id, target)
@@ -377,7 +377,7 @@ class ZVMImages(object):
         """
         image_bundle_name = image_name + '.tar'
         tar_file = spawn_path + '/' + tmp_file_fn + '_' + image_bundle_name
-        LOG.debug("The generate the image bundle file is %s" % tar_file)
+        LOG.debug("The generate the image bundle file is %s", tar_file)
 
         os.chdir(spawn_path)
         tarFile = tarfile.open(tar_file, mode='w')
@@ -519,7 +519,7 @@ class ZVMImages(object):
         except (exception.ZVMXCATRequestFailed,
                 exception.ZVMInvalidXCATResponseDataError,
                 exception.ZVMXCATInternalError) as err:
-            LOG.warning(_LW("Illegal date for last_use_date %s") %
+            LOG.warning(_LW("Illegal date for last_use_date %s"),
                      err.format_message())
 
         return last_use_date_string
@@ -536,14 +536,14 @@ class ZVMImages(object):
         else:
             LOG.warning(_LW("The format for image %s record in xcat table "
                 "osimage's last_used_date is not valid. The correct "
-                "format is auto:last_use_date:yyyy-mm-dd") % image_name)
+                "format is auto:last_use_date:yyyy-mm-dd"), image_name)
             return
 
         try:
             last_use_date_datetime = datetime.datetime.strptime(
                                     last_use_date_string, '%Y-%m-%d')
         except Exception as err:
-            LOG.warning(_LW("Illegal date for last_use_date %(msg)s") % err)
+            LOG.warning(_LW("Illegal date for last_use_date %(msg)s"), err)
             return
 
         return last_use_date_datetime.date()
@@ -571,7 +571,7 @@ class ZVMImages(object):
                 last_use_date = image_list[i][1]
                 if self._verify_is_deletable_periodic(last_use_date,
                                                    clean_period):
-                    LOG.debug('Delete the image %s' % image_name_xcat)
+                    LOG.debug('Delete the image %s', image_name_xcat)
                     self.delete_image_from_xcat(image_name_xcat)
                 else:
                     LOG.debug("Keep the image")
@@ -629,7 +629,7 @@ class ZVMImages(object):
 
     def get_imgcapture_needed(self, instance):
         """Get the space needed on xCAT MN for an image capture."""
-        LOG.debug("Getting image capture needed size for %s" %
+        LOG.debug("Getting image capture needed size for %s",
                   instance['name'])
 
         cmd = "df -h /"
@@ -676,8 +676,8 @@ class ZVMImages(object):
             else:
                 return image_name_xcat
         except (TypeError, IndexError):
-            LOG.error(_("xCAT imagename format for %s is not as expected")
-                      % image_name_xcat)
+            LOG.error(_("xCAT imagename format for %s is not as expected"),
+                      image_name_xcat)
 
     def _sort_image_by_use_date(self, image_list, left, right):
         """Sort the image_list by last_use_date from oldest image to latest."""
@@ -784,7 +784,7 @@ class ZVMImages(object):
                     " please check whether the image file exists!"))
             raise exception.ZVMImageError(msg=msg)
 
-        LOG.debug("hexdump result is %s" % output)
+        LOG.debug("hexdump result is %s", output)
         try:
             root_disk_units = int(output[144:156])
         except ValueError:
@@ -798,14 +798,14 @@ class ZVMImages(object):
                       " support FBA and CKD disk"))
             raise exception.ZVMImageError(msg=msg)
 
-        LOG.debug("The image's root_disk_units is %s" % root_disk_units)
+        LOG.debug("The image's root_disk_units is %s", root_disk_units)
         return root_disk_units
 
     def set_image_root_disk_units(self, context, image_meta, image_file_path):
         """Set the property 'root_disk_units'to image."""
         new_image_meta = image_meta
         root_disk_units = self.get_root_disk_units(image_file_path)
-        LOG.debug("The image's root_disk_units is %s" % root_disk_units)
+        LOG.debug("The image's root_disk_units is %s", root_disk_units)
 
         (glance_image_service, image_id) = glance.get_remote_image_service(
                                                 context, image_meta['id'])
