@@ -1819,8 +1819,9 @@ class ZVMDriver(driver.ComputeDriver):
         def _wait_for_nic_add_in_direct(inst_name, expiration):
             if (CONF.zvm_reachable_timeout and
                     timeutils.utcnow() > expiration):
-                LOG.warning(_LW("NIC update check failed"), instance=instance)
-                raise loopingcall.LoopingCallDone()
+                msg = _("NIC update check failed "
+                        "on instance:%s") % instance.uuid
+                raise exception.ZVMNetworkError(msg=msg)
 
             try:
                 switch_dict = self._get_nic_switch_info(inst_name)
