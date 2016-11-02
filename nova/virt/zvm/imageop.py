@@ -91,7 +91,7 @@ class ZVMImages(object):
                 LOG.error(msg)
                 raise exception.ZVMImageError(msg=msg)
         else:
-            msg = _("Capture image returns bad response.")
+            msg = _("Capture image returns bad response. res is %s") % response
             LOG.error(msg)
             raise exception.ZVMImageError(msg=msg)
 
