@@ -628,8 +628,8 @@ class ZVMImages(object):
 
     def get_imgcapture_needed(self, instance, user_dict):
         """Get the space needed on xCAT MN for an image capture."""
-        LOG.debug("Getting %s root disk size as image capture max needed." %
-                  instance['name'])
+        LOG.debug("Getting %s root disk size as image capture max needed.",
+                                                 instance['name'])
         try:
             rdisk = ''.join(['MDISK ', CONF.zvm_user_root_vdev])
             rdisk_dict = [mdisk for mdisk in user_dict
