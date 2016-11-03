@@ -53,8 +53,10 @@ class LinuxDist(object):
             (cfg_str, cmd_str, dns_str,
                 route_str) = self._generate_network_configuration(network,
                                                 base_vdev, device_num)
-            LOG.debug('Network configure file content is: %s' % cfg_str)
             target_net_conf_file_name = file_path + file_name
+            cfg_str_for_log = cfg_str.replace('\n', ' ')
+            LOG.debug('Network configure file[%s] content is: %s',
+                    (target_net_conf_file_name, cfg_str_for_log))
             cfg_files.append((target_net_conf_file_name, cfg_str))
             udev_cfg_str += self._get_udev_configuration(device_num,
                                 '0.0.' + str(base_vdev).zfill(4))
