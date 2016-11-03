@@ -405,7 +405,7 @@ class ZVMDriverTestCases(ZVMTestCase):
         self.mox.VerifyAll()
 
     def test_destroy_non_exist(self):
-        self.stubs.Set(self.driver, 'instance_exists', self._fake_fun(False))
+        self.stubs.Set(self.driver, '_instance_exists', self._fake_fun(False))
         self.driver.destroy({}, self.instance2, {}, {})
         self.mox.VerifyAll()
 
@@ -933,11 +933,11 @@ class ZVMDriverTestCases(ZVMTestCase):
     def test_attach_volume(self):
         self.instance.vm_state = vm_states.ACTIVE
         self.mox.StubOutWithMock(self.driver, '_format_mountpoint')
-        self.mox.StubOutWithMock(self.driver, 'instance_exists')
+        self.mox.StubOutWithMock(self.driver, '_instance_exists')
         self.mox.StubOutWithMock(instance.ZVMInstance, 'is_reachable')
         self.mox.StubOutWithMock(instance.ZVMInstance, 'attach_volume')
         self.driver._format_mountpoint('/dev/sdd').AndReturn('/dev/vdd')
-        self.driver.instance_exists('os000001').AndReturn(True)
+        self.driver._instance_exists('os000001').AndReturn(True)
         instance.ZVMInstance.is_reachable().AndReturn(True)
         instance.ZVMInstance.attach_volume(self.driver._volumeop, {},
                                            self._fake_connection_info(),
@@ -957,10 +957,10 @@ class ZVMDriverTestCases(ZVMTestCase):
 
     def test_attach_volume_no_mountpoint(self):
         self.instance.vm_state = vm_states.ACTIVE
-        self.mox.StubOutWithMock(self.driver, 'instance_exists')
+        self.mox.StubOutWithMock(self.driver, '_instance_exists')
         self.mox.StubOutWithMock(instance.ZVMInstance, 'is_reachable')
         self.mox.StubOutWithMock(instance.ZVMInstance, 'attach_volume')
-        self.driver.instance_exists('os000001').AndReturn(True)
+        self.driver._instance_exists('os000001').AndReturn(True)
         instance.ZVMInstance.is_reachable().AndReturn(True)
         instance.ZVMInstance.attach_volume(self.driver._volumeop, {},
                                            self._fake_connection_info(),
@@ -1509,7 +1509,7 @@ class ZVMDriverTestCases(ZVMTestCase):
     def test_confirm_migration_same_mn(self):
         self.flags(zvm_xcat_server="10.10.10.10")
         inst = instance.CopiedInstance(self._fake_inst)
-        self.stubs.Set(self.driver, 'instance_exists', self._fake_fun(True))
+        self.stubs.Set(self.driver, '_instance_exists', self._fake_fun(True))
         self.mox.StubOutWithMock(self.driver, 'destroy')
         self.driver.destroy({}, mox.IgnoreArg())
         self.mox.ReplayAll()
@@ -1518,7 +1518,7 @@ class ZVMDriverTestCases(ZVMTestCase):
 
     def test_confirm_migration_diff_mn(self):
         self.flags(zvm_xcat_server="10.10.10.11")
-        self.stubs.Set(self.driver, 'instance_exists', self._fake_fun(False))
+        self.stubs.Set(self.driver, '_instance_exists', self._fake_fun(False))
         self.stubs.Set(self.driver._zvm_images, 'delete_image_from_xcat',
                        self._fake_fun())
         self.stubs.Set(self.driver._zvm_images,
@@ -1536,14 +1536,14 @@ class ZVMDriverTestCases(ZVMTestCase):
         self.stubs.Set(instance.ZVMInstance, 'delete_xcat_node',
                        self._fake_fun())
 
-        self.mox.StubOutWithMock(self.driver, 'instance_exists')
+        self.mox.StubOutWithMock(self.driver, '_instance_exists')
         self.mox.StubOutWithMock(self.driver, '_preset_instance_network')
         self.mox.StubOutWithMock(self.driver, '_add_nic_to_table')
         self.mox.StubOutWithMock(self.driver, '_wait_and_get_nic_direct')
         self.mox.StubOutWithMock(self.driver, '_attach_volume_to_instance')
         self.mox.StubOutWithMock(self.driver, 'power_on')
 
-        self.driver.instance_exists('rszos000001').AndReturn(True)
+        self.driver._instance_exists('rszos000001').AndReturn(True)
         self.driver._preset_instance_network('os000001',
             self._fake_network_info()).AndReturn(None)
         self.driver._add_nic_to_table('os000001',
@@ -1561,12 +1561,12 @@ class ZVMDriverTestCases(ZVMTestCase):
     def test_finish_revert_migration_diff_mn(self):
         self.flags(zvm_xcat_server="10.10.10.11")
 
-        self.mox.StubOutWithMock(self.driver, 'instance_exists')
+        self.mox.StubOutWithMock(self.driver, '_instance_exists')
         self.mox.StubOutWithMock(self.driver._zvm_images,
                                  'cleanup_image_after_migration')
         self.mox.StubOutWithMock(self.driver, '_attach_volume_to_instance')
 
-        self.driver.instance_exists('rszos000001').AndReturn(False)
+        self.driver._instance_exists('rszos000001').AndReturn(False)
         self.driver._zvm_images.cleanup_image_after_migration(
             'os000001').AndReturn(None)
         self.driver._attach_volume_to_instance({}, mox.IgnoreArg(),
@@ -1637,10 +1637,10 @@ class ZVMDriverTestCases(ZVMTestCase):
 
     def test_detach_volume_from_instance(self):
         bdm = [{'connection_info': 'fake', 'mount_device': None}]
-        self.mox.StubOutWithMock(self.driver, 'instance_exists')
+        self.mox.StubOutWithMock(self.driver, '_instance_exists')
         self.mox.StubOutWithMock(instance.ZVMInstance, 'is_reachable')
         self.mox.StubOutWithMock(instance.ZVMInstance, 'detach_volume')
-        self.driver.instance_exists('os000001').AndReturn(True)
+        self.driver._instance_exists('os000001').AndReturn(True)
         instance.ZVMInstance.is_reachable().AndReturn(True)
         instance.ZVMInstance.detach_volume(self.driver._volumeop, 'fake',
             mox.IgnoreArg(), None, True, rollback=False)

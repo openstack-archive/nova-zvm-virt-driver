@@ -187,9 +187,13 @@ class ZVMDriver(driver.ComputeDriver):
 
         return instances
 
-    def instance_exists(self, instance_name):
+    def _instance_exists(self, instance_name):
         """Overwrite this to using instance name as input parameter."""
         return instance_name in self.list_instances()
+
+    def instance_exists(self, instance):
+        """Overwrite this to using instance name as input parameter."""
+        return self._instance_exists(instance.name)
 
     def spawn(self, context, instance, image_meta, injected_files,
               admin_password, network_info=None, block_device_info=None,
@@ -551,7 +555,7 @@ class ZVMDriver(driver.ComputeDriver):
                                                             block_device_info)
         zvm_inst = ZVMInstance(self, instance)
 
-        if self.instance_exists(inst_name):
+        if self._instance_exists(inst_name):
             LOG.info(_LI("Destroying instance %s") % inst_name,
                      instance=instance)
 
@@ -678,7 +682,7 @@ class ZVMDriver(driver.ComputeDriver):
             raise exception.ZVMDriverError(msg=msg)
         if mountpoint:
             mountpoint = self._format_mountpoint(mountpoint)
-        if self.instance_exists(instance['name']):
+        if self._instance_exists(instance['name']):
             zvm_inst = ZVMInstance(self, instance)
             is_active = zvm_inst.is_reachable()
 
@@ -693,7 +697,7 @@ class ZVMDriver(driver.ComputeDriver):
             raise exception.ZVMDriverError(msg=msg)
         if mountpoint:
             mountpoint = self._format_mountpoint(mountpoint)
-        if self.instance_exists(instance['name']):
+        if self._instance_exists(instance['name']):
             zvm_inst = ZVMInstance(self, instance)
             is_active = zvm_inst.is_reachable()
 
@@ -1465,7 +1469,7 @@ class ZVMDriver(driver.ComputeDriver):
             if mountpoint:
                 mountpoint = self._format_mountpoint(mountpoint)
 
-            if self.instance_exists(instance['name']):
+            if self._instance_exists(instance['name']):
                 zvm_inst = ZVMInstance(self, instance)
                 is_active = zvm_inst.is_reachable()
                 try:
@@ -1736,7 +1740,7 @@ class ZVMDriver(driver.ComputeDriver):
         old_instance['name'] = ''.join(('rsz', instance['name']))
         old_inst = ZVMInstance(self, old_instance)
 
-        if self.instance_exists(old_inst._name):
+        if self._instance_exists(old_inst._name):
             # Same xCAT MN:
             self.destroy({}, old_instance)
         else:
@@ -1752,7 +1756,7 @@ class ZVMDriver(driver.ComputeDriver):
         zvm_inst = ZVMInstance(self, new_instance)
         bdm = driver.block_device_info_get_mapping(block_device_info)
 
-        if self.instance_exists(zvm_inst._name):
+        if self._instance_exists(zvm_inst._name):
             # Same xCAT MN:
             old_inst = ZVMInstance(self, instance)
             old_inst.copy_xcat_node(new_instance['name'])
