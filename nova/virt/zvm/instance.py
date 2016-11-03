@@ -685,14 +685,14 @@ class ZVMInstance(object):
     def is_reachable(self):
         """Check whether IUCV connection works well."""
         if zvmutils.xcat_support_iucv(self._driver._xcat_version):
-            LOG.debug("Check whether VM %s is reachable." % self._name)
+            LOG.debug("Check whether VM %s is reachable.", self._name)
             result = self._power_state("PUT", "isreachable")
             if ': reachable' in result['info'][0][0]:
 
                 return True
         else:
             url = self._xcat_url.nodestat('/' + self._name)
-            LOG.debug('Get instance status of %s' % self._name)
+            LOG.debug('Get instance status of %s', self._name)
             res_dict = zvmutils.xcat_request("GET", url)
 
             with zvmutils.expect_invalid_xcat_resp_data():
