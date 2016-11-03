@@ -754,7 +754,7 @@ def punch_iucv_file(os_ver, zhcp, zhcp_userid, instance_name,
         "cp -rf %s/%s %s 2>&1 >/var/log/messages" % (punch_path,
                                         iucv_service_name, iucv_service_path),
         "chmod +x %s %s" % (iucv_server_path, iucv_service_path),
-        "echo -n %s >/tmp/authorized_userid 2>&1" % zhcp_userid,
+        "echo -n %s >/etc/iucv_authorized_userid 2>&1" % zhcp_userid,
         start_iucv_service_sh
         ))
     _generate_iucv_cmd_file(iucv_cmd_file_path, cmd)
@@ -769,7 +769,7 @@ def punch_iucv_file(os_ver, zhcp, zhcp_userid, instance_name,
 
 
 def punch_iucv_authorized_file(instance_name, zhcp_userid):
-    cmd = "echo -n %s >/tmp/authorized_userid 2>&1" % zhcp_userid
+    cmd = "echo -n %s >/etc/iucv_authorized_userid 2>&1" % zhcp_userid
     iucv_cmd_file_path = '/tmp/%s.sh' % instance_name[-8:]
     _generate_iucv_cmd_file(iucv_cmd_file_path, cmd)
     punch_file(instance_name, iucv_cmd_file_path, 'X', remote_host=get_host())
