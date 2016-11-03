@@ -508,6 +508,9 @@ class ZVMDriver(driver.ComputeDriver):
 
         LOG.debug("Generating the manifest.xml as a part of bundle file for "
                     "image %s", image_meta['id'], instance=instance)
+        image_name = image_name.encode('unicode_escape')
+        image_name = image_name.replace('\u', '')
+        image_name = image_name.decode('utf-8')
         self._zvm_images.generate_manifest_file(image_meta, image_name,
                                                  disk_file, bundle_file_path)
 
