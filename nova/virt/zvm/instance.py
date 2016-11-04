@@ -119,6 +119,7 @@ class ZVMInstance(object):
                 LOG.warning(_LW("z/VM instance %s already active")
                             % self._name)
                 return
+            raise nova_exception.InstancePowerOnFailure(reason=err_str)
 
         self._wait_for_reachable()
         if not self._reachable:
