@@ -104,6 +104,11 @@ class LinuxDist(object):
 
         return cfg_str, cmd_str, dns_str, route_str
 
+    def assemble_zfcp_srcdev(self, fcp, wwpn, lun):
+        path = '/dev/disk/by-path/ccw-0.0.%(fcp)s-zfcp-0x%(wwpn)s:0x%(lun)s'
+        srcdev = path % {'fcp': fcp, 'wwpn': wwpn, 'lun': lun}
+        return srcdev
+
     @abc.abstractmethod
     def _get_network_file_path(self):
         """Get network file configuration path."""
@@ -540,6 +545,12 @@ class ubuntu(LinuxDist):
 
     def get_zipl_script_lines(self, image, ramdisk, root, fcp, wwpn, lun):
         pass
+
+    def assemble_zfcp_srcdev(self, fcp, wwpn, lun):
+        path = '/dev/disk/by-path/ccw-0.0.%(fcp)s-fc-0x%(wwpn)s-lun-%(lun)s'
+        lun = int(lun[0:4], 16)
+        srcdev = path % {'fcp': fcp, 'wwpn': wwpn, 'lun': lun}
+        return srcdev
 
 
 class ubuntu16(ubuntu):
