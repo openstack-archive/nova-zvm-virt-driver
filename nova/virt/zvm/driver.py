@@ -1811,7 +1811,8 @@ class ZVMDriver(driver.ComputeDriver):
     def _set_admin_password(self, inst_name, password):
         command = "echo %s|passwd --stdin root" % password
         try:
-            zvmutils.xdsh(inst_name, command)
+            # After support IUCV, will use execcmdonvm to replace xdsh.
+            zvmutils.execcmdonvm(inst_name, command)
         except exception.ZVMXCATXdshFailed as err:
             LOG.error(_("Setting root password for instance %(instance)s "
                         "failed with reason: %(err)s"),
