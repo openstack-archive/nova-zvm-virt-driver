@@ -226,6 +226,10 @@ class XCATUrl(object):
         """Run shell command after support IUCV."""
         return self.PREFIX + self.NODES + arg + self.EXECCMDONVM + self.SUFFIX
 
+    def execcmdonvm(self, arg=''):
+        """Run shell command after support IUCV."""
+        return self.PREFIX + self.NODES + arg + self.EXECCMDONVM + self.SUFFIX
+
     def network(self, arg='', addp=None):
         rurl = self.PREFIX + self.NETWORK + arg + self.SUFFIX
         if addp is not None:
