@@ -80,6 +80,7 @@ class XCATUrl(object):
         self.PUUID = '&objectid='
         self.DIAGLOGS = '/logs/diagnostics'
         self.PNODERANGE = '&nodeRange='
+        self.EXECCMDONVM = '/execcmdonvm'
 
     def _nodes(self, arg=''):
         return self.PREFIX + self.NODES + arg + self.SUFFIX
@@ -220,6 +221,10 @@ class XCATUrl(object):
     def xdsh(self, arg=''):
         """Run shell command."""
         return self.PREFIX + self.NODES + arg + self.XDSH + self.SUFFIX
+
+    def execcmdonvm(self, arg=''):
+        """Run shell command after support IUCV."""
+        return self.PREFIX + self.NODES + arg + self.EXECCMDONVM + self.SUFFIX
 
     def network(self, arg='', addp=None):
         rurl = self.PREFIX + self.NETWORK + arg + self.SUFFIX
@@ -655,6 +660,16 @@ def xdsh(node, commands):
     return res_dict
 
 
+def execcmdonvm(node, commands):
+    """"Run command on VM."""
+    LOG.debug('Run command %(cmd)s on VM %(node)s',
+              {'cmd': commands, 'node': node})
+
+    body = [commands]
+    url = get_xcat_url().execcmdonvm('/' + node)
+    return xcat_request("PUT", url, body)
+
+    
 def punch_file(node, fn, fclass):
     body = [" ".join(['--punchfile', fn, fclass, get_host()])]
     url = get_xcat_url().chvm('/' + node)
