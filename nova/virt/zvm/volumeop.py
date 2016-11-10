@@ -27,6 +27,7 @@ from nova.i18n import _, _LW
 from nova.objects import block_device as block_device_obj
 from nova.objects import instance as instance_obj
 from nova.virt.zvm import const
+from nova.virt.zvm import dist
 from nova.virt.zvm import exception
 from nova.virt.zvm import utils as zvmutils
 from nova.volume import cinder
@@ -335,6 +336,7 @@ class SVCDriver(DriverAPI):
         self._instance_fcp_map = {}
         self._is_instance_fcp_map_locked = False
         self._volume_api = cinder.API()
+        self._dist_manager = dist.ListDistManager()
 
         self._actions = {'attach_volume': 'addScsiVolume',
                         'detach_volume': 'removeScsiVolume',
@@ -1001,7 +1003,8 @@ class SVCDriver(DriverAPI):
         parmline = ' '.join([action, fcp, wwpn, lun])
         return parmline
 
-    def _get_mountpoint_parms(self, action, fcp, wwpn, lun, mountpoint):
+    def _get_mountpoint_parms(self, action, fcp, wwpn, lun,
+                              mountpoint, os_version):
         action_parm = "action=%s" % action
         mountpoint = "tgtFile=%s" % mountpoint
         # Replace the ';' in wwpn/fcp to ',' in script file since shell will
@@ -1009,10 +1012,10 @@ class SVCDriver(DriverAPI):
         wwpn = wwpn.replace(';', ',')
         fcp = fcp.replace(';', ',')
         if action == self._actions['create_mountpoint']:
-            path = self._get_zfcp_path_pattern()
-            srcdev = path % {'fcp': fcp, 'wwpn': wwpn, 'lun': lun}
+            dist = self._dist_manager.get_linux_dist(os_version)()
+            srcdev = dist.assemble_zfcp_srcdev(fcp, wwpn, lun)
             srcfile = "srcFile=%s" % srcdev
-            parmline = ' '.join([action_parm, mountpoint, srcfile])
+            parmline = ' '.join([action_parm, mountpoint, srcdev])
         else:
             parmline = ' '.join([action_parm, mountpoint])
         return parmline
@@ -1040,8 +1043,9 @@ class SVCDriver(DriverAPI):
         self._xcat_chvm(instance['name'], body)
 
     def _create_mountpoint(self, instance, fcp, wwpn, lun, mountpoint):
-        path = self._get_zfcp_path_pattern()
-        srcdev = path % {'fcp': fcp, 'wwpn': wwpn, 'lun': lun}
+        os_version = instance['system_metadata']['image_os_version']
+        dist = self._dist_manager.get_linux_dist(os_version)()
+        srcdev = dist.assemble_zfcp_srcdev(fcp, wwpn, lun)
         body = [" ".join(['--createfilesysnode', srcdev, mountpoint])]
         self._xcat_chvm(instance['name'], body)
 
@@ -1069,6 +1073,3 @@ class SVCDriver(DriverAPI):
     def _xcat_rinv(self, fields):
         url = self._xcat_url.rinv('/' + self._host, fields)
         return zvmutils.xcat_request('GET', url)
-
-    def _get_zfcp_path_pattern(self):
-        return '/dev/disk/by-path/ccw-0.0.%(fcp)s-zfcp-0x%(wwpn)s:0x%(lun)s'
