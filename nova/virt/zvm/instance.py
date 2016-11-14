@@ -115,7 +115,7 @@ class ZVMInstance(object):
             err_str = err.format_message()
             if ("Return Code: 200" in err_str and
                     "Reason Code: 8" in err_str):
-                # Instance already not active
+                # Instance already active
                 LOG.warning(_LW("z/VM instance %s already active"), self._name)
                 return
             raise nova_exception.InstancePowerOnFailure(reason=err_str)
