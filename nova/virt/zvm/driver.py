@@ -306,8 +306,6 @@ class ZVMDriver(driver.ComputeDriver):
                 if not image_in_xcat:
                     self._import_image_to_xcat(context, instance, image_meta,
                                                tmp_file_fn)
-                elif bundle_file_path is not None:
-                    self._pathutils.clean_temp_folder(bundle_file_path)
 
                 deploy_image_name = self._zvm_images.get_imgname_xcat(
                                         instance['image_ref'])
@@ -379,6 +377,9 @@ class ZVMDriver(driver.ComputeDriver):
             instance.save()
 
             spawn_time = time.time() - spawn_start
+            if bundle_file_path is not None:
+                self._pathutils.clean_temp_folder(bundle_file_path)
+
             LOG.info(_LI("Instance spawned succeeded in %s seconds"),
                      spawn_time, instance=instance)
         except (exception.ZVMXCATCreateNodeFailed,
