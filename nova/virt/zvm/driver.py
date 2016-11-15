@@ -306,8 +306,6 @@ class ZVMDriver(driver.ComputeDriver):
                 if not image_in_xcat:
                     self._import_image_to_xcat(context, instance, image_meta,
                                                tmp_file_fn)
-                elif bundle_file_path is not None:
-                    self._pathutils.clean_temp_folder(bundle_file_path)
 
                 deploy_image_name = self._zvm_images.get_imgname_xcat(
                                         instance['image_ref'])
@@ -401,6 +399,8 @@ class ZVMDriver(driver.ComputeDriver):
                           {'instance': zvm_inst._name, 'err': err},
                           instance=instance)
         finally:
+            if bundle_file_path is not None:
+                self._pathutils.clean_temp_folder(bundle_file_path)
             self._pathutils.clean_temp_folder(instance_path)
 
         # Update image last deploy date in xCAT osimage table
