@@ -68,15 +68,14 @@ Possible values:
     cfg.StrOpt('zvm_xcat_ca_file',
                default=None,
                help="""
-CA file for https connection to xcat.
+CA file for https connection to xCAT REST API.
 
-When https is used to communicate between zvm driver and xcat,
-zvm driver need to have a CA file so that certificates will
-be used to verify xcat is the one zvm plugin to connect to.
-see https://bugs.launchpad.net/ossn/+bug/1188189 for additional info.
+When HTTPS protocol is used to communicate between z/VM driver and xCAT REST
+API, z/VM driver need to have a CA file which will be used to verify xCAT is
+the one z/VM driver to connect to.
 
 Possible values:
-    A file location in the host that running compute service.
+    A CA file name and location in the host that running compute service.
 """),
     cfg.StrOpt('zvm_diskpool',
                default=None,
