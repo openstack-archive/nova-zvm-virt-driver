@@ -1530,6 +1530,12 @@ class ZVMDriver(driver.ComputeDriver):
                            defines the image from which this instance
                            was created
         """
+        # This is because commit fbe31e461ac3f16edb795993558a2314b4c16b52
+        # changes the image_meta from dict to object, we have several
+        # unique property can't be handled well
+        # see bug 1537921 for detail info
+        image_meta = self._image_api.get(context, image_meta.id)
+
         disk_info = jsonutils.loads(disk_info)
 
         source_xcat_mn = disk_info['disk_source_mn'].encode('gbk')

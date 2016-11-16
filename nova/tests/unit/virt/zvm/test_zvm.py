@@ -1230,6 +1230,7 @@ class ZVMDriverTestCases(ZVMTestCase):
                      'dest_node': 'FAKENODE2'}
         disk_info = jsonutils.dumps(disk_info)
 
+        self.stubs.Set(self.driver._image_api, 'get', self.fake_image_get)
         self.mox.StubOutWithMock(self.driver, 'get_host_ip_addr')
         self.mox.StubOutWithMock(self.driver._pathutils, 'get_instance_path')
         self.mox.StubOutWithMock(self.driver._networkop,
@@ -1272,7 +1273,8 @@ class ZVMDriverTestCases(ZVMTestCase):
         self.mox.ReplayAll()
 
         self.driver.finish_migration(self.context, migration, self._fake_inst,
-                                     disk_info, network_info, None, None,
+                                     disk_info, network_info,
+                                     self.fake_imgmeta_obj(), None,
                                      block_device_info=self._fake_bdi())
         self.mox.VerifyAll()
 
@@ -1292,6 +1294,7 @@ class ZVMDriverTestCases(ZVMTestCase):
                      'dest_node': 'FAKENODE2'}
         disk_info = jsonutils.dumps(disk_info)
 
+        self.stubs.Set(self.driver._image_api, 'get', self.fake_image_get)
         self.mox.StubOutWithMock(self.driver, 'get_host_ip_addr')
         self.mox.StubOutWithMock(self.driver._pathutils, 'get_instance_path')
         self.mox.StubOutWithMock(self.driver._networkop,
@@ -1332,7 +1335,8 @@ class ZVMDriverTestCases(ZVMTestCase):
         self.mox.ReplayAll()
 
         self.driver.finish_migration(self.context, migration, self._fake_inst,
-                                     disk_info, network_info, None, None,
+                                     disk_info, network_info,
+                                     self.fake_imgmeta_obj(), None,
                                      block_device_info=self._fake_bdi())
         self.mox.VerifyAll()
 
@@ -1353,6 +1357,7 @@ class ZVMDriverTestCases(ZVMTestCase):
                      'dest_node': 'FAKENODE2'}
         disk_info = jsonutils.dumps(disk_info)
 
+        self.stubs.Set(self.driver._image_api, 'get', self.fake_image_get)
         self.mox.StubOutWithMock(self.driver, 'get_host_ip_addr')
         self.mox.StubOutWithMock(self.driver._pathutils, 'get_instance_path')
         self.mox.StubOutWithMock(self.driver._networkop,
@@ -1396,7 +1401,8 @@ class ZVMDriverTestCases(ZVMTestCase):
         self.mox.ReplayAll()
 
         self.driver.finish_migration(self.context, migration, self._fake_inst,
-                                     disk_info, network_info, None, None,
+                                     disk_info, network_info,
+                                     self.fake_imgmeta_obj(), None,
                                      block_device_info=self._fake_bdi())
         self.mox.VerifyAll()
 
@@ -1418,6 +1424,7 @@ class ZVMDriverTestCases(ZVMTestCase):
                      'dest_node': 'FAKENODE2'}
         disk_info = jsonutils.dumps(disk_info)
 
+        self.stubs.Set(self.driver._image_api, 'get', self.fake_image_get)
         self.mox.StubOutWithMock(self.driver, 'get_host_ip_addr')
         self.mox.StubOutWithMock(self.driver._pathutils, 'get_instance_path')
         self.mox.StubOutWithMock(self.driver._networkop,
@@ -1463,8 +1470,8 @@ class ZVMDriverTestCases(ZVMTestCase):
 
         self.assertRaises(exception.ZVMXCATDeployNodeFailed,
             self.driver.finish_migration, self.context, migration,
-            self._fake_inst, disk_info, network_info, None, None,
-            block_device_info=self._fake_bdi())
+            self._fake_inst, disk_info, network_info, self.fake_imgmeta_obj(),
+            None, block_device_info=self._fake_bdi())
         self.mox.VerifyAll()
 
     def test_finish_migration_diff_mn(self):
@@ -1484,6 +1491,7 @@ class ZVMDriverTestCases(ZVMTestCase):
                      'dest_node': 'FAKENODE2'}
         disk_info = jsonutils.dumps(disk_info)
 
+        self.stubs.Set(self.driver._image_api, 'get', self.fake_image_get)
         self.mox.StubOutWithMock(self.driver, 'get_host_ip_addr')
         self.mox.StubOutWithMock(self.driver._pathutils, 'get_instance_path')
         self.mox.StubOutWithMock(instance.ZVMInstance, 'create_xcat_node')
@@ -1523,7 +1531,8 @@ class ZVMDriverTestCases(ZVMTestCase):
         self.mox.ReplayAll()
 
         self.driver.finish_migration(self.context, migration, self._fake_inst,
-                                     disk_info, network_info, None, None,
+                                     disk_info, network_info,
+                                     self.fake_imgmeta_obj(), None,
                                      block_device_info=self._fake_bdi())
         self.mox.VerifyAll()
 
