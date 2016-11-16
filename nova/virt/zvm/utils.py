@@ -545,6 +545,7 @@ def _is_warning_or_recoverable_issue(err_str):
 def _is_recoverable_issue(err_str):
     dirmaint_request_counter_save = ['Return Code: 596', 'Reason Code: 1185']
     recoverable_issues = [dirmaint_request_counter_save]
+    recoverable_issues.append(['Return Code: 596', 'Reason Code: 6312'])
     for issue in recoverable_issues:
         # Search all matchs in the return value
         # any mismatch leads to recoverable not empty
