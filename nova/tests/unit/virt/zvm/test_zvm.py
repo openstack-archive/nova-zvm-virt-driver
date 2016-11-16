@@ -2166,6 +2166,18 @@ class ZVMNetworkTestCases(ZVMTestCase):
         data = 'Return Code: 596\n Reason Code: 1185'
         self.assertTrue(zvmutils._is_recoverable_issue(data))
 
+        data = 'Return Code: 596\n Reason Code: 6313'
+        self.assertFalse(zvmutils._is_recoverable_issue(data))
+
+        data = 'Return Code: 597\n Reason Code: 6312'
+        self.assertFalse(zvmutils._is_recoverable_issue(data))
+
+        data = 'Return Code: 597\n Reason Code: 6313'
+        self.assertFalse(zvmutils._is_recoverable_issue(data))
+
+        data = 'Return Code: 596\n Reason Code: 6312'
+        self.assertTrue(zvmutils._is_recoverable_issue(data))
+
 
 class ZVMUtilsTestCases(ZVMTestCase):
 
