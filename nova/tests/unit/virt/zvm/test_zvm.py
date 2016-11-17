@@ -3782,7 +3782,8 @@ class SVCDriverTestCase(ZVMTestCase):
 
     def test_attach_volume_inactive_error_no_rollback(self):
         fake_info = ('lun', 'wwpn', '1G', '1faa')
-        fake_instance = {'name': 'fake'}
+        fake_instance = {'name': 'fake',
+                         'system_metadata': {'image_os_version': 'sles11'}}
         self.driver._instance_fcp_map = {}
         self.driver._fcp_pool = {'1faa': self.driver.FCP([])}
         rollback = False
@@ -3798,8 +3799,8 @@ class SVCDriverTestCase(ZVMTestCase):
         self.driver._add_zfcp_to_pool(farg, farg, farg, farg).AndReturn(None)
         self.driver._allocate_zfcp(farg, farg, farg, farg, farg).AndReturn(
                 None)
-        self.driver._notice_attach(farg, farg, farg, farg, farg).AndReturn(
-                None)
+        self.driver._notice_attach(farg, farg, farg, farg, farg,
+                                   farg).AndReturn(None)
         self.driver._attach_device(farg, farg).AndRaise(
                 exception.ZVMVolumeError(msg='No msg'))
         self.mox.ReplayAll()
@@ -3813,7 +3814,8 @@ class SVCDriverTestCase(ZVMTestCase):
 
     def test_attach_volume_inactive_error_rollback_and_detach(self):
         fake_info = ('lun', 'wwpn', '1G', '1faa')
-        fake_instance = {'name': 'fake'}
+        fake_instance = {'name': 'fake',
+                         'system_metadata': {'image_os_version': 'sles11'}}
         self.driver._instance_fcp_map = {}
         self.driver._fcp_pool = {'1faa': self.driver.FCP([])}
         rollback = True
@@ -3832,12 +3834,13 @@ class SVCDriverTestCase(ZVMTestCase):
         self.driver._add_zfcp_to_pool(farg, farg, farg, farg).AndReturn(None)
         self.driver._allocate_zfcp(farg, farg, farg, farg, farg).AndReturn(
                 None)
-        self.driver._notice_attach(farg, farg, farg, farg, farg).AndReturn(
-                None)
+        self.driver._notice_attach(farg, farg, farg, farg, farg,
+                                   farg).AndReturn(None)
         self.driver._attach_device(farg, farg).AndRaise(
                 exception.ZVMVolumeError(msg='No msg'))
-        self.driver._notice_detach(farg, farg, farg, farg, farg).AndRaise(
-                exception.ZVMVolumeError(msg='No msg'))
+        self.driver._notice_detach(farg, farg, farg, farg, farg,
+                                   farg).AndRaise(
+                                        exception.ZVMVolumeError(msg='No msg'))
         self.driver._remove_zfcp_from_pool(farg, farg).AndRaise(
                 exception.ZVMVolumeError(msg='No msg'))
         self.driver._detach_device(farg, farg).AndReturn(None)
@@ -3852,7 +3855,8 @@ class SVCDriverTestCase(ZVMTestCase):
 
     def test_attach_volume_inactive_error_rollback_no_detach(self):
         fake_info = ('lun', 'wwpn', '1G', '1faa')
-        fake_instance = {'name': 'fake'}
+        fake_instance = {'name': 'fake',
+                         'system_metadata': {'image_os_version': 'sles11'}}
         self.driver._instance_fcp_map = {'fake': {'fcp_list': ['1faa'],
                                                   'count': 1}}
         self.driver._fcp_pool = {'1faa': self.driver.FCP([])}
@@ -3870,10 +3874,12 @@ class SVCDriverTestCase(ZVMTestCase):
         self.driver._add_zfcp_to_pool(farg, farg, farg, farg).AndReturn(None)
         self.driver._allocate_zfcp(farg, farg, farg, farg, farg).AndReturn(
                 None)
-        self.driver._notice_attach(farg, farg, farg, farg, farg).AndRaise(
-                exception.ZVMVolumeError(msg='No msg'))
-        self.driver._notice_detach(farg, farg, farg, farg, farg).AndRaise(
-                exception.ZVMVolumeError(msg='No msg'))
+        self.driver._notice_attach(farg, farg, farg, farg, farg,
+                                   farg).AndRaise(
+                                        exception.ZVMVolumeError(msg='No msg'))
+        self.driver._notice_detach(farg, farg, farg, farg, farg,
+                                   farg).AndRaise(
+                                        exception.ZVMVolumeError(msg='No msg'))
         self.driver._remove_zfcp_from_pool(farg, farg).AndRaise(
                 exception.ZVMVolumeError(msg='No msg'))
         self.mox.ReplayAll()
@@ -3887,7 +3893,8 @@ class SVCDriverTestCase(ZVMTestCase):
 
     def test_attach_volume_inactive(self):
         fake_info = ('lun', 'wwpn', '1G', '1faa')
-        fake_instance = {'name': 'fake'}
+        fake_instance = {'name': 'fake',
+                         'system_metadata': {'image_os_version': 'sles11'}}
         self.driver._instance_fcp_map = {}
         self.driver._fcp_pool = {'1faa': self.driver.FCP([])}
         rollback = True
@@ -3903,8 +3910,8 @@ class SVCDriverTestCase(ZVMTestCase):
         self.driver._add_zfcp_to_pool(farg, farg, farg, farg).AndReturn(None)
         self.driver._allocate_zfcp(farg, farg, farg, farg, farg).AndReturn(
                 None)
-        self.driver._notice_attach(farg, farg, farg, farg, farg).AndReturn(
-                None)
+        self.driver._notice_attach(farg, farg, farg, farg, farg,
+                                   farg).AndReturn(None)
         self.driver._attach_device(farg, farg).AndReturn(None)
         self.mox.ReplayAll()
 
@@ -3916,7 +3923,8 @@ class SVCDriverTestCase(ZVMTestCase):
 
     def test_attach_volume_inactive_multi_fcp(self):
         fake_info = ('lun', 'wwpn', '1G', '1faa;1fab')
-        fake_instance = {'name': 'fake'}
+        fake_instance = {'name': 'fake',
+                         'system_metadata': {'image_os_version': 'sles11'}}
         self.driver._instance_fcp_map = {}
         self.driver._fcp_pool = {'1faa': self.driver.FCP([]),
                                  '1fab': self.driver.FCP([])}
@@ -3933,8 +3941,8 @@ class SVCDriverTestCase(ZVMTestCase):
         self.driver._add_zfcp_to_pool(farg, farg, farg, farg).AndReturn(None)
         self.driver._allocate_zfcp(farg, farg, farg, farg, farg).AndReturn(
                 None)
-        self.driver._notice_attach(farg, farg, farg, farg, farg).AndReturn(
-                None)
+        self.driver._notice_attach(farg, farg, farg, farg, farg,
+                                   farg).AndReturn(None)
         self.driver._attach_device(farg, farg).AndReturn(None)
         self.driver._attach_device(farg, farg).AndReturn(None)
         self.mox.ReplayAll()
@@ -3947,7 +3955,8 @@ class SVCDriverTestCase(ZVMTestCase):
 
     def test_attach_volume_inactive_no_attach(self):
         fake_info = ('lun', 'wwpn', '1G', '1faa')
-        fake_instance = {'name': 'fake'}
+        fake_instance = {'name': 'fake',
+                         'system_metadata': {'image_os_version': 'sles11'}}
         self.driver._instance_fcp_map = {'fake': {'fcp_list': ['1faa'],
                                                   'count': 1}}
         self.driver._fcp_pool = {'1faa': self.driver.FCP([])}
@@ -3963,8 +3972,8 @@ class SVCDriverTestCase(ZVMTestCase):
         self.driver._add_zfcp_to_pool(farg, farg, farg, farg).AndReturn(None)
         self.driver._allocate_zfcp(farg, farg, farg, farg, farg).AndReturn(
                 None)
-        self.driver._notice_attach(farg, farg, farg, farg, farg).AndReturn(
-                None)
+        self.driver._notice_attach(farg, farg, farg, farg, farg,
+                                   farg).AndReturn(None)
         self.mox.ReplayAll()
 
         self.driver.attach_volume_inactive(farg, farg, fake_instance,
@@ -3975,7 +3984,8 @@ class SVCDriverTestCase(ZVMTestCase):
 
     def test_detach_volume_inactive_error_no_rollback(self):
         fake_info = ('lun', 'wwpn', '1G', '1faa')
-        fake_instance = {'name': 'fake'}
+        fake_instance = {'name': 'fake',
+                         'system_metadata': {'image_os_version': 'sles11'}}
         self.driver._instance_fcp_map = {'fake': {'fcp_list': ['1faa'],
                                                   'count': 1}}
         self.driver._fcp_pool = {'1faa': self.driver.FCP([])}
@@ -3991,8 +4001,8 @@ class SVCDriverTestCase(ZVMTestCase):
         self.driver._extract_connection_info(farg, farg).AndReturn(fake_info)
         self.driver._remove_zfcp(farg, farg, farg, farg).AndReturn(None)
         self.driver._remove_zfcp_from_pool(farg, farg).AndReturn(None)
-        self.driver._notice_detach(farg, farg, farg, farg, farg).AndReturn(
-                None)
+        self.driver._notice_detach(farg, farg, farg, farg, farg,
+                                   farg).AndReturn(None)
         self.driver._detach_device(farg, farg).AndRaise(
                 exception.ZVMVolumeError(msg='No msg'))
         self.mox.ReplayAll()
@@ -4006,7 +4016,8 @@ class SVCDriverTestCase(ZVMTestCase):
 
     def test_detach_volume_inactive_error_detach_rollback(self):
         fake_info = ('lun', 'wwpn', '1G', '1faa')
-        fake_instance = {'name': 'fake'}
+        fake_instance = {'name': 'fake',
+                         'system_metadata': {'image_os_version': 'sles11'}}
         self.driver._instance_fcp_map = {'fake': {'fcp_list': ['1faa'],
                                                   'count': 1}}
         self.driver._fcp_pool = {'1faa': self.driver.FCP([])}
@@ -4026,14 +4037,15 @@ class SVCDriverTestCase(ZVMTestCase):
         self.driver._extract_connection_info(farg, farg).AndReturn(fake_info)
         self.driver._remove_zfcp(farg, farg, farg, farg).AndReturn(None)
         self.driver._remove_zfcp_from_pool(farg, farg).AndReturn(None)
-        self.driver._notice_detach(farg, farg, farg, farg, farg).AndReturn(
-                None)
+        self.driver._notice_detach(farg, farg, farg, farg, farg,
+                                   farg).AndReturn(None)
         self.driver._detach_device(farg, farg).AndRaise(
                 exception.ZVMVolumeError(msg='No msg'))
         self.driver._attach_device(farg, farg).AndRaise(
                 exception.ZVMVolumeError(msg='No msg'))
-        self.driver._notice_attach(farg, farg, farg, farg, farg).AndRaise(
-                exception.ZVMVolumeError(msg='No msg'))
+        self.driver._notice_attach(farg, farg, farg, farg, farg,
+                                   farg).AndRaise(
+                                        exception.ZVMVolumeError(msg='No msg'))
         self.driver._add_zfcp_to_pool(farg, farg, farg, farg).AndReturn(True)
         self.driver._allocate_zfcp(farg, farg, farg, farg, farg).AndReturn(
                 None)
@@ -4048,7 +4060,8 @@ class SVCDriverTestCase(ZVMTestCase):
 
     def test_detach_volume_inactive_error_no_detach_rollback(self):
         fake_info = ('lun', 'wwpn', '1G', '1faa')
-        fake_instance = {'name': 'fake'}
+        fake_instance = {'name': 'fake',
+                         'system_metadata': {'image_os_version': 'sles11'}}
         self.driver._instance_fcp_map = {'fake': {'fcp_list': ['1faa'],
                                                   'count': 2}}
         self.driver._fcp_pool = {'1faa': self.driver.FCP([])}
@@ -4067,12 +4080,14 @@ class SVCDriverTestCase(ZVMTestCase):
         self.driver._extract_connection_info(farg, farg).AndReturn(fake_info)
         self.driver._remove_zfcp(farg, farg, farg, farg).AndReturn(None)
         self.driver._remove_zfcp_from_pool(farg, farg).AndReturn(None)
-        self.driver._notice_detach(farg, farg, farg, farg, farg).AndRaise(
-                exception.ZVMVolumeError(msg='No msg'))
+        self.driver._notice_detach(farg, farg, farg, farg, farg,
+                                   farg).AndRaise(
+                                        exception.ZVMVolumeError(msg='No msg'))
         self.driver._attach_device(farg, farg).AndRaise(
                 exception.ZVMVolumeError(msg='No msg'))
-        self.driver._notice_attach(farg, farg, farg, farg, farg).AndRaise(
-                exception.ZVMVolumeError(msg='No msg'))
+        self.driver._notice_attach(farg, farg, farg, farg, farg,
+                                   farg).AndRaise(
+                                        exception.ZVMVolumeError(msg='No msg'))
         self.driver._add_zfcp_to_pool(farg, farg, farg, farg).AndRaise(
                 exception.ZVMVolumeError(msg='No msg'))
         self.driver._allocate_zfcp(farg, farg, farg, farg, farg).AndReturn(
@@ -4088,7 +4103,8 @@ class SVCDriverTestCase(ZVMTestCase):
 
     def test_detach_volume_inactive_and_detach(self):
         fake_info = ('lun', 'wwpn', '1G', '1faa')
-        fake_instance = {'name': 'fake'}
+        fake_instance = {'name': 'fake',
+                         'system_metadata': {'image_os_version': 'sles11'}}
         self.driver._instance_fcp_map = {'fake': {'fcp_list': ['1faa'],
                                                   'count': 1}}
         self.driver._fcp_pool = {'1faa': self.driver.FCP([])}
@@ -4104,8 +4120,8 @@ class SVCDriverTestCase(ZVMTestCase):
         self.driver._extract_connection_info(farg, farg).AndReturn(fake_info)
         self.driver._remove_zfcp(farg, farg, farg, farg).AndReturn(None)
         self.driver._remove_zfcp_from_pool(farg, farg).AndReturn(None)
-        self.driver._notice_detach(farg, farg, farg, farg, farg).AndReturn(
-                None)
+        self.driver._notice_detach(farg, farg, farg, farg, farg,
+                                   farg).AndReturn(None)
         self.driver._detach_device(farg, farg).AndReturn(None)
         self.mox.ReplayAll()
 
@@ -4117,7 +4133,8 @@ class SVCDriverTestCase(ZVMTestCase):
 
     def test_detach_volume_inactive_no_detach(self):
         fake_info = ('lun', 'wwpn', '1G', '1faa')
-        fake_instance = {'name': 'fake'}
+        fake_instance = {'name': 'fake',
+                         'system_metadata': {'image_os_version': 'sles11'}}
         self.driver._instance_fcp_map = {'fake': {'fcp_list': ['1faa'],
                                                   'count': 2}}
         self.driver._fcp_pool = {'1faa': self.driver.FCP([])}
@@ -4132,8 +4149,8 @@ class SVCDriverTestCase(ZVMTestCase):
         self.driver._extract_connection_info(farg, farg).AndReturn(fake_info)
         self.driver._remove_zfcp(farg, farg, farg, farg).AndReturn(None)
         self.driver._remove_zfcp_from_pool(farg, farg).AndReturn(None)
-        self.driver._notice_detach(farg, farg, farg, farg, farg).AndReturn(
-                None)
+        self.driver._notice_detach(farg, farg, farg, farg, farg,
+                                   farg).AndReturn(None)
         self.mox.ReplayAll()
 
         self.driver.detach_volume_inactive(farg, fake_instance, farg, rollback)
@@ -4143,7 +4160,8 @@ class SVCDriverTestCase(ZVMTestCase):
 
     def test_detach_volume_inactive_multi_path(self):
         fake_info = ('lun', 'wwpn', '1G', '1faa')
-        fake_instance = {'name': 'fake'}
+        fake_instance = {'name': 'fake',
+                         'system_metadata': {'image_os_version': 'sles11'}}
         self.driver._instance_fcp_map = {'fake': {'fcp_list': ['1faa'],
                                                   'count': 2}}
         self.driver._fcp_pool = {'1faa': self.driver.FCP([]),
@@ -4159,8 +4177,8 @@ class SVCDriverTestCase(ZVMTestCase):
         self.driver._extract_connection_info(farg, farg).AndReturn(fake_info)
         self.driver._remove_zfcp(farg, farg, farg, farg).AndReturn(None)
         self.driver._remove_zfcp_from_pool(farg, farg).AndReturn(None)
-        self.driver._notice_detach(farg, farg, farg, farg, farg).AndReturn(
-                None)
+        self.driver._notice_detach(farg, farg, farg, farg, farg,
+                                   farg).AndReturn(None)
         self.mox.ReplayAll()
 
         self.driver.detach_volume_inactive(farg, fake_instance, farg, rollback)
