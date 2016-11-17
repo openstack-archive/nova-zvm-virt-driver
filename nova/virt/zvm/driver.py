@@ -1683,7 +1683,7 @@ class ZVMDriver(driver.ComputeDriver):
 
                     # re-configure the networking
                     self._reconfigure_networking(new_inst._name, network_info,
-                                                 old_userid, instance)
+                                                 instance, userid=old_userid)
                     if power_on:
                         new_inst.power_on()
 
