@@ -345,8 +345,7 @@ class ZVMDriverTestCases(ZVMTestCase):
         return self._generate_xcat_resp(inst_inv_info)
 
     def _fake_reachable_data(self, stat):
-        # return {"data": [{"node": [{"name": ["os000001"], "data": [stat]}]}]}
-        return self._set_reachable(stat)
+        return {"data": [{"node": [{"name": ["os000001"], "data": [stat]}]}]}
 
     @mock.patch('nova.virt.zvm.instance.ZVMInstance.get_info')
     def test_get_info(self, mk_get_info):
@@ -387,8 +386,7 @@ class ZVMDriverTestCases(ZVMTestCase):
         rmvm_info = ["os000001: Deleting virtual server OS000001... Done"]
         fake_resp_list = [
             ("GET", None, None, self._fake_instance_list_data()),
-            # ("GET", None, None, self._fake_reachable_data('sshd')),
-            ("PUT", None, None, self._fake_reachable_data(': reachable')),
+            ("GET", None, None, self._fake_reachable_data('sshd')),
             ("DELETE", None, None, self._gen_resp(info=rmvm_info))]
         self._set_fake_xcat_resp(fake_resp_list)
         self.driver.destroy({}, self.instance, {}, {})
@@ -399,8 +397,7 @@ class ZVMDriverTestCases(ZVMTestCase):
         det_res = self._gen_resp(info=rmvm_info, error=['error'])
         fake_resp_list = [
             ("GET", None, None, self._fake_instance_list_data()),
-            # ("GET", None, None, self._fake_reachable_data('sshd')),
-            ("PUT", None, None, self._fake_reachable_data(': reachable')),
+            ("GET", None, None, self._fake_reachable_data('sshd')),
             ("DELETE", None, None, det_res)]
         self._set_fake_xcat_resp(fake_resp_list)
         self.assertRaises(exception.ZVMXCATInternalError,
@@ -508,7 +505,6 @@ class ZVMDriverTestCases(ZVMTestCase):
         self.stubs.Set(self.driver, '_add_nic_to_table', self._fake_fun())
         self.stubs.Set(zvmutils, 'punch_adminpass_file', self._fake_fun())
         self.stubs.Set(zvmutils, 'punch_xcat_auth_file', self._fake_fun())
-        self.stubs.Set(zvmutils, 'punch_iucv_file', self._fake_fun())
         self.stubs.Set(instance.ZVMInstance, 'power_on', self._fake_fun())
         self.stubs.Set(self.driver._zvm_images, 'update_last_use_date',
                        self._fake_fun())
@@ -548,7 +544,6 @@ class ZVMDriverTestCases(ZVMTestCase):
         self.stubs.Set(self.driver, '_add_nic_to_table', self._fake_fun())
         self.stubs.Set(zvmutils, 'punch_adminpass_file', self._fake_fun())
         self.stubs.Set(zvmutils, 'punch_xcat_auth_file', self._fake_fun())
-        self.stubs.Set(zvmutils, 'punch_iucv_file', self._fake_fun())
         self.stubs.Set(instance.ZVMInstance, 'power_on', self._fake_fun())
         self.stubs.Set(self.driver._zvm_images, 'update_last_use_date',
                        self._fake_fun())
@@ -599,7 +594,6 @@ class ZVMDriverTestCases(ZVMTestCase):
         self.mox.StubOutWithMock(self.driver._pathutils, 'clean_temp_folder')
         self.mox.StubOutWithMock(zvmutils, 'punch_adminpass_file')
         self.mox.StubOutWithMock(zvmutils, 'punch_xcat_auth_file')
-        self.mox.StubOutWithMock(zvmutils, 'punch_iucv_file')
         self.mox.StubOutWithMock(zvmutils, 'process_eph_disk')
         self.stubs.Set(self.driver, '_wait_and_get_nic_direct',
                        self._fake_fun())
@@ -632,8 +626,6 @@ class ZVMDriverTestCases(ZVMTestCase):
         zvmutils.punch_adminpass_file(mox.IgnoreArg(), 'os000001', 'pass',
                                       mox.IgnoreArg())
         zvmutils.punch_xcat_auth_file(mox.IgnoreArg(), 'os000001')
-        zvmutils.punch_iucv_file('rhel6.2', 'fakehcp.fake.com',
-                        'fakehcp', 'os000001', '/temp/os000001')
         zvmutils.process_eph_disk('os000001', mox.IgnoreArg(), mox.IgnoreArg(),
                                   mox.IgnoreArg())
         zvmutils.process_eph_disk('os000001', mox.IgnoreArg(), mox.IgnoreArg(),
@@ -712,12 +704,13 @@ class ZVMDriverTestCases(ZVMTestCase):
         self.mox.VerifyAll()
 
     def _set_reachable(self, stat):
-        return {"data": [{"info": ["os000001: reachable"]}]}
+        return {"data": [{"node": [{"name": ["os000001"],
+                                    "data": [stat]}]}]}
 
     def test_power_on(self):
         info = ["os000001: Activating OS000001... Done\n"]
         self._set_fake_xcat_responses([self._generate_xcat_resp(info),
-                                       self._set_reachable('reachable')])
+                                       self._set_reachable('sshd')])
         self.driver.power_on({}, self.instance, {})
 
     def _fake_manifest(self):
@@ -740,14 +733,15 @@ class ZVMDriverTestCases(ZVMTestCase):
                                       "&field=--freerepospace"])
         res_fspace = self._gen_resp(info=["gpok164: Free Image "
                                           "Repository: 13.9G"])
+        url_xdsh = self._app_auth('/xcatws/nodes/os000001/dsh')
+        body_cmd = ["command=df -h /", "options=-q"]
+        res_img_need = self._gen_resp(data=["Filesystem Size Used Avail Use% "
+                                            "Mounted on /dev/dasda1 6.8G "
+                                            "5.2G 1.3G  81% /"])
         self._set_fake_xcat_resp([
             ("GET", url_fspace, None, res_fspace),
+            ('PUT', url_xdsh, body_cmd, res_img_need),
             ])
-
-        self.stubs.Set(self.driver, '_get_user_directory',
-                       self._fake_fun(None))
-        self.stubs.Set(self.driver._zvm_images, 'get_imgcapture_needed',
-                       self._fake_fun(3.0))
         self.stubs.Set(self.driver._zvm_images, 'create_zvm_image',
                        self._fake_fun(''))
         self.stubs.Set(self.driver, 'power_on', self._fake_fun())
@@ -770,7 +764,6 @@ class ZVMDriverTestCases(ZVMTestCase):
         self.stubs.Set(self.driver._zvm_images, 'get_root_disk_units',
                        self._fake_fun(1111))
         self.stubs.Set(os, 'makedirs', self._fake_fun())
-
         self.driver.snapshot({}, self.instance, '0000-1111', self._fake_fun())
         self.mox.VerifyAll()
 
@@ -781,8 +774,6 @@ class ZVMDriverTestCases(ZVMTestCase):
             self._fake_fun((FakeImageService(self._fake_image_meta()), 0)))
         self.stubs.Set(self.driver._zvm_images, 'get_free_space_xcat',
                        self._fake_fun(20.0))
-        self.stubs.Set(self.driver, '_get_user_directory',
-                                   self._fake_fun(None))
         self.stubs.Set(self.driver._zvm_images, 'get_imgcapture_needed',
                        self._fake_fun(10.0))
         self.mox.StubOutWithMock(self.driver._zvm_images, 'create_zvm_image')
@@ -812,7 +803,6 @@ class ZVMDriverTestCases(ZVMTestCase):
 
         self.mox.StubOutWithMock(self.driver._zvm_images,
                                  'get_free_space_xcat')
-        self.mox.StubOutWithMock(self.driver, '_get_user_directory')
         self.mox.StubOutWithMock(self.driver._zvm_images,
                                  'get_imgcapture_needed')
         self.mox.StubOutWithMock(self.driver._zvm_images, 'create_zvm_image')
@@ -832,11 +822,8 @@ class ZVMDriverTestCases(ZVMTestCase):
         self.driver._zvm_images.get_free_space_xcat(
                         CONF.xcat_free_space_threshold,
                         CONF.zvm_xcat_master).AndReturn(10.0)
-        fake_dict = [
-            'os000001: MDISK 0100 3390 n 100 n MR\n']
-        self.driver._get_user_directory('os000001').AndReturn(fake_dict)
         self.driver._zvm_images.get_imgcapture_needed(
-                                self.instance, fake_dict).AndReturn(5.0)
+                                                self.instance).AndReturn(5.0)
         self.driver._zvm_images.create_zvm_image(self.instance, 'fakeimg',
                                             'uuid').AndReturn('fakeimg-uuid')
         self.driver._zvm_images.update_last_use_date('fakeimg-uuid')
@@ -861,7 +848,7 @@ class ZVMDriverTestCases(ZVMTestCase):
         info1 = ["os000001: Shutting down... Done"]
         info2 = ["os000001: Activating... Done"]
         data = {"data": [{"info": info1}, {"info": info2}]}
-        self._set_fake_xcat_responses([data, self._set_reachable('reachable')])
+        self._set_fake_xcat_responses([data, self._set_reachable('sshd')])
         self.driver.reboot(self.context, self.instance, {}, "HARD")
         self.mox.VerifyAll()
 
@@ -869,7 +856,7 @@ class ZVMDriverTestCases(ZVMTestCase):
         info1 = ["os000001: Shutting down... Failed"]
         info2 = ["os000001: Activating... Done"]
         data = {"data": [{"info": info1}, {"info": info2}]}
-        self._set_fake_xcat_responses([data, self._set_reachable('reachable')])
+        self._set_fake_xcat_responses([data, self._set_reachable('sshd')])
         self.driver.reboot(self.context, self.instance, {}, "HARD")
         self.mox.VerifyAll()
 
@@ -886,7 +873,7 @@ class ZVMDriverTestCases(ZVMTestCase):
         info1 = ["os000001: Shutting down... Done"]
         info2 = ["os000001: Activating... Done"]
         data = {"data": [{"info": info1}, {"info": info2}]}
-        self._set_fake_xcat_responses([data, self._set_reachable('reachable')])
+        self._set_fake_xcat_responses([data, self._set_reachable('sshd')])
         self.driver.reboot(self.context, self.instance, {}, "SOFT")
         self.mox.VerifyAll()
 
@@ -1230,7 +1217,6 @@ class ZVMDriverTestCases(ZVMTestCase):
                      'dest_node': 'FAKENODE2'}
         disk_info = jsonutils.dumps(disk_info)
 
-        self.stubs.Set(self.driver._image_api, 'get', self.fake_image_get)
         self.mox.StubOutWithMock(self.driver, 'get_host_ip_addr')
         self.mox.StubOutWithMock(self.driver._pathutils, 'get_instance_path')
         self.mox.StubOutWithMock(self.driver._networkop,
@@ -1247,7 +1233,6 @@ class ZVMDriverTestCases(ZVMTestCase):
         self.mox.StubOutWithMock(self.driver._zvm_images,
                                  'delete_image_from_xcat')
         self.mox.StubOutWithMock(zvmutils, 'punch_xcat_auth_file')
-        self.mox.StubOutWithMock(zvmutils, 'punch_iucv_authorized_file')
         self.mox.StubOutWithMock(instance.ZVMInstance, 'power_on')
         self.mox.StubOutWithMock(zvmutils, 'xdsh')
         self.mox.StubOutWithMock(self.driver, '_attach_volume_to_instance')
@@ -1267,14 +1252,12 @@ class ZVMDriverTestCases(ZVMTestCase):
         self.driver._wait_and_get_nic_direct('os000001', self._fake_inst)
         self.driver._zvm_images.delete_image_from_xcat(farg)
         zvmutils.punch_xcat_auth_file(mox.IgnoreArg(), 'os000001')
-        zvmutils.punch_iucv_authorized_file('rszos000001', 'fakehcp')
         instance.ZVMInstance.power_on()
         self.driver._attach_volume_to_instance(farg, self._fake_inst, [])
         self.mox.ReplayAll()
 
         self.driver.finish_migration(self.context, migration, self._fake_inst,
-                                     disk_info, network_info,
-                                     self.fake_imgmeta_obj(), None,
+                                     disk_info, network_info, None, None,
                                      block_device_info=self._fake_bdi())
         self.mox.VerifyAll()
 
@@ -1294,7 +1277,6 @@ class ZVMDriverTestCases(ZVMTestCase):
                      'dest_node': 'FAKENODE2'}
         disk_info = jsonutils.dumps(disk_info)
 
-        self.stubs.Set(self.driver._image_api, 'get', self.fake_image_get)
         self.mox.StubOutWithMock(self.driver, 'get_host_ip_addr')
         self.mox.StubOutWithMock(self.driver._pathutils, 'get_instance_path')
         self.mox.StubOutWithMock(self.driver._networkop,
@@ -1310,7 +1292,6 @@ class ZVMDriverTestCases(ZVMTestCase):
         self.mox.StubOutWithMock(self.driver._zvm_images,
                                  'delete_image_from_xcat')
         self.mox.StubOutWithMock(zvmutils, 'punch_xcat_auth_file')
-        self.mox.StubOutWithMock(zvmutils, 'punch_iucv_authorized_file')
         self.mox.StubOutWithMock(instance.ZVMInstance, 'power_on')
         self.mox.StubOutWithMock(zvmutils, 'xdsh')
         self.mox.StubOutWithMock(self.driver, '_attach_volume_to_instance')
@@ -1329,14 +1310,12 @@ class ZVMDriverTestCases(ZVMTestCase):
         self.driver._wait_and_get_nic_direct('os000001', self._fake_inst)
         self.driver._zvm_images.delete_image_from_xcat(farg)
         zvmutils.punch_xcat_auth_file(mox.IgnoreArg(), 'os000001')
-        zvmutils.punch_iucv_authorized_file('rszos000001', 'fakehcp')
         instance.ZVMInstance.power_on()
         self.driver._attach_volume_to_instance(farg, self._fake_inst, [])
         self.mox.ReplayAll()
 
         self.driver.finish_migration(self.context, migration, self._fake_inst,
-                                     disk_info, network_info,
-                                     self.fake_imgmeta_obj(), None,
+                                     disk_info, network_info, None, None,
                                      block_device_info=self._fake_bdi())
         self.mox.VerifyAll()
 
@@ -1357,7 +1336,6 @@ class ZVMDriverTestCases(ZVMTestCase):
                      'dest_node': 'FAKENODE2'}
         disk_info = jsonutils.dumps(disk_info)
 
-        self.stubs.Set(self.driver._image_api, 'get', self.fake_image_get)
         self.mox.StubOutWithMock(self.driver, 'get_host_ip_addr')
         self.mox.StubOutWithMock(self.driver._pathutils, 'get_instance_path')
         self.mox.StubOutWithMock(self.driver._networkop,
@@ -1375,7 +1353,6 @@ class ZVMDriverTestCases(ZVMTestCase):
         self.mox.StubOutWithMock(self.driver._zvm_images,
                                  'delete_image_from_xcat')
         self.mox.StubOutWithMock(zvmutils, 'punch_xcat_auth_file')
-        self.mox.StubOutWithMock(zvmutils, 'punch_iucv_authorized_file')
         self.mox.StubOutWithMock(instance.ZVMInstance, 'power_on')
         self.mox.StubOutWithMock(self.driver, '_attach_volume_to_instance')
 
@@ -1395,14 +1372,12 @@ class ZVMDriverTestCases(ZVMTestCase):
         self.driver._wait_and_get_nic_direct('os000001', self._fake_inst)
         self.driver._zvm_images.delete_image_from_xcat(farg)
         zvmutils.punch_xcat_auth_file(mox.IgnoreArg(), 'os000001')
-        zvmutils.punch_iucv_authorized_file('rszos000001', 'fakehcp')
         instance.ZVMInstance.power_on()
         self.driver._attach_volume_to_instance(farg, self._fake_inst, [])
         self.mox.ReplayAll()
 
         self.driver.finish_migration(self.context, migration, self._fake_inst,
-                                     disk_info, network_info,
-                                     self.fake_imgmeta_obj(), None,
+                                     disk_info, network_info, None, None,
                                      block_device_info=self._fake_bdi())
         self.mox.VerifyAll()
 
@@ -1424,7 +1399,6 @@ class ZVMDriverTestCases(ZVMTestCase):
                      'dest_node': 'FAKENODE2'}
         disk_info = jsonutils.dumps(disk_info)
 
-        self.stubs.Set(self.driver._image_api, 'get', self.fake_image_get)
         self.mox.StubOutWithMock(self.driver, 'get_host_ip_addr')
         self.mox.StubOutWithMock(self.driver._pathutils, 'get_instance_path')
         self.mox.StubOutWithMock(self.driver._networkop,
@@ -1470,8 +1444,8 @@ class ZVMDriverTestCases(ZVMTestCase):
 
         self.assertRaises(exception.ZVMXCATDeployNodeFailed,
             self.driver.finish_migration, self.context, migration,
-            self._fake_inst, disk_info, network_info, self.fake_imgmeta_obj(),
-            None, block_device_info=self._fake_bdi())
+            self._fake_inst, disk_info, network_info, None, None,
+            block_device_info=self._fake_bdi())
         self.mox.VerifyAll()
 
     def test_finish_migration_diff_mn(self):
@@ -1491,7 +1465,6 @@ class ZVMDriverTestCases(ZVMTestCase):
                      'dest_node': 'FAKENODE2'}
         disk_info = jsonutils.dumps(disk_info)
 
-        self.stubs.Set(self.driver._image_api, 'get', self.fake_image_get)
         self.mox.StubOutWithMock(self.driver, 'get_host_ip_addr')
         self.mox.StubOutWithMock(self.driver._pathutils, 'get_instance_path')
         self.mox.StubOutWithMock(instance.ZVMInstance, 'create_xcat_node')
@@ -1507,7 +1480,6 @@ class ZVMDriverTestCases(ZVMTestCase):
         self.mox.StubOutWithMock(self.driver._zvm_images,
                                  'delete_image_from_xcat')
         self.mox.StubOutWithMock(zvmutils, 'punch_xcat_auth_file')
-        self.mox.StubOutWithMock(zvmutils, 'punch_iucv_authorized_file')
         self.mox.StubOutWithMock(instance.ZVMInstance, 'power_on')
         self.mox.StubOutWithMock(self.driver, '_attach_volume_to_instance')
 
@@ -1525,14 +1497,12 @@ class ZVMDriverTestCases(ZVMTestCase):
         self.driver._wait_and_get_nic_direct('os000001', self._fake_inst)
         self.driver._zvm_images.delete_image_from_xcat(farg)
         zvmutils.punch_xcat_auth_file(farg, farg)
-        zvmutils.punch_iucv_authorized_file('os000001', 'fakehcp')
         instance.ZVMInstance.power_on()
         self.driver._attach_volume_to_instance(farg, self._fake_inst, [])
         self.mox.ReplayAll()
 
         self.driver.finish_migration(self.context, migration, self._fake_inst,
-                                     disk_info, network_info,
-                                     self.fake_imgmeta_obj(), None,
+                                     disk_info, network_info, None, None,
                                      block_device_info=self._fake_bdi())
         self.mox.VerifyAll()
 
@@ -1562,8 +1532,6 @@ class ZVMDriverTestCases(ZVMTestCase):
     def test_finish_revert_migration_same_mn(self):
         self.flags(zvm_xcat_server="10.10.10.10")
         self.stubs.Set(instance.ZVMInstance, 'copy_xcat_node',
-                       self._fake_fun())
-        self.stubs.Set(zvmutils, 'add_iucv_in_zvm_table',
                        self._fake_fun())
         self.stubs.Set(instance.ZVMInstance, 'delete_xcat_node',
                        self._fake_fun())
@@ -3782,7 +3750,8 @@ class SVCDriverTestCase(ZVMTestCase):
 
     def test_attach_volume_inactive_error_no_rollback(self):
         fake_info = ('lun', 'wwpn', '1G', '1faa')
-        fake_instance = {'name': 'fake'}
+        fake_instance = {'name': 'fake',
+                         'system_metadata': {'image_os_version': 'sles11'}}
         self.driver._instance_fcp_map = {}
         self.driver._fcp_pool = {'1faa': self.driver.FCP([])}
         rollback = False
@@ -3798,8 +3767,8 @@ class SVCDriverTestCase(ZVMTestCase):
         self.driver._add_zfcp_to_pool(farg, farg, farg, farg).AndReturn(None)
         self.driver._allocate_zfcp(farg, farg, farg, farg, farg).AndReturn(
                 None)
-        self.driver._notice_attach(farg, farg, farg, farg, farg).AndReturn(
-                None)
+        self.driver._notice_attach(farg, farg, farg, farg, farg,
+                                   farg).AndReturn(None)
         self.driver._attach_device(farg, farg).AndRaise(
                 exception.ZVMVolumeError(msg='No msg'))
         self.mox.ReplayAll()
@@ -3813,7 +3782,8 @@ class SVCDriverTestCase(ZVMTestCase):
 
     def test_attach_volume_inactive_error_rollback_and_detach(self):
         fake_info = ('lun', 'wwpn', '1G', '1faa')
-        fake_instance = {'name': 'fake'}
+        fake_instance = {'name': 'fake',
+                         'system_metadata': {'image_os_version': 'sles11'}}
         self.driver._instance_fcp_map = {}
         self.driver._fcp_pool = {'1faa': self.driver.FCP([])}
         rollback = True
@@ -3832,12 +3802,13 @@ class SVCDriverTestCase(ZVMTestCase):
         self.driver._add_zfcp_to_pool(farg, farg, farg, farg).AndReturn(None)
         self.driver._allocate_zfcp(farg, farg, farg, farg, farg).AndReturn(
                 None)
-        self.driver._notice_attach(farg, farg, farg, farg, farg).AndReturn(
-                None)
+        self.driver._notice_attach(farg, farg, farg, farg, farg,
+                                   farg).AndReturn(None)
         self.driver._attach_device(farg, farg).AndRaise(
                 exception.ZVMVolumeError(msg='No msg'))
-        self.driver._notice_detach(farg, farg, farg, farg, farg).AndRaise(
-                exception.ZVMVolumeError(msg='No msg'))
+        self.driver._notice_detach(farg, farg, farg, farg, farg,
+                                   farg).AndRaise(
+                                        exception.ZVMVolumeError(msg='No msg'))
         self.driver._remove_zfcp_from_pool(farg, farg).AndRaise(
                 exception.ZVMVolumeError(msg='No msg'))
         self.driver._detach_device(farg, farg).AndReturn(None)
@@ -3852,7 +3823,8 @@ class SVCDriverTestCase(ZVMTestCase):
 
     def test_attach_volume_inactive_error_rollback_no_detach(self):
         fake_info = ('lun', 'wwpn', '1G', '1faa')
-        fake_instance = {'name': 'fake'}
+        fake_instance = {'name': 'fake',
+                         'system_metadata': {'image_os_version': 'sles11'}}
         self.driver._instance_fcp_map = {'fake': {'fcp_list': ['1faa'],
                                                   'count': 1}}
         self.driver._fcp_pool = {'1faa': self.driver.FCP([])}
@@ -3870,10 +3842,12 @@ class SVCDriverTestCase(ZVMTestCase):
         self.driver._add_zfcp_to_pool(farg, farg, farg, farg).AndReturn(None)
         self.driver._allocate_zfcp(farg, farg, farg, farg, farg).AndReturn(
                 None)
-        self.driver._notice_attach(farg, farg, farg, farg, farg).AndRaise(
-                exception.ZVMVolumeError(msg='No msg'))
-        self.driver._notice_detach(farg, farg, farg, farg, farg).AndRaise(
-                exception.ZVMVolumeError(msg='No msg'))
+        self.driver._notice_attach(farg, farg, farg, farg, farg,
+                                   farg).AndRaise(
+                                        exception.ZVMVolumeError(msg='No msg'))
+        self.driver._notice_detach(farg, farg, farg, farg, farg,
+                                   farg).AndRaise(
+                                        exception.ZVMVolumeError(msg='No msg'))
         self.driver._remove_zfcp_from_pool(farg, farg).AndRaise(
                 exception.ZVMVolumeError(msg='No msg'))
         self.mox.ReplayAll()
@@ -3887,7 +3861,8 @@ class SVCDriverTestCase(ZVMTestCase):
 
     def test_attach_volume_inactive(self):
         fake_info = ('lun', 'wwpn', '1G', '1faa')
-        fake_instance = {'name': 'fake'}
+        fake_instance = {'name': 'fake',
+                         'system_metadata': {'image_os_version': 'sles11'}}
         self.driver._instance_fcp_map = {}
         self.driver._fcp_pool = {'1faa': self.driver.FCP([])}
         rollback = True
@@ -3903,8 +3878,8 @@ class SVCDriverTestCase(ZVMTestCase):
         self.driver._add_zfcp_to_pool(farg, farg, farg, farg).AndReturn(None)
         self.driver._allocate_zfcp(farg, farg, farg, farg, farg).AndReturn(
                 None)
-        self.driver._notice_attach(farg, farg, farg, farg, farg).AndReturn(
-                None)
+        self.driver._notice_attach(farg, farg, farg, farg, farg,
+                                   farg).AndReturn(None)
         self.driver._attach_device(farg, farg).AndReturn(None)
         self.mox.ReplayAll()
 
@@ -3916,7 +3891,8 @@ class SVCDriverTestCase(ZVMTestCase):
 
     def test_attach_volume_inactive_multi_fcp(self):
         fake_info = ('lun', 'wwpn', '1G', '1faa;1fab')
-        fake_instance = {'name': 'fake'}
+        fake_instance = {'name': 'fake',
+                         'system_metadata': {'image_os_version': 'sles11'}}
         self.driver._instance_fcp_map = {}
         self.driver._fcp_pool = {'1faa': self.driver.FCP([]),
                                  '1fab': self.driver.FCP([])}
@@ -3933,8 +3909,8 @@ class SVCDriverTestCase(ZVMTestCase):
         self.driver._add_zfcp_to_pool(farg, farg, farg, farg).AndReturn(None)
         self.driver._allocate_zfcp(farg, farg, farg, farg, farg).AndReturn(
                 None)
-        self.driver._notice_attach(farg, farg, farg, farg, farg).AndReturn(
-                None)
+        self.driver._notice_attach(farg, farg, farg, farg, farg,
+                                   farg).AndReturn(None)
         self.driver._attach_device(farg, farg).AndReturn(None)
         self.driver._attach_device(farg, farg).AndReturn(None)
         self.mox.ReplayAll()
@@ -3947,7 +3923,8 @@ class SVCDriverTestCase(ZVMTestCase):
 
     def test_attach_volume_inactive_no_attach(self):
         fake_info = ('lun', 'wwpn', '1G', '1faa')
-        fake_instance = {'name': 'fake'}
+        fake_instance = {'name': 'fake',
+                         'system_metadata': {'image_os_version': 'sles11'}}
         self.driver._instance_fcp_map = {'fake': {'fcp_list': ['1faa'],
                                                   'count': 1}}
         self.driver._fcp_pool = {'1faa': self.driver.FCP([])}
@@ -3963,8 +3940,8 @@ class SVCDriverTestCase(ZVMTestCase):
         self.driver._add_zfcp_to_pool(farg, farg, farg, farg).AndReturn(None)
         self.driver._allocate_zfcp(farg, farg, farg, farg, farg).AndReturn(
                 None)
-        self.driver._notice_attach(farg, farg, farg, farg, farg).AndReturn(
-                None)
+        self.driver._notice_attach(farg, farg, farg, farg, farg,
+                                   farg).AndReturn(None)
         self.mox.ReplayAll()
 
         self.driver.attach_volume_inactive(farg, farg, fake_instance,
@@ -3975,7 +3952,8 @@ class SVCDriverTestCase(ZVMTestCase):
 
     def test_detach_volume_inactive_error_no_rollback(self):
         fake_info = ('lun', 'wwpn', '1G', '1faa')
-        fake_instance = {'name': 'fake'}
+        fake_instance = {'name': 'fake',
+                         'system_metadata': {'image_os_version': 'sles11'}}
         self.driver._instance_fcp_map = {'fake': {'fcp_list': ['1faa'],
                                                   'count': 1}}
         self.driver._fcp_pool = {'1faa': self.driver.FCP([])}
@@ -3991,8 +3969,8 @@ class SVCDriverTestCase(ZVMTestCase):
         self.driver._extract_connection_info(farg, farg).AndReturn(fake_info)
         self.driver._remove_zfcp(farg, farg, farg, farg).AndReturn(None)
         self.driver._remove_zfcp_from_pool(farg, farg).AndReturn(None)
-        self.driver._notice_detach(farg, farg, farg, farg, farg).AndReturn(
-                None)
+        self.driver._notice_detach(farg, farg, farg, farg, farg,
+                                   farg).AndReturn(None)
         self.driver._detach_device(farg, farg).AndRaise(
                 exception.ZVMVolumeError(msg='No msg'))
         self.mox.ReplayAll()
@@ -4006,7 +3984,8 @@ class SVCDriverTestCase(ZVMTestCase):
 
     def test_detach_volume_inactive_error_detach_rollback(self):
         fake_info = ('lun', 'wwpn', '1G', '1faa')
-        fake_instance = {'name': 'fake'}
+        fake_instance = {'name': 'fake',
+                         'system_metadata': {'image_os_version': 'sles11'}}
         self.driver._instance_fcp_map = {'fake': {'fcp_list': ['1faa'],
                                                   'count': 1}}
         self.driver._fcp_pool = {'1faa': self.driver.FCP([])}
@@ -4026,14 +4005,15 @@ class SVCDriverTestCase(ZVMTestCase):
         self.driver._extract_connection_info(farg, farg).AndReturn(fake_info)
         self.driver._remove_zfcp(farg, farg, farg, farg).AndReturn(None)
         self.driver._remove_zfcp_from_pool(farg, farg).AndReturn(None)
-        self.driver._notice_detach(farg, farg, farg, farg, farg).AndReturn(
-                None)
+        self.driver._notice_detach(farg, farg, farg, farg, farg,
+                                   farg).AndReturn(None)
         self.driver._detach_device(farg, farg).AndRaise(
                 exception.ZVMVolumeError(msg='No msg'))
         self.driver._attach_device(farg, farg).AndRaise(
                 exception.ZVMVolumeError(msg='No msg'))
-        self.driver._notice_attach(farg, farg, farg, farg, farg).AndRaise(
-                exception.ZVMVolumeError(msg='No msg'))
+        self.driver._notice_attach(farg, farg, farg, farg, farg,
+                                   farg).AndRaise(
+                                        exception.ZVMVolumeError(msg='No msg'))
         self.driver._add_zfcp_to_pool(farg, farg, farg, farg).AndReturn(True)
         self.driver._allocate_zfcp(farg, farg, farg, farg, farg).AndReturn(
                 None)
@@ -4048,7 +4028,8 @@ class SVCDriverTestCase(ZVMTestCase):
 
     def test_detach_volume_inactive_error_no_detach_rollback(self):
         fake_info = ('lun', 'wwpn', '1G', '1faa')
-        fake_instance = {'name': 'fake'}
+        fake_instance = {'name': 'fake',
+                         'system_metadata': {'image_os_version': 'sles11'}}
         self.driver._instance_fcp_map = {'fake': {'fcp_list': ['1faa'],
                                                   'count': 2}}
         self.driver._fcp_pool = {'1faa': self.driver.FCP([])}
@@ -4067,12 +4048,14 @@ class SVCDriverTestCase(ZVMTestCase):
         self.driver._extract_connection_info(farg, farg).AndReturn(fake_info)
         self.driver._remove_zfcp(farg, farg, farg, farg).AndReturn(None)
         self.driver._remove_zfcp_from_pool(farg, farg).AndReturn(None)
-        self.driver._notice_detach(farg, farg, farg, farg, farg).AndRaise(
-                exception.ZVMVolumeError(msg='No msg'))
+        self.driver._notice_detach(farg, farg, farg, farg, farg,
+                                   farg).AndRaise(
+                                        exception.ZVMVolumeError(msg='No msg'))
         self.driver._attach_device(farg, farg).AndRaise(
                 exception.ZVMVolumeError(msg='No msg'))
-        self.driver._notice_attach(farg, farg, farg, farg, farg).AndRaise(
-                exception.ZVMVolumeError(msg='No msg'))
+        self.driver._notice_attach(farg, farg, farg, farg, farg,
+                                   farg).AndRaise(
+                                        exception.ZVMVolumeError(msg='No msg'))
         self.driver._add_zfcp_to_pool(farg, farg, farg, farg).AndRaise(
                 exception.ZVMVolumeError(msg='No msg'))
         self.driver._allocate_zfcp(farg, farg, farg, farg, farg).AndReturn(
@@ -4088,7 +4071,8 @@ class SVCDriverTestCase(ZVMTestCase):
 
     def test_detach_volume_inactive_and_detach(self):
         fake_info = ('lun', 'wwpn', '1G', '1faa')
-        fake_instance = {'name': 'fake'}
+        fake_instance = {'name': 'fake',
+                         'system_metadata': {'image_os_version': 'sles11'}}
         self.driver._instance_fcp_map = {'fake': {'fcp_list': ['1faa'],
                                                   'count': 1}}
         self.driver._fcp_pool = {'1faa': self.driver.FCP([])}
@@ -4104,8 +4088,8 @@ class SVCDriverTestCase(ZVMTestCase):
         self.driver._extract_connection_info(farg, farg).AndReturn(fake_info)
         self.driver._remove_zfcp(farg, farg, farg, farg).AndReturn(None)
         self.driver._remove_zfcp_from_pool(farg, farg).AndReturn(None)
-        self.driver._notice_detach(farg, farg, farg, farg, farg).AndReturn(
-                None)
+        self.driver._notice_detach(farg, farg, farg, farg, farg,
+                                   farg).AndReturn(None)
         self.driver._detach_device(farg, farg).AndReturn(None)
         self.mox.ReplayAll()
 
@@ -4117,7 +4101,8 @@ class SVCDriverTestCase(ZVMTestCase):
 
     def test_detach_volume_inactive_no_detach(self):
         fake_info = ('lun', 'wwpn', '1G', '1faa')
-        fake_instance = {'name': 'fake'}
+        fake_instance = {'name': 'fake',
+                         'system_metadata': {'image_os_version': 'sles11'}}
         self.driver._instance_fcp_map = {'fake': {'fcp_list': ['1faa'],
                                                   'count': 2}}
         self.driver._fcp_pool = {'1faa': self.driver.FCP([])}
@@ -4132,8 +4117,8 @@ class SVCDriverTestCase(ZVMTestCase):
         self.driver._extract_connection_info(farg, farg).AndReturn(fake_info)
         self.driver._remove_zfcp(farg, farg, farg, farg).AndReturn(None)
         self.driver._remove_zfcp_from_pool(farg, farg).AndReturn(None)
-        self.driver._notice_detach(farg, farg, farg, farg, farg).AndReturn(
-                None)
+        self.driver._notice_detach(farg, farg, farg, farg, farg,
+                                   farg).AndReturn(None)
         self.mox.ReplayAll()
 
         self.driver.detach_volume_inactive(farg, fake_instance, farg, rollback)
@@ -4143,7 +4128,8 @@ class SVCDriverTestCase(ZVMTestCase):
 
     def test_detach_volume_inactive_multi_path(self):
         fake_info = ('lun', 'wwpn', '1G', '1faa')
-        fake_instance = {'name': 'fake'}
+        fake_instance = {'name': 'fake',
+                         'system_metadata': {'image_os_version': 'sles11'}}
         self.driver._instance_fcp_map = {'fake': {'fcp_list': ['1faa'],
                                                   'count': 2}}
         self.driver._fcp_pool = {'1faa': self.driver.FCP([]),
@@ -4159,8 +4145,8 @@ class SVCDriverTestCase(ZVMTestCase):
         self.driver._extract_connection_info(farg, farg).AndReturn(fake_info)
         self.driver._remove_zfcp(farg, farg, farg, farg).AndReturn(None)
         self.driver._remove_zfcp_from_pool(farg, farg).AndReturn(None)
-        self.driver._notice_detach(farg, farg, farg, farg, farg).AndReturn(
-                None)
+        self.driver._notice_detach(farg, farg, farg, farg, farg,
+                                   farg).AndReturn(None)
         self.mox.ReplayAll()
 
         self.driver.detach_volume_inactive(farg, fake_instance, farg, rollback)
@@ -4233,13 +4219,24 @@ class ZVMImageOPTestCases(ZVMTestCase):
             "is disabled to avoid man-the-middle attacks.\n"]]},
             {"errorcode": ["0"]}]}
 
-    def test_get_imgcapture_needed(self):
-        rdisk_dict = [
-            'os000001: MDISK 0100 3390 n 100 n MR\n',
-            'os000001: MDISK 0102 3390 n 200 n MR\n',
-            'os000001: MDISK 0103 3390 n 300 n MR\n']
-        size = self.imageop.get_imgcapture_needed(self.instance, rdisk_dict)
-        self.assertEqual(size, float(100) * 737280 / 1024.0 / 1024 / 1024 * 2)
+    def test_get_imgcapture_needed_in_compression_0(self):
+        self.mox.StubOutWithMock(zvmutils, 'xcat_request')
+        zvmutils.xcat_request('PUT', mox.IgnoreArg(),
+                        mox.IgnoreArg()).AndReturn(self.res_data['data'][0])
+        self.mox.ReplayAll()
+        size = self.imageop.get_imgcapture_needed(self.instance)
+        self.assertEqual(size, float(3.0) * 2)
+
+        self.mox.VerifyAll()
+
+    def test_get_imgcapture_needed_in_compression_6(self):
+        self.mox.StubOutWithMock(zvmutils, 'xcat_request')
+        zvmutils.xcat_request('PUT', mox.IgnoreArg(),
+                        mox.IgnoreArg()).AndReturn(self.res_data['data'][0])
+        self.mox.ReplayAll()
+        self.flags(zvm_image_compression_level='6')
+        size = self.imageop.get_imgcapture_needed(self.instance)
+        self.assertEqual(size, float(1.7) * 2)
 
         self.mox.VerifyAll()
 
