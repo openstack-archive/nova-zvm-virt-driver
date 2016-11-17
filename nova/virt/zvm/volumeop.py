@@ -822,10 +822,12 @@ class SVCDriver(DriverAPI):
         do_attach = not self._is_fcp_in_use(instance)
         self._update_instance_fcp_map_if_unlocked(instance['name'],
                                                   fcp_list, self._INCREASE)
+        os_version = instance['system_metadata']['image_os_version']
         try:
             self._add_zfcp_to_pool(fcp, wwpn, lun, size)
             self._allocate_zfcp(instance, fcp, size, wwpn, lun)
-            self._notice_attach(instance, fcp, wwpn, lun, mountpoint)
+            self._notice_attach(instance, fcp, wwpn, lun, mountpoint,
+                                os_version)
             if do_attach:
                 for dev_no in fcp_list:
                     self._attach_device(instance['name'], dev_no)
@@ -840,7 +842,7 @@ class SVCDriver(DriverAPI):
                 if rollback:
                     with zvmutils.ignore_errors():
                         self._notice_detach(instance, fcp, wwpn, lun,
-                                            mountpoint)
+                                            mountpoint, os_version)
                     with zvmutils.ignore_errors():
                         self._remove_zfcp_from_pool(wwpn, lun)
                     with zvmutils.ignore_errors():
@@ -860,10 +862,12 @@ class SVCDriver(DriverAPI):
         self._update_instance_fcp_map_if_unlocked(instance['name'],
                                                   fcp_list, self._DECREASE)
         do_detach = not self._is_fcp_in_use(instance)
+        os_version = instance['system_metadata']['image_os_version']
         try:
             self._remove_zfcp(instance, fcp, wwpn, lun)
             self._remove_zfcp_from_pool(wwpn, lun)
-            self._notice_detach(instance, fcp, wwpn, lun, mountpoint)
+            self._notice_detach(instance, fcp, wwpn, lun, mountpoint,
+                                os_version)
             if do_detach:
                 for dev_no in fcp_list:
                     self._detach_device(instance['name'], dev_no)
@@ -883,7 +887,7 @@ class SVCDriver(DriverAPI):
                         self._attach_device(instance['name'], fcp)
                     with zvmutils.ignore_errors():
                         self._notice_attach(instance, fcp, wwpn, lun,
-                                            mountpoint)
+                                            mountpoint, os_version)
                     with zvmutils.ignore_errors():
                         self._add_zfcp_to_pool(fcp, wwpn, lun, size)
                     with zvmutils.ignore_errors():
@@ -969,7 +973,7 @@ class SVCDriver(DriverAPI):
                 return True
         return False
 
-    def _notice_attach(self, instance, fcp, wwpn, lun, mountpoint):
+    def _notice_attach(self, instance, fcp, wwpn, lun, mountpoint, os_version):
         # Create and send volume file
         action = self._actions['attach_volume']
         parms = self._get_volume_parms(action, fcp, wwpn, lun)
@@ -977,10 +981,11 @@ class SVCDriver(DriverAPI):
 
         # Create and send mount point file
         action = self._actions['create_mountpoint']
-        parms = self._get_mountpoint_parms(action, fcp, wwpn, lun, mountpoint)
+        parms = self._get_mountpoint_parms(action, fcp, wwpn, lun, mountpoint,
+                                           os_version)
         self._send_notice(instance, parms)
 
-    def _notice_detach(self, instance, fcp, wwpn, lun, mountpoint):
+    def _notice_detach(self, instance, fcp, wwpn, lun, mountpoint, os_version):
         # Create and send volume file
         action = self._actions['detach_volume']
         parms = self._get_volume_parms(action, fcp, wwpn, lun)
@@ -988,7 +993,8 @@ class SVCDriver(DriverAPI):
 
         # Create and send mount point file
         action = self._actions['remove_mountpoint']
-        parms = self._get_mountpoint_parms(action, fcp, wwpn, lun, mountpoint)
+        parms = self._get_mountpoint_parms(action, fcp, wwpn, lun, mountpoint,
+                                           os_version)
         self._send_notice(instance, parms)
 
     def _get_volume_parms(self, action, fcp, wwpn, lun):
