@@ -1463,8 +1463,9 @@ class ZVMDriverTestCases(ZVMTestCase):
         instance.ZVMInstance.delete_xcat_node()
         instance.ZVMInstance.copy_xcat_node(farg)
         instance.ZVMInstance.delete_xcat_node()
-        self.driver._reconfigure_networking(farg, network_info, farg,
-                                            self._fake_inst)
+        self.driver._reconfigure_networking(farg, network_info,
+                                            self._fake_inst,
+                                            userid='os000001')
         instance.ZVMInstance.power_on()
         self.mox.ReplayAll()
 
