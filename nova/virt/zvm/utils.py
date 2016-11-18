@@ -369,11 +369,11 @@ class XCATConnection(object):
         return resp
 
 
-def xcat_request(method, url, body=None, headers=None):
+def xcat_request(method, url, body=None, headers=None, ignore_warning=False):
     headers = headers or {}
     conn = XCATConnection()
     resp = conn.request(method, url, body, headers)
-    return load_xcat_resp(resp['message'])
+    return load_xcat_resp(resp['message'], ignore_warning=ignore_warning)
 
 
 def jsonloads(jsonstr):
@@ -495,7 +495,7 @@ def mapping_power_stat(power_stat):
 
 
 @wrap_invalid_xcat_resp_data_error
-def load_xcat_resp(message):
+def load_xcat_resp(message, ignore_warning=False):
     """Abstract information from xCAT REST response body.
 
     As default, xCAT response will in format of JSON and can be
@@ -531,7 +531,8 @@ def load_xcat_resp(message):
             else:
                 raise exception.ZVMXCATInternalError(msg=message)
 
-    _log_warnings(resp)
+    if not ignore_warning:
+        _log_warnings(resp)
 
     return resp
 

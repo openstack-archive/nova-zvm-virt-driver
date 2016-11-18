@@ -832,7 +832,8 @@ class ZVMInstance(object):
         url = self._xcat_url.rinv('/' + self._name, '&field=--consoleoutput'
                                   '&field=%s') % logsize
 
-        res_info = zvmutils.xcat_request("GET", url)
+        # Because we might have logs in the console, we need ignore the warning
+        res_info = zvmutils.xcat_request("GET", url, ignore_warning=True)
 
         with zvmutils.expect_invalid_xcat_resp_data(res_info):
             log_data = res_info['info'][0][0]
