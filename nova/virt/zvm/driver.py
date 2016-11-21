@@ -240,8 +240,7 @@ class ZVMDriver(driver.ComputeDriver):
         bdm = driver.block_device_info_get_mapping(block_device_info)
 
         if not network_info:
-            msg = _("Not support boot without a NIC. "
-            "A NIC connected to xCAT management network is required.")
+            msg = _("Not support boot without a NIC.")
             raise exception.ZVMDriverError(msg=msg)
 
         # Ensure the used image is a valid zVM image
