@@ -196,7 +196,7 @@ class ZVMImages(object):
         manifest = {}
 
         if os.path.exists(manifest_xml):
-            xml_file = Dom.parse(manifest_xml)
+            xml_file = Dom.parse(manifest_xml)  # nosec
         else:
             LOG.warning(_LW('manifest.xml does not exist'))
             manifest['imagename'] = ''
