@@ -721,10 +721,10 @@ def _generate_iucv_cmd_file(iucv_cmd_file_path, cmd):
 
 def add_iucv_in_zvm_table(instance_name):
     result = xcat_cmd_gettab('zvm', 'node', instance_name, "status")
-    if not result or not result[0]:
+    if not result:
         status = "IUCV=1"
     else:
-        status = result[0][0] + ';IUCV=1'
+        status = result + ';IUCV=1'
     xcat_cmd_settab('zvm', 'node', instance_name, "status", status)
 
 
