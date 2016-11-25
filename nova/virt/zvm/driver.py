@@ -1754,7 +1754,7 @@ class ZVMDriver(driver.ComputeDriver):
 
         self._zvm_images.update_last_use_date(image_name_xcat)
 
-    def confirm_migration(self, migration, instance, network_info):
+    def confirm_migration(self, context, migration, instance, network_info):
         """Confirms a resize, destroying the source VM."""
         # Point to old instance
         old_instance = self._copy_instance(instance)
@@ -1763,10 +1763,10 @@ class ZVMDriver(driver.ComputeDriver):
 
         if self._instance_exists(old_inst._name):
             # Same xCAT MN:
-            self.destroy({}, old_instance)
+            self.destroy(context, old_instance)
         else:
             # Different xCAT MN:
-            self.destroy({}, instance)
+            self.destroy(context, instance)
             self._zvm_images.cleanup_image_after_migration(instance['name'])
 
     def finish_revert_migration(self, context, instance, network_info,
