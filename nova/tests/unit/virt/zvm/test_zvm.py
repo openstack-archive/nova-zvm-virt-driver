@@ -1542,9 +1542,9 @@ class ZVMDriverTestCases(ZVMTestCase):
         inst = instance.CopiedInstance(self._fake_inst)
         self.stubs.Set(self.driver, '_instance_exists', self._fake_fun(True))
         self.mox.StubOutWithMock(self.driver, 'destroy')
-        self.driver.destroy({}, mox.IgnoreArg())
+        self.driver.destroy(self.context, mox.IgnoreArg())
         self.mox.ReplayAll()
-        self.driver.confirm_migration([], inst, [])
+        self.driver.confirm_migration(self.context, [], inst, [])
         self.mox.VerifyAll()
 
     def test_confirm_migration_diff_mn(self):
@@ -1555,9 +1555,9 @@ class ZVMDriverTestCases(ZVMTestCase):
         self.stubs.Set(self.driver._zvm_images,
                        'cleanup_image_after_migration', self._fake_fun())
         self.mox.StubOutWithMock(self.driver, 'destroy')
-        self.driver.destroy({}, self._fake_inst)
+        self.driver.destroy(self.context, self._fake_inst)
         self.mox.ReplayAll()
-        self.driver.confirm_migration([], self._fake_inst, [])
+        self.driver.confirm_migration(self.context, [], self._fake_inst, [])
         self.mox.VerifyAll()
 
     def test_finish_revert_migration_same_mn(self):
