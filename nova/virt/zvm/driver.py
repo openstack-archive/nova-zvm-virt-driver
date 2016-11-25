@@ -1832,7 +1832,7 @@ class ZVMDriver(driver.ComputeDriver):
             self._set_admin_password(instance['name'], new_pass)
 
     def _set_admin_password(self, inst_name, password):
-        command = "echo %s|passwd --stdin root" % password
+        command = "echo 'root:%s' | chpasswd" % password
         try:
             if zvmutils.xcat_support_iucv(self._xcat_version):
                 # After support IUCV, will use execcmdonvm to replace xdsh.
