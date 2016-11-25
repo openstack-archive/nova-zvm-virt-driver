@@ -1914,7 +1914,7 @@ class ZVMDriver(driver.ComputeDriver):
             self._set_admin_password(instance['name'], new_pass)
 
     def _set_admin_password(self, inst_name, password):
-        command = "echo %s|passwd --stdin root" % password
+        command = "echo 'root:%s' | chpasswd" % password
         try:
             zvmutils.xdsh(inst_name, command)
         except exception.ZVMXCATXdshFailed as err:
