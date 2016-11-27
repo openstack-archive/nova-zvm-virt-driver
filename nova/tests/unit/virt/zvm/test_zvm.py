@@ -4330,10 +4330,11 @@ class ZVMImageOPTestCases(ZVMTestCase):
                                     'os_name': 'name',
                                     'provisioning_method': 'method'}
         image_meta['id'] = '0'
-        exc = self.assertRaises(exception.ZVMImageError,
+        exc = self.assertRaises(nova_exception.ImageUnacceptable,
             self.imageop.zimage_check, image_meta)
-        msg = ("Image error: The image 0 is not a valid zVM image, "
-               "property ['image_type_xcat', 'os_version'] are missing")
+        msg = ("Image 0 is unacceptable: The image 0 is not a valid zVM "
+               "image, property ['image_type_xcat', 'os_version'] "
+               "are missing")
         self.assertEqual(msg, six.text_type(exc))
 
 
