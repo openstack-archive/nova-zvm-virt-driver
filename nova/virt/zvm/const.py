@@ -68,7 +68,7 @@ ZVM_IMAGE_SIZE_MAX = 10
 # is lower than this version, we will warn user and prevent
 # compute service to start up.
 # Will bump this version time to time for each release.
-XCAT_MINIMUM_VERSION = '2.8.3.7'
+XCAT_MINIMUM_VERSION = '2.8.3.16'
 
 
 # It means we introduced 'version' concept at 2.8.3.7
