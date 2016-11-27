@@ -752,7 +752,8 @@ class ZVMImages(object):
                    "property %(prop)s are missing") % {'id': image_meta['id'],
                                                        'prop': missing_prop})
             LOG.error(msg)
-            raise exception.ZVMImageError(msg=msg)
+            raise nova_exception.ImageUnacceptable(image_id=image_meta['id'],
+                                                   reason=msg)
 
     def cleanup_image_after_migration(self, inst_name):
         """Cleanup osimages in xCAT image repository while confirm migration
