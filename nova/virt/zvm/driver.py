@@ -33,12 +33,12 @@ from nova.api.metadata import base as instance_metadata
 from nova.compute import power_state
 from nova.compute import task_states
 from nova.compute import utils as compute_utils
-from nova.compute import vm_mode
 from nova.compute import vm_states
 from nova import exception as nova_exception
 from nova.i18n import _, _LI, _LW
 from nova.image import api as image_api
 from nova.image import glance
+from nova.objects import fields
 from nova import utils
 from nova.virt import configdrive
 from nova.virt import driver
@@ -1266,7 +1266,7 @@ class ZVMDriver(driver.ComputeDriver):
         data['hypervisor_hostname'] = info['hypervisor_hostname']
         data['supported_instances'] = [(const.ARCHITECTURE,
                                         const.HYPERVISOR_TYPE,
-                                        vm_mode.HVM)]
+                                        fields.VMMode.HVM)]
         data['zhcp'] = self._get_hcp_info(info['zhcp'])
         data['ipl_time'] = info['ipl_time']
 
