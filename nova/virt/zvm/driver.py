@@ -1485,9 +1485,12 @@ class ZVMDriver(driver.ComputeDriver):
                     zvm_inst.detach_volume(self._volumeop, connection_info,
                                            instance, mountpoint, is_active,
                                            rollback=False)
-                except exception.ZVMVolumeError:
-                    LOG.warning(_LW("Failed to detach volume from %s"),
-                             instance['name'], instance=instance)
+                except exception.ZVMVolumeError as err:
+                    LOG.warning(_LW("Failed to detach volume from %(inst)s: "
+                                    "%(err)s"),
+                                    {'inst': instance['name'],
+                                     'err': err.format_message()},
+                                    instance=instance)
 
     def _capture_disk_for_instance(self, context, instance):
         """Capture disk."""
