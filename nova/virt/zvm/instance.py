@@ -561,16 +561,17 @@ class ZVMInstance(object):
         url = self._xcat_url.chvm('/' + self._name)
         zvmutils.xcat_request("PUT", url, body)
 
-    def _power_state(self, method, state):
+    def _power_state(self, method, state, field=None):
         """Invoke xCAT REST API to set/get power state for a instance."""
         body = [state]
-        url = self._xcat_url.rpower('/' + self._name)
+        url = self._xcat_url.rpower('/' + self._name, field)
         return zvmutils.xcat_request(method, url, body)
 
     def _check_power_stat(self):
         """Get power status of a z/VM instance."""
         LOG.debug('Query power stat of %s', self._name)
-        res_dict = self._power_state("GET", "stat")
+        addp = '&field=stat'
+        res_dict = self._power_state("GET", None, field=addp)
 
         @zvmutils.wrap_invalid_xcat_resp_data_error
         def _get_power_string(d):
@@ -687,7 +688,8 @@ class ZVMInstance(object):
         """Check whether IUCV connection works well."""
         if zvmutils.xcat_support_iucv(self._driver._xcat_version):
             LOG.debug("Check whether VM %s is reachable.", self._name)
-            result = self._power_state("PUT", "isreachable")
+            addp = '&field=isreachable'
+            result = self._power_state("GET", None, field=addp)
             if ': reachable' in result['info'][0][0]:
 
                 return True

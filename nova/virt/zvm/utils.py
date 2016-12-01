@@ -131,8 +131,9 @@ class XCATUrl(object):
         rurl = self._append_instanceid(rurl, vmuuid)
         return rurl
 
-    def rpower(self, arg=''):
-        return self.PREFIX + self.NODES + arg + self.POWER + self.SUFFIX
+    def rpower(self, arg='', addp=None):
+        rurl = self.PREFIX + self.NODES + arg + self.POWER + self.SUFFIX
+        return self._append_addp(rurl, addp)
 
     def nodels(self, arg=''):
         return self._nodes(arg)

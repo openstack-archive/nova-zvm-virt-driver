@@ -388,7 +388,7 @@ class ZVMDriverTestCases(ZVMTestCase):
         fake_resp_list = [
             ("GET", None, None, self._fake_instance_list_data()),
             # ("GET", None, None, self._fake_reachable_data('sshd')),
-            ("PUT", None, None, self._fake_reachable_data(': reachable')),
+            ("GET", None, None, self._fake_reachable_data(': reachable')),
             ("DELETE", None, None, self._gen_resp(info=rmvm_info))]
         self._set_fake_xcat_resp(fake_resp_list)
         self.driver.destroy({}, self.instance, {}, {})
@@ -400,7 +400,7 @@ class ZVMDriverTestCases(ZVMTestCase):
         fake_resp_list = [
             ("GET", None, None, self._fake_instance_list_data()),
             # ("GET", None, None, self._fake_reachable_data('sshd')),
-            ("PUT", None, None, self._fake_reachable_data(': reachable')),
+            ("GET", None, None, self._fake_reachable_data(': reachable')),
             ("DELETE", None, None, det_res)]
         self._set_fake_xcat_resp(fake_resp_list)
         self.assertRaises(exception.ZVMXCATInternalError,
