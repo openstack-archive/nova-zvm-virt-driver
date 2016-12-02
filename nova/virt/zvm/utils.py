@@ -784,13 +784,13 @@ def punch_iucv_file(os_ver, zhcp, zhcp_userid, instance_name,
     add_iucv_in_zvm_table(instance_name)
 
 
-def punch_iucv_authorized_file(instance_name, zhcp_userid):
+def punch_iucv_authorized_file(old_inst_name, new_inst_name, zhcp_userid):
     cmd = "echo -n %s >/etc/iucv_authorized_userid 2>&1" % zhcp_userid
-    iucv_cmd_file_path = '/tmp/%s.sh' % instance_name[-8:]  # nosec
+    iucv_cmd_file_path = '/tmp/%s.sh' % new_inst_name[-8:]  # nosec
     _generate_iucv_cmd_file(iucv_cmd_file_path, cmd)
-    punch_file(instance_name, iucv_cmd_file_path, 'X', remote_host=get_host())
+    punch_file(new_inst_name, iucv_cmd_file_path, 'X', remote_host=get_host())
     # set VM's communicate type is IUCV
-    add_iucv_in_zvm_table(instance_name)
+    add_iucv_in_zvm_table(old_inst_name)
 
 
 def process_eph_disk(instance_name, vdev=None, fmt=None, mntdir=None):
