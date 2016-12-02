@@ -1701,10 +1701,10 @@ class ZVMDriver(driver.ComputeDriver):
             if zvmutils.xcat_support_iucv(self._xcat_version):
                 if same_xcat_mn:
                     zvmutils.punch_iucv_authorized_file(old_inst._name,
-                                                            zhcp_userid)
+                                            new_inst._name, zhcp_userid)
                 else:
                     zvmutils.punch_iucv_authorized_file(new_inst._name,
-                                                            zhcp_userid)
+                                            new_inst._name, zhcp_userid)
             new_inst.power_on()
             self._attach_volume_to_instance(context, instance, bdm)
 
