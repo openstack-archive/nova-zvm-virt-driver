@@ -721,9 +721,12 @@ class ZVMImages(object):
                         return to_be_deleted_image_profile
 
         if size_sum < current_needed:
+            avail = self.get_free_space_xcat(CONF.xcat_free_space_threshold,
+                                             CONF.zvm_xcat_master)
+            avail = avail + size_sum
             msg = _LW("xCAT MN space not enough for current image operation: "
                     "%(n)d G needed,%(a)d G available") % {'n': current_needed,
-                                                           'a': size_sum}
+                                                           'a': avail}
             LOG.warning(msg)
 
         return to_be_deleted_image_profile
