@@ -39,6 +39,7 @@ from nova import exception as nova_exception
 from nova.i18n import _, _LI, _LW
 from nova.image import api as image_api
 from nova.image import glance
+from nova.objects import migrate_data as migrate_data_obj
 from nova import utils
 from nova.virt import configdrive
 from nova.virt import driver
@@ -992,14 +993,7 @@ class ZVMDriver(driver.ComputeDriver):
         :param block_migration: if true, prepare for block migration
         :param disk_over_commit: if true, allow disk over commit
         """
-        # For z/VM, all live migration check will be done in
-        # check_can_live_migration_source, so just return a dst_compute_info.
-        # And we only support shared storage live migration.
-        migrate_data = {'dest_host': dst_compute_info['hypervisor_hostname'],
-                        'is_shared_storage': True}
-        dest_check_data = {'migrate_data': migrate_data}
-
-        return dest_check_data
+        return migrate_data_obj.LibvirtLiveMigrateData()
 
     def check_can_live_migrate_source(self, ctxt, instance_ref,
                                       dest_check_data, block_device_info=None):
@@ -1013,43 +1007,10 @@ class ZVMDriver(driver.ComputeDriver):
         :param dest_check_data: result of check_can_live_migrate_destination
 
         """
-        LOG.info(_LI("Checking source host for live-migration for %s") %
-                 instance_ref['name'], instance=instance_ref)
+        return migrate_data_obj.LibvirtLiveMigrateData()
 
-        migrate_data = dest_check_data.get('migrate_data', {})
-        dest_host = migrate_data.get('dest_host', None)
-        userid = zvmutils.get_userid(instance_ref['name'])
-        migrate_data.update({'source_xcat_mn': CONF.zvm_xcat_server,
-                             'zvm_userid': userid})
-
-        if dest_host is not None:
-            try:
-                self._vmrelocate(dest_host, instance_ref['name'], 'test')
-            except nova_exception.MigrationError as err:
-                emsg = err.format_message()
-                if isinstance(CONF.zvm_vmrelocate_force, str):
-                    force = CONF.zvm_vmrelocate_force.lower()
-                    if ('domain' in force) or ('architecture' in force):
-                        if '1944' in emsg:
-                            # force domain/architecture in effect, ignore
-                            return migrate_data
-                LOG.error(_("Live-migrating check failed: %s") % emsg,
-                          instance=instance_ref)
-                raise nova_exception.MigrationPreCheckError(reason=emsg)
-
-            return migrate_data
-        else:
-            reason = _("Invalid migration data")
-            raise nova_exception.MigrationPreCheckError(reason=reason)
-
-    def check_can_live_migrate_destination_cleanup(self, ctxt,
+    def cleanup_live_migration_destination_check(self, ctxt,
                                                    dest_check_data):
-        """Do required cleanup on dest host after check_can_live_migrate calls
-
-        :param ctxt: security context
-        :param dest_check_data: result of check_can_live_migrate_destination
-
-        """
         # For z/VM, nothing needed to be cleanup
         return
 
@@ -1070,16 +1031,6 @@ class ZVMDriver(driver.ComputeDriver):
             raise nova_exception.MigrationError(reason=msg)
 
         zvm_inst = ZVMInstance(self, instance_ref)
-        source_xcat_mn = migrate_data.get('source_xcat_mn', '')
-        userid = migrate_data.get('zvm_userid')
-        hcp = self._get_hcp_info()['hostname']
-        same_xcat_mn = source_xcat_mn == CONF.zvm_xcat_server
-        dest_diff_mn_key = None
-
-        if not same_xcat_mn:
-            # The two z/VM system managed by two different xCAT MN
-            zvm_inst.create_xcat_node(hcp, userid)
-            dest_diff_mn_key = zvmutils.get_mn_pub_key()
         if network_info is not None:
             network = network_info[0]['network']
             ip_addr = network['subnets'][0]['ips'][0]['address']
@@ -1087,8 +1038,7 @@ class ZVMDriver(driver.ComputeDriver):
                                           zvm_inst._name)
             self._networkop.makehosts()
 
-        return {'same_xcat_mn': same_xcat_mn,
-                'dest_diff_mn_key': dest_diff_mn_key}
+        return
 
     def pre_block_migration(self, ctxt, instance_ref, disk_info):
         """Prepare a block device for migration
@@ -1122,33 +1072,34 @@ class ZVMDriver(driver.ComputeDriver):
 
         """
         inst_name = instance_ref['name']
-        dest_host = migrate_data['dest_host']
+
+        # Test can live migrate or not
+        force = CONF.zvm_vmrelocate_force
+        try:
+            self._vmrelocate(dest, inst_name, 'test')
+        except nova_exception.MigrationError as err:
+            emsg = err.format_message()
+            if (force and ('domain' in force.lower() or
+                    'architecture' in force.lower()) and ('1944' in emsg)):
+                LOG.debug("Ignore VMRELOCATE 1944 error")
+            else:
+                LOG.error(_("Live-migrating check failed: %s") % emsg,
+                          instance=instance_ref)
+                with excutils.save_and_reraise_exception():
+                    recover_method(ctxt, instance_ref, dest,
+                                   block_migration, migrate_data)
+
         LOG.info(_LI("Live-migrating %(inst)s to %(dest)s") %
-                 {'inst': inst_name, 'dest': dest_host}, instance=instance_ref)
-
-        same_mn = migrate_data['pre_live_migration_result']['same_xcat_mn']
-        dest_diff_mn_key = migrate_data['pre_live_migration_result'].get(
-                            'dest_diff_mn_key', None)
-
-        if not same_mn and dest_diff_mn_key:
-            auth_command = ('echo "%s" >> /root/.ssh/authorized_keys' %
-                dest_diff_mn_key)
-            zvmutils.xdsh(inst_name, auth_command)
+                 {'inst': inst_name, 'dest': dest}, instance=instance_ref)
 
         try:
-            self._vmrelocate(dest_host, inst_name, 'move')
+            self._vmrelocate(dest, inst_name, 'move')
         except nova_exception.MigrationError as err:
             LOG.error(_("Live-migration failed: %s") % err.format_message(),
                       instance=instance_ref)
             with excutils.save_and_reraise_exception():
                 recover_method(ctxt, instance_ref, dest,
                                block_migration, migrate_data)
-
-        if not same_mn:
-            # Delete node definition at source xCAT MN
-            zvm_inst = ZVMInstance(self, instance_ref)
-            self._networkop.clean_mac_switch_host(zvm_inst._name)
-            zvm_inst.delete_xcat_node()
 
         post_method(ctxt, instance_ref, dest,
                     block_migration, migrate_data)
