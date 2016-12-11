@@ -986,107 +986,23 @@ class ZVMDriverTestCases(ZVMTestCase):
 
     def test_live_migration_same_mn(self):
         dest = 'fhost2'
-        migrate_data = {'dest_host': dest,
-                        'pre_live_migration_result':
-                            {'same_xcat_mn': True,
-                             'dest_diff_mn_key': None}}
         info = ["os000001: VMRELOCATE action=move against OS000001... Done\n"]
-        self._set_fake_xcat_responses([self._generate_xcat_resp(info)])
+        self._set_fake_xcat_responses([self._generate_xcat_resp(info),
+                                       self._generate_xcat_resp(info)])
         self.driver.live_migration(self.context, self.instance, dest,
                                    self._fake_fun(), self._fake_fun(), None,
-                                   migrate_data)
-        self.mox.VerifyAll()
-
-    def test_live_migration_diff_mn(self):
-        dest = 'fhost2'
-        migrate_data = {'dest_host': dest,
-                        'pre_live_migration_result':
-                            {'same_xcat_mn': False,
-                             'dest_diff_mn_key': 'sshkey'}}
-        info = ["os000001: VMRELOCATE action=move against OS000001... Done\n"]
-        self.stubs.Set(zvmutils, "xdsh", self._fake_fun())
-        self.stubs.Set(self.driver._networkop, 'clean_mac_switch_host',
-                       self._fake_fun())
-        self.stubs.Set(instance.ZVMInstance, 'delete_xcat_node',
-                       self._fake_fun())
-        self._set_fake_xcat_resp([("PUT", None, None,
-                                   self._gen_resp(info=info))])
-        self.driver.live_migration(self.context, self.instance, dest,
-                                   self._fake_fun(), self._fake_fun(), None,
-                                   migrate_data)
+                                   None)
         self.mox.VerifyAll()
 
     def test_live_migration_failed(self):
         dest = 'fhost2'
-        migrate_data = {'dest_host': dest,
-                        'pre_live_migration_result':
-                            {'same_xcat_mn': True,
-                             'dest_diff_mn_key': None}}
         info = ["os000001: VMRELOCATE MOVE error\n"]
         self._set_fake_xcat_responses([self._gen_resp(info=info,
                                                       error=['error'])])
         self.stubs.Set(zvmutils, "xdsh", self._fake_fun())
         self.assertRaises(nova_exception.MigrationError,
             self.driver.live_migration, self.context, self.instance, dest,
-            self._fake_fun(), self._fake_fun(), None, migrate_data)
-        self.mox.VerifyAll()
-
-    def test_check_can_live_migrate_destination(self):
-        dest = 'fhost2'
-        dest_info = {'hypervisor_hostname': dest}
-        res_dict = self.driver.check_can_live_migrate_destination(self.context,
-            self.instance, {}, dest_info, {}, {})
-        exp_dict = {'dest_host': dest,
-                    'is_shared_storage': True}
-        self.assertEqual(res_dict.get('migrate_data', None), exp_dict)
-
-    def test_check_can_live_migrate_source(self):
-        dest = 'fhost2'
-        migrate_data = {'dest_host': dest,
-                        'is_shared_storage': True}
-        dest_check_data = {'migrate_data': migrate_data}
-        info = ["os000001: VMRELOCATE action=test against OS000001... Done\n"]
-        self._set_fake_xcat_resp([
-            ("GET", None, None, self._gen_resp(info=["userid=os000001"])),
-            ("PUT", None, None, self._gen_resp(info=info))])
-        res_dict = self.driver.check_can_live_migrate_source(
-                       self.context, self.instance, dest_check_data)
-        self.assertNotEqual(res_dict.get('dest_host', None), None)
-        self.mox.ReplayAll()
-
-    def test_check_can_live_migrate_source_failed(self):
-        dest = 'fhost2'
-        migrate_data = {'dest_host': dest}
-        dest_check_data = {'migrate_data': migrate_data}
-        error = ["VMRELOCATE move failed"]
-
-        self.mox.StubOutWithMock(zvmutils, "get_userid")
-        self.mox.StubOutWithMock(self.driver, "_vmrelocate")
-        zvmutils.get_userid('os000001').AndReturn("os000001")
-        self.driver._vmrelocate('fhost2', 'os000001', 'test').AndRaise(
-            nova_exception.MigrationError(reason=error))
-        self.mox.ReplayAll()
-
-        self.assertRaises(nova_exception.MigrationError,
-            self.driver.check_can_live_migrate_source, self.context,
-            self.instance, dest_check_data)
-        self.mox.VerifyAll()
-
-    def test_check_can_live_migrate_source_force(self):
-        self.flags(zvm_vmrelocate_force='domain')
-        dest = 'fhost2'
-        migrate_data = {'dest_host': dest}
-        dest_check_data = {'migrate_data': migrate_data}
-
-        self.mox.StubOutWithMock(zvmutils, "get_userid")
-        self.mox.StubOutWithMock(self.driver, "_vmrelocate")
-        zvmutils.get_userid('os000001').AndReturn("os000001")
-        self.driver._vmrelocate('fhost2', 'os000001', 'test').AndRaise(
-            nova_exception.MigrationError(reason="1944"))
-        self.mox.ReplayAll()
-
-        self.driver.check_can_live_migrate_source(self.context, self.instance,
-                                                  dest_check_data)
+            self._fake_fun(), self._fake_fun(), None, None)
         self.mox.VerifyAll()
 
     def test_migrate_disk_and_power_off(self):
