@@ -14,3 +14,4 @@ testscenarios>=0.4
 testtools>=1.4.0
 mock>=1.2
 mox>=0.5.3
+vine
