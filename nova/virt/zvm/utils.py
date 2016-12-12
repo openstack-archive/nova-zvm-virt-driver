@@ -728,6 +728,11 @@ def add_iucv_in_zvm_table(instance_name):
     xcat_cmd_settab('zvm', 'node', instance_name, "status", status)
 
 
+def copy_zvm_table_status(des_inst_name, src_inst_name):
+    status = xcat_cmd_gettab('zvm', 'node', src_inst_name, "status")
+    xcat_cmd_settab('zvm', 'node', des_inst_name, "status", status)
+
+
 def punch_iucv_file(os_ver, zhcp, zhcp_userid, instance_name,
                     instance_path):
     """put iucv server and service files to reader."""
@@ -789,8 +794,8 @@ def punch_iucv_authorized_file(old_inst_name, new_inst_name, zhcp_userid):
     iucv_cmd_file_path = '/tmp/%s.sh' % new_inst_name[-8:]  # nosec
     _generate_iucv_cmd_file(iucv_cmd_file_path, cmd)
     punch_file(new_inst_name, iucv_cmd_file_path, 'X', remote_host=get_host())
-    # set VM's communicate type is IUCV
-    add_iucv_in_zvm_table(old_inst_name)
+    # set VM's communicate type the same as original VM
+    copy_zvm_table_status(old_inst_name, new_inst_name)
 
 
 def process_eph_disk(instance_name, vdev=None, fmt=None, mntdir=None):
