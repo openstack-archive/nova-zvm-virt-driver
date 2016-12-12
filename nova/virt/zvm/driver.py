@@ -1788,7 +1788,8 @@ class ZVMDriver(driver.ComputeDriver):
             old_inst = ZVMInstance(self, instance)
             old_inst.copy_xcat_node(new_instance['name'])
             if zvmutils.xcat_support_iucv(self._xcat_version):
-                zvmutils.add_iucv_in_zvm_table(instance['name'])
+                zvmutils.copy_zvm_table_status(instance['name'],
+                                                        new_instance['name'])
             zvm_inst.delete_xcat_node()
 
             self._reconfigure_networking(instance['name'], network_info,
