@@ -472,6 +472,7 @@ class ZVMDriver(driver.ComputeDriver):
         self._networkop.add_xcat_host(instance_name, ip_addr, instance_name)
         self._networkop.makehosts()
 
+    @utils.synchronized('import_action_lock')
     def _import_image_to_nova(self, context, instance, image_meta):
         image_file_name = image_meta['properties']['image_file_name']
         disk_file = ''.join(j for j in image_file_name.split(".img")[0]
