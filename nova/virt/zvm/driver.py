@@ -28,6 +28,7 @@ from oslo_utils import excutils
 from oslo_utils import timeutils
 from oslo_utils import units
 from oslo_utils import versionutils
+from oslo_utils import uuidutils
 
 from nova.api.metadata import base as instance_metadata
 from nova.compute import power_state
@@ -1496,7 +1497,7 @@ class ZVMDriver(driver.ComputeDriver):
         """Capture disk."""
         zvm_inst = ZVMInstance(self, instance)
         image_name = ''.join('rsz' + instance['name'])
-        image_uuid = str(uuid.uuid4())
+        image_uuid = str(uuidutils.generate_uuid())
         image_href = image_uuid.replace('-', '_')
 
         # Capture
