@@ -14,6 +14,7 @@
 
 import contextlib
 import datetime
+import eventlet
 import itertools
 import operator
 import os
@@ -123,6 +124,7 @@ class ZVMDriver(driver.ComputeDriver):
         self._volume_api = cinder.API()
         self._dist_manager = dist.ListDistManager()
         self._image_api = image_api.API()
+        self._imageop_semaphore = eventlet.semaphore.Semaphore(1)
 
     def init_host(self, host):
         """Initialize anything that is necessary for the driver to function,
@@ -305,12 +307,15 @@ class ZVMDriver(driver.ComputeDriver):
             if not boot_from_volume:
                 tmp_file_fn = None
                 bundle_file_path = None
-                if 'root_disk_units' not in image_meta['properties']:
-                    (tmp_file_fn, image_file_path,
-                     bundle_file_path) = self._import_image_to_nova(context,
+                with self._imageop_semaphore:
+                    if 'root_disk_units' not in image_meta['properties']:
+                        (tmp_file_fn, image_file_path,
+                        bundle_file_path) = self._import_image_to_nova(
+                                                    context,
                                                     instance, image_meta)
-                    image_meta = self._zvm_images.set_image_root_disk_units(
-                                    context, image_meta, image_file_path)
+                        image_meta = self._zvm_images.\
+                                        set_image_root_disk_units(
+                                        context, image_meta, image_file_path)
                 image_in_xcat = self._zvm_images.image_exist_xcat(
                                     instance['image_ref'])
                 if not image_in_xcat:
