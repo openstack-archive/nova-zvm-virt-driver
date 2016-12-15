@@ -384,6 +384,9 @@ class ZVMInstance(object):
             (lun, wwpn, size,
              fcp) = self._volumeop.extract_connection_info(context,
                                                             connection_info)
+            if len(wwpn) > 16:
+                # wwpn list as: aaaa;bbbb;cccc;dddd;eeee
+                wwpn = wwpn.split(';')[0]
 
             (kernel_parm_string, scpdata) = self._forge_hex_scpdata(fcp,
                                                         wwpn, lun, volume_meta)
