@@ -4264,8 +4264,9 @@ class ZVMDistTestCases(test.TestCase):
         self.rhel7 = dist.rhel7()
         self.sles11 = dist.sles11()
         self.sles12 = dist.sles12()
+        self.ubuntu16 = dist.ubuntu16()
         self.support_list = [self.rhel6, self.rhel7,
-                             self.sles11, self.sles12]
+                             self.sles11, self.sles12, self.ubuntu16]
 
     def test_get_znetconfig_contents(self):
         for v in self.support_list:
@@ -4287,7 +4288,8 @@ class ZVMDistTestCases(test.TestCase):
     def test_get_network_file_path(self):
         for v in self.support_list:
             contents = v._get_network_file_path()
-            self.assertTrue(len(contents) > 0)
+            if v != self.ubuntu16:
+                self.assertTrue(len(contents) > 0)
 
     def test_get_change_passwd_command(self):
         for v in self.support_list:
@@ -4301,7 +4303,10 @@ class ZVMDistTestCases(test.TestCase):
 
     def test_get_cfg_str(self):
         for v in self.support_list:
-            v._get_cfg_str('0', '0', '0', '0', '0', '0', '0')
+            if v is self.ubuntu16:
+                v._get_cfg_str('0', '0', '0', '0', '0')
+            else:
+                v._get_cfg_str('0', '0', '0', '0', '0', '0', '0')
 
     def test_get_device_filename(self):
         for v in self.support_list:
@@ -4322,7 +4327,7 @@ class ZVMDistTestCases(test.TestCase):
         wwpn = "55556666"
         lun = "11112222"
 
-        expected = ("=root=/dev/sda2 selinux=0 "
+        expected = ("=root=/dev/sda2 selinux=0 zfcp.allow_lun_scan=0 "
                     "rd_ZFCP=0.0.1faa,0x55556666,0x11112222")
         actual = self.rhel6.get_scp_string(root, fcp, wwpn, lun)
         self.assertEqual(expected, actual)
@@ -4332,7 +4337,7 @@ class ZVMDistTestCases(test.TestCase):
         actual = self.rhel7.get_scp_string(root, fcp, wwpn, lun)
         self.assertEqual(expected, actual)
 
-        expected = ("=root=/dev/sda2 "
+        expected = ("=root=/dev/sda2 zfcp.allow_lun_scan=0 "
                     "zfcp.device=0.0.1faa,0x55556666,0x11112222")
         actual = self.sles11.get_scp_string(root, fcp, wwpn, lun)
         self.assertEqual(expected, actual)
@@ -4340,6 +4345,11 @@ class ZVMDistTestCases(test.TestCase):
         expected = ("=root=/dev/sda2 zfcp.allow_lun_scan=0 "
                     "zfcp.device=0.0.1faa,0x55556666,0x11112222")
         actual = self.sles12.get_scp_string(root, fcp, wwpn, lun)
+        self.assertEqual(expected, actual)
+
+        expected = ("=root=/dev/sda2 zfcp.allow_lun_scan=0 "
+                    "zfcp.device=0.0.1faa,0x55556666,0x11112222")
+        actual = self.ubuntu16.get_scp_string(root, fcp, wwpn, lun)
         self.assertEqual(expected, actual)
 
     def test_get_zipl_script_lines(self):
@@ -4359,7 +4369,8 @@ class ZVMDistTestCases(test.TestCase):
                     'image=image\\n'
                     'ramdisk=ramdisk\\n'
                     'parameters=\\"root=/dev/sda2 '
-                    'rd_ZFCP=0.0.1faa,0x55556666,0x11112222 selinux=0\\""'
+                    'rd_ZFCP=0.0.1faa,0x55556666,0x11112222 '
+                    'zfcp.allow_lun_scan=0 selinux=0\\""'
                     '>/etc/zipl_volume.conf\n'
                     'zipl -c /etc/zipl_volume.conf']
         actual = self.rhel6.get_zipl_script_lines(image, ramdisk, root,
@@ -4391,7 +4402,8 @@ class ZVMDistTestCases(test.TestCase):
                     'target = /boot/zipl\\n'
                     'ramdisk=ramdisk\\n'
                     'parameters=\\"root=/dev/sda2 '
-                    'zfcp.device=0.0.1faa,0x55556666,0x11112222\\""'
+                    'zfcp.device=0.0.1faa,0x55556666,0x11112222 '
+                    'zfcp.allow_lun_scan=0\\""'
                     '>/etc/zipl_volume.conf\n'
                     'mkinitrd\n'
                     'zipl -c /etc/zipl_volume.conf']
@@ -4414,6 +4426,23 @@ class ZVMDistTestCases(test.TestCase):
                     'zipl -c /etc/zipl_volume.conf']
         actual = self.sles12.get_zipl_script_lines(image, ramdisk, root,
                                                   fcp, wwpn, lun)
+        self.assertEqual(expected, actual)
+
+        expected = ['#!/bin/bash\n',
+                    'echo -e "[defaultboot]\\n'
+                    'default=boot-from-volume\\n'
+                    '[boot-from-volume]\\n'
+                    'image=image\\n'
+                    'target = /boot/zipl\\n'
+                    'ramdisk=ramdisk\\n'
+                    'parameters=\\"root=/dev/sda2 '
+                    'zfcp.device=0.0.1faa,0x55556666,0x11112222 '
+                    'zfcp.allow_lun_scan=0\\""'
+                    '>/etc/zipl_volume.conf\n'
+                    'mkinitrd\n'
+                    'zipl -c /etc/zipl_volume.conf']
+        actual = self.ubuntu16.get_zipl_script_lines(image, ramdisk, root,
+                                                     fcp, wwpn, lun)
         self.assertEqual(expected, actual)
 
 
