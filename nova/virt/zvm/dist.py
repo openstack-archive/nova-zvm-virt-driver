@@ -243,7 +243,7 @@ class rhel6(rhel):
         return 'eth' + str(device_num)
 
     def get_scp_string(self, root, fcp, wwpn, lun):
-        return ("=root=%(root)s selinux=0 "
+        return ("=root=%(root)s selinux=0 zfcp.allow_lun_scan=0 "
                 "rd_ZFCP=0.0.%(fcp)s,0x%(wwpn)s,0x%(lun)s") % {
                 'root': root, 'fcp': fcp, 'wwpn': wwpn, 'lun': lun}
 
@@ -257,7 +257,8 @@ class rhel6(rhel):
                  'image=%(image)s\\n'
                  'ramdisk=%(ramdisk)s\\n'
                  'parameters=\\"root=%(root)s '
-                 'rd_ZFCP=0.0.%(fcp)s,0x%(wwpn)s,0x%(lun)s selinux=0\\""'
+                 'rd_ZFCP=0.0.%(fcp)s,0x%(wwpn)s,0x%(lun)s '
+                 'zfcp.allow_lun_scan=0 selinux=0\\""'
                  '>/etc/zipl_volume.conf\n'
                  'zipl -c /etc/zipl_volume.conf')
                 % {'image': image, 'ramdisk': ramdisk, 'root': root,
@@ -367,7 +368,7 @@ class sles(LinuxDist):
         return cfg_str
 
     def get_scp_string(self, root, fcp, wwpn, lun):
-        return ("=root=%(root)s "
+        return ("=root=%(root)s zfcp.allow_lun_scan=0 "
                 "zfcp.device=0.0.%(fcp)s,0x%(wwpn)s,0x%(lun)s") % {
                 'root': root, 'fcp': fcp, 'wwpn': wwpn, 'lun': lun}
 
@@ -380,7 +381,8 @@ class sles(LinuxDist):
                  'target = /boot/zipl\\n'
                  'ramdisk=%(ramdisk)s\\n'
                  'parameters=\\"root=%(root)s '
-                 'zfcp.device=0.0.%(fcp)s,0x%(wwpn)s,0x%(lun)s\\""'
+                 'zfcp.device=0.0.%(fcp)s,0x%(wwpn)s,0x%(lun)s '
+                 'zfcp.allow_lun_scan=0\\""'
                  '>/etc/zipl_volume.conf\n'
                  'mkinitrd\n'
                  'zipl -c /etc/zipl_volume.conf')
@@ -419,28 +421,6 @@ class sles12(sles):
 
     def get_change_passwd_command(self, admin_password):
         return "echo 'root:%s' | chpasswd" % admin_password
-
-    def get_scp_string(self, root, fcp, wwpn, lun):
-        return ("=root=%(root)s zfcp.allow_lun_scan=0 "
-                "zfcp.device=0.0.%(fcp)s,0x%(wwpn)s,0x%(lun)s") % {
-                'root': root, 'fcp': fcp, 'wwpn': wwpn, 'lun': lun}
-
-    def get_zipl_script_lines(self, image, ramdisk, root, fcp, wwpn, lun):
-        return ['#!/bin/bash\n',
-                ('echo -e "[defaultboot]\\n'
-                 'default=boot-from-volume\\n'
-                 '[boot-from-volume]\\n'
-                 'image=%(image)s\\n'
-                 'target = /boot/zipl\\n'
-                 'ramdisk=%(ramdisk)s\\n'
-                 'parameters=\\"root=%(root)s '
-                 'zfcp.device=0.0.%(fcp)s,0x%(wwpn)s,0x%(lun)s '
-                 'zfcp.allow_lun_scan=0\\""'
-                 '>/etc/zipl_volume.conf\n'
-                 'mkinitrd\n'
-                 'zipl -c /etc/zipl_volume.conf')
-                % {'image': image, 'ramdisk': ramdisk, 'root': root,
-                   'fcp': fcp, 'wwpn': wwpn, 'lun': lun}]
 
 
 class ubuntu(LinuxDist):
@@ -543,10 +523,26 @@ class ubuntu(LinuxDist):
         pass
 
     def get_scp_string(self, root, fcp, wwpn, lun):
-        pass
+        return ("=root=%(root)s zfcp.allow_lun_scan=0 "
+                "zfcp.device=0.0.%(fcp)s,0x%(wwpn)s,0x%(lun)s") % {
+                'root': root, 'fcp': fcp, 'wwpn': wwpn, 'lun': lun}
 
     def get_zipl_script_lines(self, image, ramdisk, root, fcp, wwpn, lun):
-        pass
+        return ['#!/bin/bash\n',
+                ('echo -e "[defaultboot]\\n'
+                 'default=boot-from-volume\\n'
+                 '[boot-from-volume]\\n'
+                 'image=%(image)s\\n'
+                 'target = /boot/zipl\\n'
+                 'ramdisk=%(ramdisk)s\\n'
+                 'parameters=\\"root=%(root)s '
+                 'zfcp.device=0.0.%(fcp)s,0x%(wwpn)s,0x%(lun)s '
+                 'zfcp.allow_lun_scan=0\\""'
+                 '>/etc/zipl_volume.conf\n'
+                 'mkinitrd\n'
+                 'zipl -c /etc/zipl_volume.conf')
+                % {'image': image, 'ramdisk': ramdisk, 'root': root,
+                   'fcp': fcp, 'wwpn': wwpn, 'lun': lun}]
 
     def assemble_zfcp_srcdev(self, fcp, wwpn, lun):
         path = '/dev/disk/by-path/ccw-0.0.%(fcp)s-fc-0x%(wwpn)s-lun-%(lun)s'
