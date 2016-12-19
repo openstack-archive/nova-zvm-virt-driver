@@ -311,16 +311,17 @@ class ZVMInstance(object):
 
         body = self._create_user_id_body(boot_from_volume)
 
-        # image_meta passed from spawn is a dict, in resize is a object
-        if isinstance(image_meta, dict):
-            if 'name' in image_meta.keys():
-                kwimage = 'imagename=%s' % image_meta['name']
-                body.append(kwimage)
-        else:
-            image_name = getattr(image_meta, 'name')
-            if image_name:
-                kwimage = 'imagename=%s' % image_name
-                body.append(kwimage)
+        if not boot_from_volume:
+            # image_meta passed from spawn is a dict, in resize is a object
+            if isinstance(image_meta, dict):
+                if 'name' in image_meta.keys():
+                    kwimage = 'imagename=%s' % image_meta['name']
+                    body.append(kwimage)
+            else:
+                image_name = getattr(image_meta, 'name')
+                if image_name:
+                    kwimage = 'imagename=%s' % image_name
+                    body.append(kwimage)
 
         if os_image:
             kwimage = 'osimage=%s' % os_image
