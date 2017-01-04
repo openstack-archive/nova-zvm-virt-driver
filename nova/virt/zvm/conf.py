@@ -152,7 +152,7 @@ Possible values:
                     'determines that there are insufficient storage '
                     'resources on destination system.'),
     cfg.StrOpt('zvm_vmrelocate_immediate',
-               default='yes',
+               default='no',
                help='Immediate can be: (YES) VMRELOCATE command will do '
                     'one early pass through virtual machine storage and '
                     'then go directly to the quiesce stage, '
