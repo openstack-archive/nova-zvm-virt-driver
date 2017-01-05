@@ -71,11 +71,11 @@ Possible values:
 CA file for https connection to xCAT REST API.
 
 When HTTPS protocol is used to communicate between z/VM driver and xCAT REST
-API, z/VM driver need to have a CA file which will be used to verify xCAT is
-the one z/VM driver to connect to.
+API, z/VM compute service needs to have a CA file which will be used to verify
+that it has the correct authorization to talk with xCAT.
 
 Possible values:
-    A CA file name and location in the host that running compute service.
+    A CA file name and location in the host that is running compute service.
 """),
     cfg.StrOpt('zvm_diskpool',
                default=None,
@@ -105,11 +105,11 @@ Possible values:
     cfg.StrOpt('zvm_host',
                default=None,
                help="""
-z/VM host that managed by the compute node.
+z/VM host that is managed by the compute node.
 
 This is the name of the hypervisor that is managed by the compute service.
-Admin need to set this name by refering to the z/VM system configuration
-file.
+The admin should refer to the z/VM system configuration file
+SYSTEM_IDENTIFIER statement for the hypervisor name.
 
 Possible values:
     A 1-8 character string, matching the z/VM system name this
@@ -201,14 +201,11 @@ Possible Values:
     cfg.IntOpt('zvm_console_log_size',
                default=100,
                help="""
-The maximum console log size, in kilobytes, allowed.
+The maximum allowed console log size, in kilobytes.
 
-Console logs must be transferred to OpenStack from z/VM side,
-so this controls how large each transferred console can be.
-
-Possible values:
-    Any positive integer, recommended to be at least 100 KB to
-    avoid unnecessary calls between z/VM and OpenStack.
+Console logs must be transferred to OpenStack from xCAT, this controls how
+large each file can be. A smaller size may mean more calls will be needed
+to transfer large consoles, which may not be desirable for performance reasons.
 """),
     ]
 
@@ -234,7 +231,7 @@ Default password for a new created z/VM user.
 
 This is the password for any z/VM user IDs created when OpenStack deploys new
 virtual servers (also called nova instances), defined in the USER directory
-statement. The default value is dfltpass. You can change it as needed.
+statement.
 
 Possible values:
     A 1-8 character string.
@@ -249,8 +246,8 @@ Classes A-G are defined by default, or the administrator can define
 their own using characters A-Z, 1-6.
 
 Possible value:
-    In opnestack solution, 'G' is the only recommended value.
-    Consult with your zVM admin for more info.
+    Currently, 'G' is the recommended value.
+    Consult with your z/VM administrator for more information.
 """),
     cfg.StrOpt('zvm_user_root_vdev',
                default='0100',
