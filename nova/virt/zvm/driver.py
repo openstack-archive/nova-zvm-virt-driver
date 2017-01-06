@@ -537,9 +537,9 @@ class ZVMDriver(driver.ComputeDriver):
 
         LOG.debug("Generating the manifest.xml as a part of bundle file for "
                     "image %s", image_meta['id'], instance=instance)
-        image_name = image_name.encode('unicode_escape')
-        image_name = image_name.replace('\u', '')
-        image_name = image_name.decode('utf-8')
+
+        image_name = zvmutils.remove_prefix_of_unicode(image_name)
+
         self._zvm_images.generate_manifest_file(image_meta, image_name,
                                                  disk_file, bundle_file_path)
 
@@ -787,6 +787,7 @@ class ZVMDriver(driver.ComputeDriver):
         # remove user names special characters, this name will only be used
         # to pass to xcat and combine with UUID in xcat.
         image_name = ''.join(i for i in image_meta['name'] if i.isalnum())
+        image_name = zvmutils.remove_prefix_of_unicode(image_name)
         image_name_xcat = None
 
         # Make sure the instance's power_state is running and unpaused before
