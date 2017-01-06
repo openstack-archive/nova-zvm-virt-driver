@@ -2400,6 +2400,12 @@ class ZVMUtilsTestCases(ZVMTestCase):
         self.assertEqual(20, zvmutils.convert_to_mb('20M'))
         self.assertEqual(1153433.6, zvmutils.convert_to_mb('1.1T'))
 
+    def test_remove_prefix_of_unicode(self):
+        self.assertEqual(u'6d4b8bd575284f8b',
+                zvmutils.remove_prefix_of_unicode(u'\u6d4b\u8bd5\u7528\u4f8b'))
+        self.assertEqual('uuuuasd81m.qw38927u',
+                zvmutils.remove_prefix_of_unicode('uuuuasd81m.qw38927u'))
+
 
 class ZVMConfigDriveTestCase(test.NoDBTestCase):
 
