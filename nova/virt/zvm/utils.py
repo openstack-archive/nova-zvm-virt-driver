@@ -291,6 +291,13 @@ def get_xcat_url():
     return _XCAT_URL
 
 
+def remove_prefix_of_unicode(str_unicode):
+    str_unicode = str_unicode.encode('unicode_escape')
+    str_unicode = str_unicode.replace('\u', '')
+    str_unicode = str_unicode.decode('utf-8')
+    return str_unicode
+
+
 class XCATConnection(object):
     """Https requests to xCAT web service."""
 
