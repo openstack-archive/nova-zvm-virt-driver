@@ -223,12 +223,6 @@ class ZVMDriver(driver.ComputeDriver):
                                   attached to the instance.
 
         """
-        # This is because commit fbe31e461ac3f16edb795993558a2314b4c16b52
-        # changes the image_meta from dict to object, we have several
-        # unique property can't be handled well
-        # see bug 1537921 for detail info
-        image_meta = self._image_api.get(context, image_meta.id)
-
         # For zVM instance, limit the maximum length of instance name to be 8
         if len(instance['name']) > 8:
             msg = (_("Don't support spawn vm on zVM hypervisor with instance "
@@ -245,9 +239,23 @@ class ZVMDriver(driver.ComputeDriver):
             msg = _("Not support boot without a NIC.")
             raise exception.ZVMDriverError(msg=msg)
 
+        # Use image_type to distinguish the image that is for normal deploy
+        # and volume snapshot image
+        image_type = ''
         # Ensure the used image is a valid zVM image
         if not boot_from_volume:
+            # This is because commit fbe31e461ac3f16edb795993558a2314b4c16b52
+            # changes the image_meta from dict to object, we have several
+            # unique property can't be handled well
+            # see bug 1537921 for detail info
+            image_meta = self._image_api.get(context, image_meta.id)
             self._zvm_images.zimage_check(image_meta)
+            if 'image_comments' not in image_meta['properties']:
+                image_type = 'xcatconf4z'
+            else:
+                image_type = 'cloudimg'
+        else:
+            image_type = 'volume-snapshot'
 
         compute_node = CONF.zvm_host
         hcp_info = self._get_hcp_info()
@@ -259,7 +267,7 @@ class ZVMDriver(driver.ComputeDriver):
                                                           zvm_inst._name)
         # Create network configuration files
         LOG.debug('Creating network configuration files '
-                    'for instance: %s', zvm_inst._name, instance=instance)
+                  'for instance: %s', zvm_inst._name, instance=instance)
         base_nic_vdev = CONF.zvm_default_nic_vdev
 
         if not boot_from_volume:
@@ -283,9 +291,9 @@ class ZVMDriver(driver.ComputeDriver):
             admin_password = CONF.zvm_image_default_password
         transportfiles = None
         if configdrive.required_by(instance):
-            transportfiles = self._create_config_drive(context,
-                instance_path, instance, image_meta, injected_files,
-                admin_password, net_conf_cmds, linuxdist)
+            transportfiles = self._create_config_drive(context, instance_path,
+                                instance, injected_files, admin_password,
+                                net_conf_cmds, linuxdist, image_type)
 
         LOG.info(_LI("The instance %(name)s is spawning at %(node)s"),
                  {'name': zvm_inst._name, 'node': compute_node},
@@ -334,7 +342,7 @@ class ZVMDriver(driver.ComputeDriver):
             else:
                 zvmutils.punch_configdrive_file(transportfiles, zvm_inst._name)
 
-            if 'image_comments' not in image_meta['properties']:
+            if image_type in ['xcatconf4z', 'volume-snapshot']:
                 # Change vm's admin password during spawn
                 zvmutils.punch_adminpass_file(instance_path, zvm_inst._name,
                                               admin_password, linuxdist)
@@ -359,8 +367,7 @@ class ZVMDriver(driver.ComputeDriver):
                         zvmutils.process_eph_disk(zvm_inst._name, vdev, fmt,
                                                   mount_dir)
 
-            # Wait neutron zvm-agent add NIC information
-            # to user direct.
+            # Wait neutron zvm-agent add NIC information to user direct.
             self._wait_and_get_nic_direct(zvm_inst._name, instance)
 
             # Attach persistent volume, exclude root volume
@@ -418,8 +425,8 @@ class ZVMDriver(driver.ComputeDriver):
             self._zvm_images.update_last_use_date(deploy_image_name)
 
     def _create_config_drive(self, context, instance_path, instance,
-                             image_meta, injected_files, admin_password,
-                             commands, linuxdist):
+                             injected_files, admin_password, commands,
+                             linuxdist, image_type=''):
         if CONF.config_drive_format not in ['tgz', 'iso9660']:
             msg = (_("Invalid config drive format %s") %
                    CONF.config_drive_format)
@@ -432,7 +439,7 @@ class ZVMDriver(driver.ComputeDriver):
             extra_md['admin_pass'] = admin_password
 
         udev_settle = ''
-        if 'image_comments' not in image_meta['properties']:
+        if image_type in ['xcatconf4z', 'volume-snapshot']:
             udev_settle = linuxdist.get_znetconfig_contents()
         if udev_settle:
             if len(commands) == 0:
