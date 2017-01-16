@@ -123,6 +123,12 @@ class ZVMDriver(driver.ComputeDriver):
         self._volume_api = cinder.API()
         self._dist_manager = dist.ListDistManager()
         self._image_api = image_api.API()
+
+        # booting multi instances at sametime will failed because we will
+        # import image to nova if root_disk_units not set,so multi threads
+        # might work on same image and the lastest one will overwrite the
+        # former ones' image data.The former ones can't find the data any more
+        # so add this semaphore to synchronize between those threads
         self._imageop_semaphore = eventlet.semaphore.Semaphore(1)
 
     def init_host(self, host):
