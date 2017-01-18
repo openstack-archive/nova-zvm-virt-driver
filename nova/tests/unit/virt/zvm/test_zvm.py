@@ -481,6 +481,7 @@ class ZVMDriverTestCases(ZVMTestCase):
         return info
 
     def test_spawn(self):
+        self.stubs.Set(self.instance, 'save', self._fake_fun())
         self.instance['config_drive'] = True
         self.stubs.Set(self.driver._pathutils, 'get_instance_path',
                        self._fake_fun('/temp/os000001'))
@@ -515,7 +516,6 @@ class ZVMDriverTestCases(ZVMTestCase):
         self.stubs.Set(self.driver, '_wait_and_get_nic_direct',
                        self._fake_fun())
         self.stubs.Set(self.driver._image_api, 'get', self.fake_image_get)
-        self.stubs.Set(self.instance, 'save', self._fake_fun())
         self.driver.spawn({}, self.instance, self.fake_imgmeta_obj(), ['fake'],
                           'fakepass', self._fake_network_info(), {})
 
@@ -566,6 +566,7 @@ class ZVMDriverTestCases(ZVMTestCase):
         self.mox.VerifyAll()
 
     def test_spawn_with_eph_opts(self):
+        self.stubs.Set(self.instance, 'save', self._fake_fun())
         self.instance['config_drive'] = True
         self.instance['ephemeral_gb'] = 2
         network_info = self._fake_network_info()
@@ -642,7 +643,6 @@ class ZVMDriverTestCases(ZVMTestCase):
         instance.ZVMInstance.power_on()
         self.driver._pathutils.clean_temp_folder(mox.IgnoreArg())
         self.driver._zvm_images.update_last_use_date(mox.IgnoreArg())
-        self.stubs.Set(self.instance, 'save', self._fake_fun())
         self.mox.ReplayAll()
 
         self.driver.spawn(self.context, self.instance, self.fake_imgmeta_obj(),
@@ -650,6 +650,7 @@ class ZVMDriverTestCases(ZVMTestCase):
         self.mox.VerifyAll()
 
     def test_spawn_image_error(self):
+        self.stubs.Set(self.instance, 'save', self._fake_fun())
         self.stubs.Set(self.driver._pathutils, 'get_instance_path',
                        self._fake_fun('/temp/os000001'))
         self.stubs.Set(virt_configdrive, 'required_by', self._fake_fun(True))
@@ -675,6 +676,7 @@ class ZVMDriverTestCases(ZVMTestCase):
         self.mox.VerifyAll()
 
     def test_spawn_deploy_failed(self):
+        self.stubs.Set(self.instance, 'save', self._fake_fun())
         self.stubs.Set(self.driver._pathutils, 'get_instance_path',
                        self._fake_fun('/temp/os000001'))
         self.stubs.Set(virt_configdrive, 'required_by', self._fake_fun(True))
