@@ -241,6 +241,13 @@ class ZVMDriver(driver.ComputeDriver):
                                                             block_device_info)
         bdm = driver.block_device_info_get_mapping(block_device_info)
 
+        # Update the root device name in instance table
+        root_device_name = '/dev/' + const.ZVM_DEFAULT_ROOT_DISK
+        if boot_from_volume:
+            root_device_name = root_mount_device
+        instance.root_device_name = root_device_name
+        instance.save()
+
         if not network_info:
             msg = _("Not support boot without a NIC.")
             raise exception.ZVMDriverError(msg=msg)
@@ -393,14 +400,6 @@ class ZVMDriver(driver.ComputeDriver):
 
             # Power on the instance, then put MN's public key into instance
             zvm_inst.power_on()
-
-            # Update the root device name in instance table
-            root_device_name = '/dev/' + const.ZVM_DEFAULT_ROOT_DISK
-            if boot_from_volume:
-                root_device_name = root_mount_device
-            instance.root_device_name = root_device_name
-            instance.save()
-
             spawn_time = time.time() - spawn_start
             LOG.info(_LI("Instance spawned succeeded in %s seconds"),
                      spawn_time, instance=instance)
