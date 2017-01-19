@@ -462,6 +462,7 @@ class ZVMDriver(driver.ComputeDriver):
                                                  content=injected_files,
                                                  extra_md=extra_md,
                                                  request_context=context)
+        inst_md.network_metadata = None
 
         configdrive_tgz = os.path.join(instance_path, 'cfgdrive.tgz')
 
