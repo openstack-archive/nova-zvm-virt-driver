@@ -446,6 +446,9 @@ class ZVMDriver(driver.ComputeDriver):
                                                  content=injected_files,
                                                  extra_md=extra_md,
                                                  request_context=context)
+        # network_metadata will prevent the hostname of the instance from
+        # being set correctly, so clean the value
+        inst_md.network_metadata = None
 
         configdrive_tgz = os.path.join(instance_path, 'cfgdrive.tgz')
 
