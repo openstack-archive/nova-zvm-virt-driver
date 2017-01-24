@@ -1482,7 +1482,7 @@ class ZVMDriverTestCases(ZVMTestCase):
         self.flags(zvm_xcat_server="10.10.10.10")
         self.stubs.Set(instance.ZVMInstance, 'copy_xcat_node',
                        self._fake_fun())
-        self.stubs.Set(zvmutils, 'add_iucv_in_zvm_table',
+        self.stubs.Set(zvmutils, 'copy_zvm_table_status',
                        self._fake_fun())
         self.stubs.Set(instance.ZVMInstance, 'delete_xcat_node',
                        self._fake_fun())
