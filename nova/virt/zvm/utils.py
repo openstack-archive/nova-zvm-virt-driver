@@ -750,8 +750,6 @@ def punch_iucv_file(os_ver, zhcp, zhcp_userid, instance_name,
     iucv_server_fn = ''.join([xcat_iucv_path, '/iucvserv'])
     iucv_server_path = '/usr/bin/iucvserv'
     punch_path = '/var/opt/xcat/transport'
-    iucv_selinux_file_name = '/iucvselx.pp'
-    iucv_selinux_file_path = xcat_iucv_path + iucv_selinux_file_name
     # generate iucvserver service and script file
     iucv_service_path = ''
     start_iucv_service_sh = ''
@@ -787,20 +785,13 @@ def punch_iucv_file(os_ver, zhcp, zhcp_userid, instance_name,
                                         iucv_service_name, iucv_service_path),
         "chmod +x %s %s" % (iucv_server_path, iucv_service_path),
         "echo -n %s >/etc/iucv_authorized_userid 2>&1" % zhcp_userid,
-        # set selinux allow policy for iucvserv
-        "if [ $(getenforce) == 'Enforcing' ]; then \
-             semodule -i %s%s; fi 2>&1 >/var/log/messages" % (punch_path,
-                                           iucv_selinux_file_name),
         start_iucv_service_sh
         ))
-
     _generate_iucv_cmd_file(iucv_cmd_file_path, cmd)
     punch_file(instance_name, iucv_server_fn, 'X',
                                    remote_host=zhcp, del_src=False)
     punch_file(instance_name, iucv_serverd_fn, 'X',
                                    remote_host=zhcp, del_src=False)
-    punch_file(instance_name, iucv_selinux_file_path, 'X',
-                                   remote_host=get_host(), del_src=False)
     punch_file(instance_name, iucv_cmd_file_path, 'X', remote_host=get_host(),
                                                      del_src=False)
     # set VM's communicate type is IUCV
