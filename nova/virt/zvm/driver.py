@@ -290,6 +290,8 @@ class ZVMDriver(driver.ComputeDriver):
             volume_summery = self._volume_api.get(context, volume_id)
             volume_meta = volume_summery['volume_metadata']
             os_version = volume_meta['os_version']
+            instance['system_metadata']['image_os_version'] = os_version
+            instance.save()
 
         linuxdist = self._dist_manager.get_linux_dist(os_version)()
         files_and_cmds = linuxdist.create_network_configuration_files(
