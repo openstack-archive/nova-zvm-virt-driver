@@ -822,7 +822,7 @@ class SVCDriver(DriverAPI):
         do_attach = not self._is_fcp_in_use(instance)
         self._update_instance_fcp_map_if_unlocked(instance['name'],
                                                   fcp_list, self._INCREASE)
-        os_version = instance['system_metadata']['image_os_version']
+        os_version = instance.system_metadata['image_os_version']
         try:
             self._add_zfcp_to_pool(fcp, wwpn, lun, size)
             self._allocate_zfcp(instance, fcp, size, wwpn, lun)
@@ -862,7 +862,7 @@ class SVCDriver(DriverAPI):
         self._update_instance_fcp_map_if_unlocked(instance['name'],
                                                   fcp_list, self._DECREASE)
         do_detach = not self._is_fcp_in_use(instance)
-        os_version = instance['system_metadata']['image_os_version']
+        os_version = instance.system_metadata['image_os_version']
         try:
             self._remove_zfcp(instance, fcp, wwpn, lun)
             self._remove_zfcp_from_pool(wwpn, lun)
@@ -1049,7 +1049,7 @@ class SVCDriver(DriverAPI):
         self._xcat_chvm(instance['name'], body)
 
     def _create_mountpoint(self, instance, fcp, wwpn, lun, mountpoint):
-        os_version = instance['system_metadata']['image_os_version']
+        os_version = instance.system_metadata['image_os_version']
         dist = self._dist_manager.get_linux_dist(os_version)()
         srcdev = dist.assemble_zfcp_srcdev(fcp, wwpn, lun)
         body = [" ".join(['--createfilesysnode', srcdev, mountpoint])]
