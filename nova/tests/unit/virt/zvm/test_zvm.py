@@ -2351,6 +2351,7 @@ class ZVMVolumeOperatorTestCase(ZVMTestCase):
     def setUp(self):
         super(ZVMVolumeOperatorTestCase, self).setUp()
         self.volumeop = volumeop.VolumeOperator()
+        self.fake_inst = self.instance
         self.mox.UnsetStubs()
 
     def test_init(self):
@@ -2358,7 +2359,6 @@ class ZVMVolumeOperatorTestCase(ZVMTestCase):
 
     def test_attach_volume_to_instance_check_args(self):
         fake_connection_info = {'info': 'fake_info'}
-        fake_instance = {'name': 'fake_instance'}
 
         farg = mox.IgnoreArg()
         self.assertRaises(exception.ZVMDriverError,
@@ -2366,11 +2366,10 @@ class ZVMVolumeOperatorTestCase(ZVMTestCase):
                           fake_connection_info, None, farg, True)
         self.assertRaises(exception.ZVMDriverError,
                           self.volumeop.attach_volume_to_instance, None,
-                          None, fake_instance, farg, False)
+                          None, self.fake_inst, farg, False)
 
     def test_detach_volume_from_instance_check_args(self):
         fake_connection_info = {'info': 'fake_info'}
-        fake_instance = {'name': 'fake_instance'}
 
         farg = mox.IgnoreArg()
         self.assertRaises(exception.ZVMDriverError,
@@ -2378,11 +2377,10 @@ class ZVMVolumeOperatorTestCase(ZVMTestCase):
                           fake_connection_info, None, farg, True)
         self.assertRaises(exception.ZVMDriverError,
                           self.volumeop.detach_volume_from_instance,
-                          None, fake_instance, farg, False)
+                          None, self.fake_inst, farg, False)
 
     def test_attach_volume_to_instance_active(self):
         fake_connection_info = {'info': 'fake_info'}
-        fake_instance = {'name': 'fake_instance'}
         is_active = True
 
         farg = mox.IgnoreArg()
@@ -2393,12 +2391,12 @@ class ZVMVolumeOperatorTestCase(ZVMTestCase):
         self.mox.ReplayAll()
 
         self.volumeop.attach_volume_to_instance(farg, fake_connection_info,
-                                                fake_instance, farg, is_active)
+                                                self.fake_inst, farg,
+                                                is_active)
         self.mox.VerifyAll()
 
     def test_attach_volume_to_instance_inactive(self):
         fake_connection_info = {'info': 'fake_info'}
-        fake_instance = {'name': 'fake_instance'}
         is_active = False
 
         farg = mox.IgnoreArg()
@@ -2409,12 +2407,12 @@ class ZVMVolumeOperatorTestCase(ZVMTestCase):
         self.mox.ReplayAll()
 
         self.volumeop.attach_volume_to_instance(farg, fake_connection_info,
-                                                fake_instance, farg, is_active)
+                                                self.fake_inst, farg,
+                                                is_active)
         self.mox.VerifyAll()
 
     def test_detach_volume_from_instance_active(self):
         fake_connection_info = {'info': 'fake_info'}
-        fake_instance = {'name': 'fake_instance'}
         is_active = True
 
         farg = mox.IgnoreArg()
@@ -2425,13 +2423,12 @@ class ZVMVolumeOperatorTestCase(ZVMTestCase):
         self.mox.ReplayAll()
 
         self.volumeop.detach_volume_from_instance(fake_connection_info,
-                                                  fake_instance, farg,
+                                                  self.fake_inst, farg,
                                                   is_active)
         self.mox.VerifyAll()
 
     def test_detach_volume_from_instance_inactive(self):
         fake_connection_info = {'info': 'fake_info'}
-        fake_instance = {'name': 'fake_instance'}
         is_active = False
 
         farg = mox.IgnoreArg()
@@ -2442,7 +2439,7 @@ class ZVMVolumeOperatorTestCase(ZVMTestCase):
         self.mox.ReplayAll()
 
         self.volumeop.detach_volume_from_instance(fake_connection_info,
-                                                  fake_instance, farg,
+                                                  self.fake_inst, farg,
                                                   is_active)
         self.mox.VerifyAll()
 
@@ -2650,6 +2647,8 @@ class SVCDriverTestCase(ZVMTestCase):
         super(SVCDriverTestCase, self).setUp()
         self.driver = volumeop.SVCDriver()
         self.flags(zvm_multiple_fcp=False)
+        self.fake_inst = self.instance
+        self.inst_name = self.fake_inst['name']
         self.mox.UnsetStubs()
 
     def test_init(self):
@@ -3003,20 +3002,18 @@ class SVCDriverTestCase(ZVMTestCase):
         self.assertEqual(target_info, connection_info)
 
     def test_get_volume_connector_no_fcp(self):
-        fake_instance = {'name': 'fake'}
         self.mox.StubOutWithMock(self.driver, '_get_fcp_from_pool')
         self.driver._get_fcp_from_pool().AndReturn(None)
         self.mox.ReplayAll()
 
         empty_connector = {'zvm_fcp': [], 'wwpns': [], 'host': ''}
         self.assertEqual(empty_connector,
-                         self.driver.get_volume_connector(fake_instance))
+                         self.driver.get_volume_connector(self.fake_inst))
         self.mox.VerifyAll()
 
     def test_get_volume_connector_from_instance(self):
-        fake_instance = {'name': 'fake'}
-        self.driver._instance_fcp_map = {'fake': {'fcp_list': ['1faa'],
-                                                  'count': 1}}
+        self.driver._instance_fcp_map = {self.inst_name: {'fcp_list': ['1faa'],
+                                                          'count': 1}}
 
         farg = mox.IgnoreArg()
         self.mox.StubOutWithMock(self.driver, '_get_wwpn')
@@ -3027,13 +3024,12 @@ class SVCDriverTestCase(ZVMTestCase):
                             'wwpns': ['0000000100000001'],
                             'zvm_fcp': ['1faa']}
         self.assertEqual(target_connector,
-                         self.driver.get_volume_connector(fake_instance))
+                         self.driver.get_volume_connector(self.fake_inst))
         self.mox.VerifyAll()
 
         self.driver._instance_fcp_map = {}
 
     def test_get_volume_connector_from_pool(self):
-        fake_instance = {'name': 'fake'}
         self.driver._fcp_pool = {'1faa': self.driver.FCP([]),
                                  '1fab': self.driver.FCP([])}
         self.mox.StubOutWithMock(self.driver, '_get_fcp_from_pool')
@@ -3048,16 +3044,15 @@ class SVCDriverTestCase(ZVMTestCase):
                             'wwpns': ['0000000100000001', '0000000200000002'],
                             'zvm_fcp': ['1faa', '1fab']}
         self.assertEqual(target_connector,
-                         self.driver.get_volume_connector(fake_instance))
+                         self.driver.get_volume_connector(self.fake_inst))
         self.assertEqual({'fcp_list': ['1faa', '1fab'], 'count': 0},
-                         self.driver._instance_fcp_map.get('fake'))
+                         self.driver._instance_fcp_map.get(self.inst_name))
         self.mox.VerifyAll()
 
         self.driver._instance_fcp_map = {}
         self.driver._fcp_pool = {}
 
     def test_get_volume_connector_no_wwpn(self):
-        fake_instance = {'name': 'fake'}
         self.driver._fcp_pool = {'0001': self.driver.FCP([])}
         self.mox.StubOutWithMock(self.driver, '_get_fcp_from_pool')
         self.mox.StubOutWithMock(self.driver, '_get_wwpn')
@@ -3068,7 +3063,7 @@ class SVCDriverTestCase(ZVMTestCase):
 
         empty_connector = {'zvm_fcp': [], 'wwpns': [], 'host': ''}
         self.assertEqual(empty_connector,
-                         self.driver.get_volume_connector(fake_instance))
+                         self.driver.get_volume_connector(self.fake_inst))
         self.mox.VerifyAll()
         self.driver._fcp_pool = {}
 
@@ -3329,7 +3324,6 @@ class SVCDriverTestCase(ZVMTestCase):
 
     def test_attach_volume_active_error_no_rollback(self):
         fake_info = ('lun', 'wwpn', '1G', '1faa')
-        fake_instance = {'name': 'fake'}
         fake_mountpoint = '/dev/vdd'
         self.driver._instance_fcp_map = {}
         self.driver._fcp_pool = {'1faa': self.driver.FCP([])}
@@ -3350,15 +3344,14 @@ class SVCDriverTestCase(ZVMTestCase):
 
         self.assertRaises(exception.ZVMVolumeError,
                           self.driver.attach_volume_active, farg,
-                          farg, fake_instance, fake_mountpoint, rollback)
-        self.assertFalse(self.driver._is_fcp_in_use(fake_instance))
+                          farg, self.fake_inst, fake_mountpoint, rollback)
+        self.assertFalse(self.driver._is_fcp_in_use(self.fake_inst))
         self.mox.VerifyAll()
         self.driver._instance_fcp_map = {}
 
     def test_attach_volume_active_error_rollback_and_detach(self):
         fake_info = ('lun', 'wwpn', '1G', '1faa')
         fake_mountpoint = '/dev/vdd'
-        fake_instance = {'name': 'fake'}
         self.driver._instance_fcp_map = {}
         self.driver._fcp_pool = {'1faa': self.driver.FCP([])}
         rollback = True
@@ -3389,17 +3382,16 @@ class SVCDriverTestCase(ZVMTestCase):
 
         self.assertRaises(exception.ZVMVolumeError,
                           self.driver.attach_volume_active, farg, farg,
-                          fake_instance, fake_mountpoint, rollback)
-        self.assertFalse(self.driver._is_fcp_in_use(fake_instance))
+                          self.fake_inst, fake_mountpoint, rollback)
+        self.assertFalse(self.driver._is_fcp_in_use(self.fake_inst))
         self.mox.VerifyAll()
         self.driver._instance_fcp_map = {}
 
     def test_attach_volume_active_error_rollback_no_detach(self):
         fake_info = ('lun', 'wwpn', '1G', '1faa')
         fake_mountpoint = '/dev/vdd'
-        fake_instance = {'name': 'fake'}
-        self.driver._instance_fcp_map = {'fake': {'fcp_list': ['1faa'],
-                                                  'count': 1}}
+        self.driver._instance_fcp_map = {self.inst_name: {'fcp_list': ['1faa'],
+                                                          'count': 1}}
         self.driver._fcp_pool = {'1faa': self.driver.FCP([])}
         rollback = True
 
@@ -3427,15 +3419,14 @@ class SVCDriverTestCase(ZVMTestCase):
 
         self.assertRaises(exception.ZVMVolumeError,
                           self.driver.attach_volume_active, farg,
-                          farg, fake_instance, fake_mountpoint, rollback)
-        self.assertTrue(self.driver._is_fcp_in_use(fake_instance))
+                          farg, self.fake_inst, fake_mountpoint, rollback)
+        self.assertTrue(self.driver._is_fcp_in_use(self.fake_inst))
         self.mox.VerifyAll()
         self.driver._instance_fcp_map = {}
 
     def test_attach_volume_active(self):
         fake_info = ('lun', 'wwpn', '1G', '1faa')
         fake_mountpoint = '/dev/vdd'
-        fake_instance = {'name': 'fake'}
         self.driver._instance_fcp_map = {}
         self.driver._fcp_pool = {'1faa': self.driver.FCP([])}
         rollback = True
@@ -3453,16 +3444,15 @@ class SVCDriverTestCase(ZVMTestCase):
                 None)
         self.mox.ReplayAll()
 
-        self.driver.attach_volume_active(farg, farg, fake_instance,
+        self.driver.attach_volume_active(farg, farg, self.fake_inst,
                                          fake_mountpoint, rollback)
-        self.assertTrue(self.driver._is_fcp_in_use(fake_instance))
+        self.assertTrue(self.driver._is_fcp_in_use(self.fake_inst))
         self.mox.VerifyAll()
         self.driver._instance_fcp_map = {}
 
     def test_attach_volume_active_multi_fcp(self):
         fake_info = ('lun', 'wwpn', '1G', '1faa;1fab')
         fake_mountpoint = '/dev/vdd'
-        fake_instance = {'name': 'fake'}
         self.driver._instance_fcp_map = {}
         self.driver._fcp_pool = {'1faa': self.driver.FCP([]),
                                  '1fab': self.driver.FCP([])}
@@ -3481,15 +3471,14 @@ class SVCDriverTestCase(ZVMTestCase):
                 None)
         self.mox.ReplayAll()
 
-        self.driver.attach_volume_active(farg, farg, fake_instance,
+        self.driver.attach_volume_active(farg, farg, self.fake_inst,
                                          fake_mountpoint, rollback)
-        self.assertTrue(self.driver._is_fcp_in_use(fake_instance))
+        self.assertTrue(self.driver._is_fcp_in_use(self.fake_inst))
         self.mox.VerifyAll()
         self.driver._instance_fcp_map = {}
 
     def test_attach_volume_active_no_mountpoint(self):
         fake_info = ('lun', 'wwpn', '1G', '1faa')
-        fake_instance = {'name': 'fake'}
         self.driver._instance_fcp_map = {}
         self.driver._fcp_pool = {'1faa': self.driver.FCP([])}
         rollback = True
@@ -3505,18 +3494,17 @@ class SVCDriverTestCase(ZVMTestCase):
         self.driver._add_zfcp(farg, farg, farg, farg, farg).AndReturn(None)
         self.mox.ReplayAll()
 
-        self.driver.attach_volume_active(farg, farg, fake_instance,
+        self.driver.attach_volume_active(farg, farg, self.fake_inst,
                                          None, rollback)
-        self.assertTrue(self.driver._is_fcp_in_use(fake_instance))
+        self.assertTrue(self.driver._is_fcp_in_use(self.fake_inst))
         self.mox.VerifyAll()
         self.driver._instance_fcp_map = {}
 
     def test_detach_volume_active_error_no_rollback(self):
         fake_info = ('lun', 'wwpn', '1G', '1faa')
-        fake_instance = {'name': 'fake'}
         fake_mountpoint = '/dev/vdd'
-        self.driver._instance_fcp_map = {'fake': {'fcp_list': ['1faa'],
-                                                  'count': 1}}
+        self.driver._instance_fcp_map = {self.inst_name: {'fcp_list': ['1faa'],
+                                                          'count': 1}}
         self.driver._fcp_pool = {'1faa': self.driver.FCP([])}
         rollback = False
 
@@ -3537,17 +3525,16 @@ class SVCDriverTestCase(ZVMTestCase):
 
         self.assertRaises(exception.ZVMVolumeError,
                           self.driver.detach_volume_active, farg,
-                          fake_instance, fake_mountpoint, rollback)
-        self.assertTrue(self.driver._is_fcp_in_use(fake_instance))
+                          self.fake_inst, fake_mountpoint, rollback)
+        self.assertTrue(self.driver._is_fcp_in_use(self.fake_inst))
         self.mox.VerifyAll()
         self.driver._instance_fcp_map = {}
 
     def test_detach_volume_active_error_rollback_with_mountpoint(self):
         fake_info = ('lun', 'wwpn', '1G', '1faa')
-        fake_instance = {'name': 'fake'}
         fake_mountpoint = '/dev/vdd'
-        self.driver._instance_fcp_map = {'fake': {'fcp_list': ['1faa'],
-                                                  'count': 1}}
+        self.driver._instance_fcp_map = {self.inst_name: {'fcp_list': ['1faa'],
+                                                          'count': 1}}
         self.driver._fcp_pool = {'1faa': self.driver.FCP([])}
         rollback = True
 
@@ -3577,16 +3564,15 @@ class SVCDriverTestCase(ZVMTestCase):
 
         self.assertRaises(exception.ZVMVolumeError,
                           self.driver.detach_volume_active, farg,
-                          fake_instance, fake_mountpoint, rollback)
-        self.assertTrue(self.driver._is_fcp_in_use(fake_instance))
+                          self.fake_inst, fake_mountpoint, rollback)
+        self.assertTrue(self.driver._is_fcp_in_use(self.fake_inst))
         self.mox.VerifyAll()
         self.driver._instance_fcp_map = {}
 
     def test_detach_volume_active_error_rollback_no_mountpoint(self):
         fake_info = ('lun', 'wwpn', '1G', '1faa')
-        fake_instance = {'name': 'fake'}
-        self.driver._instance_fcp_map = {'fake': {'fcp_list': ['1faa'],
-                                                  'count': 1}}
+        self.driver._instance_fcp_map = {self.inst_name: {'fcp_list': ['1faa'],
+                                                          'count': 1}}
         self.driver._fcp_pool = {'1faa': self.driver.FCP([])}
         rollback = True
 
@@ -3610,17 +3596,16 @@ class SVCDriverTestCase(ZVMTestCase):
 
         self.assertRaises(exception.ZVMVolumeError,
                           self.driver.detach_volume_active,
-                          farg, fake_instance, None, rollback)
-        self.assertTrue(self.driver._is_fcp_in_use(fake_instance))
+                          farg, self.fake_inst, None, rollback)
+        self.assertTrue(self.driver._is_fcp_in_use(self.fake_inst))
         self.mox.VerifyAll()
         self.driver._instance_fcp_map = {}
 
     def test_detach_volume_active_and_detach_fcp(self):
         fake_info = ('lun', 'wwpn', '1G', '1faa')
         fake_mountpoint = '/dev/vdd'
-        fake_instance = {'name': 'fake'}
-        self.driver._instance_fcp_map = {'fake': {'fcp_list': ['1faa'],
-                                                  'count': 1}}
+        self.driver._instance_fcp_map = {self.inst_name: {'fcp_list': ['1faa'],
+                                                          'count': 1}}
         self.driver._fcp_pool = {'1faa': self.driver.FCP([])}
         rollback = False
 
@@ -3638,18 +3623,17 @@ class SVCDriverTestCase(ZVMTestCase):
         self.driver._detach_device(farg, farg).AndReturn(None)
         self.mox.ReplayAll()
 
-        self.driver.detach_volume_active(farg, fake_instance,
+        self.driver.detach_volume_active(farg, self.fake_inst,
                                          fake_mountpoint, rollback)
-        self.assertFalse(self.driver._is_fcp_in_use(fake_instance))
+        self.assertFalse(self.driver._is_fcp_in_use(self.fake_inst))
         self.mox.VerifyAll()
         self.driver._instance_fcp_map = {}
 
     def test_detach_volume_active_and_reserve_fcp(self):
         fake_info = ('lun', 'wwpn', '1G', '1faa')
         fake_mountpoint = '/dev/vdd'
-        fake_instance = {'name': 'fake'}
-        self.driver._instance_fcp_map = {'fake': {'fcp_list': ['1faa'],
-                                                  'count': 2}}
+        self.driver._instance_fcp_map = {self.inst_name: {'fcp_list': ['1faa'],
+                                                          'count': 2}}
         self.driver._fcp_pool = {'1faa': self.driver.FCP([])}
         rollback = False
 
@@ -3665,18 +3649,18 @@ class SVCDriverTestCase(ZVMTestCase):
         self.driver._remove_zfcp_from_pool(farg, farg).AndReturn(None)
         self.mox.ReplayAll()
 
-        self.driver.detach_volume_active(farg, fake_instance,
+        self.driver.detach_volume_active(farg, self.fake_inst,
                                          fake_mountpoint, rollback)
-        self.assertTrue(self.driver._is_fcp_in_use(fake_instance))
+        self.assertTrue(self.driver._is_fcp_in_use(self.fake_inst))
         self.mox.VerifyAll()
         self.driver._instance_fcp_map = {}
 
     def test_detach_volume_active_multi_fcp(self):
         fake_info = ('lun', 'wwpn', '1G', '1faa;1fab')
         fake_mountpoint = '/dev/vdd'
-        fake_instance = {'name': 'fake'}
-        self.driver._instance_fcp_map = {'fake': {'fcp_list': ['1faa', '1fab'],
-                                                  'count': 2}}
+        self.driver._instance_fcp_map = {self.inst_name: {'fcp_list': [
+                                                            '1faa', '1fab'],
+                                                          'count': 2}}
         self.driver._fcp_pool = {'1faa': self.driver.FCP([]),
                                  '1fab': self.driver.FCP([])}
         rollback = False
@@ -3693,16 +3677,15 @@ class SVCDriverTestCase(ZVMTestCase):
         self.driver._remove_zfcp_from_pool(farg, farg).AndReturn(None)
         self.mox.ReplayAll()
 
-        self.driver.detach_volume_active(farg, fake_instance,
+        self.driver.detach_volume_active(farg, self.fake_inst,
                                          fake_mountpoint, rollback)
-        self.assertTrue(self.driver._is_fcp_in_use(fake_instance))
+        self.assertTrue(self.driver._is_fcp_in_use(self.fake_inst))
         self.mox.VerifyAll()
         self.driver._instance_fcp_map = {}
 
     def test_attach_volume_inactive_error_no_rollback(self):
         fake_info = ('lun', 'wwpn', '1G', '1faa')
-        fake_instance = {'name': 'fake',
-                         'system_metadata': {'image_os_version': 'sles11'}}
+        self.fake_inst.system_metadata = {'image_os_version': 'sles11'}
         self.driver._instance_fcp_map = {}
         self.driver._fcp_pool = {'1faa': self.driver.FCP([])}
         rollback = False
@@ -3726,15 +3709,14 @@ class SVCDriverTestCase(ZVMTestCase):
 
         self.assertRaises(exception.ZVMVolumeError,
                           self.driver.attach_volume_inactive, farg,
-                          farg, fake_instance, farg, rollback)
-        self.assertFalse(self.driver._is_fcp_in_use(fake_instance))
+                          farg, self.fake_inst, farg, rollback)
+        self.assertFalse(self.driver._is_fcp_in_use(self.fake_inst))
         self.mox.VerifyAll()
         self.driver._instance_fcp_map = {}
 
     def test_attach_volume_inactive_error_rollback_and_detach(self):
         fake_info = ('lun', 'wwpn', '1G', '1faa')
-        fake_instance = {'name': 'fake',
-                         'system_metadata': {'image_os_version': 'sles11'}}
+        self.fake_inst.system_metadata = {'image_os_version': 'sles11'}
         self.driver._instance_fcp_map = {}
         self.driver._fcp_pool = {'1faa': self.driver.FCP([])}
         rollback = True
@@ -3767,17 +3749,16 @@ class SVCDriverTestCase(ZVMTestCase):
 
         self.assertRaises(exception.ZVMVolumeError,
                           self.driver.attach_volume_inactive, farg,
-                          farg, fake_instance, farg, rollback)
-        self.assertFalse(self.driver._is_fcp_in_use(fake_instance))
+                          farg, self.fake_inst, farg, rollback)
+        self.assertFalse(self.driver._is_fcp_in_use(self.fake_inst))
         self.mox.VerifyAll()
         self.driver._instance_fcp_map = {}
 
     def test_attach_volume_inactive_error_rollback_no_detach(self):
         fake_info = ('lun', 'wwpn', '1G', '1faa')
-        fake_instance = {'name': 'fake',
-                         'system_metadata': {'image_os_version': 'sles11'}}
-        self.driver._instance_fcp_map = {'fake': {'fcp_list': ['1faa'],
-                                                  'count': 1}}
+        self.fake_inst.system_metadata = {'image_os_version': 'sles11'}
+        self.driver._instance_fcp_map = {self.inst_name: {'fcp_list': ['1faa'],
+                                                          'count': 1}}
         self.driver._fcp_pool = {'1faa': self.driver.FCP([])}
         rollback = True
 
@@ -3805,15 +3786,14 @@ class SVCDriverTestCase(ZVMTestCase):
 
         self.assertRaises(exception.ZVMVolumeError,
                           self.driver.attach_volume_inactive, farg,
-                          farg, fake_instance, farg, rollback)
-        self.assertTrue(self.driver._is_fcp_in_use(fake_instance))
+                          farg, self.fake_inst, farg, rollback)
+        self.assertTrue(self.driver._is_fcp_in_use(self.fake_inst))
         self.mox.VerifyAll()
         self.driver._instance_fcp_map = {}
 
     def test_attach_volume_inactive(self):
         fake_info = ('lun', 'wwpn', '1G', '1faa')
-        fake_instance = {'name': 'fake',
-                         'system_metadata': {'image_os_version': 'sles11'}}
+        self.fake_inst.system_metadata = {'image_os_version': 'sles11'}
         self.driver._instance_fcp_map = {}
         self.driver._fcp_pool = {'1faa': self.driver.FCP([])}
         rollback = True
@@ -3834,16 +3814,15 @@ class SVCDriverTestCase(ZVMTestCase):
         self.driver._attach_device(farg, farg).AndReturn(None)
         self.mox.ReplayAll()
 
-        self.driver.attach_volume_inactive(farg, farg, fake_instance,
+        self.driver.attach_volume_inactive(farg, farg, self.fake_inst,
                                            farg, rollback)
-        self.assertTrue(self.driver._is_fcp_in_use(fake_instance))
+        self.assertTrue(self.driver._is_fcp_in_use(self.fake_inst))
         self.mox.VerifyAll()
         self.driver._instance_fcp_map = {}
 
     def test_attach_volume_inactive_multi_fcp(self):
         fake_info = ('lun', 'wwpn', '1G', '1faa;1fab')
-        fake_instance = {'name': 'fake',
-                         'system_metadata': {'image_os_version': 'sles11'}}
+        self.fake_inst.system_metadata = {'image_os_version': 'sles11'}
         self.driver._instance_fcp_map = {}
         self.driver._fcp_pool = {'1faa': self.driver.FCP([]),
                                  '1fab': self.driver.FCP([])}
@@ -3866,18 +3845,17 @@ class SVCDriverTestCase(ZVMTestCase):
         self.driver._attach_device(farg, farg).AndReturn(None)
         self.mox.ReplayAll()
 
-        self.driver.attach_volume_inactive(farg, farg, fake_instance,
+        self.driver.attach_volume_inactive(farg, farg, self.fake_inst,
                                            farg, rollback)
-        self.assertTrue(self.driver._is_fcp_in_use(fake_instance))
+        self.assertTrue(self.driver._is_fcp_in_use(self.fake_inst))
         self.mox.VerifyAll()
         self.driver._instance_fcp_map = {}
 
     def test_attach_volume_inactive_no_attach(self):
         fake_info = ('lun', 'wwpn', '1G', '1faa')
-        fake_instance = {'name': 'fake',
-                         'system_metadata': {'image_os_version': 'sles11'}}
-        self.driver._instance_fcp_map = {'fake': {'fcp_list': ['1faa'],
-                                                  'count': 1}}
+        self.fake_inst.system_metadata = {'image_os_version': 'sles11'}
+        self.driver._instance_fcp_map = {self.inst_name: {'fcp_list': ['1faa'],
+                                                          'count': 1}}
         self.driver._fcp_pool = {'1faa': self.driver.FCP([])}
         rollback = True
 
@@ -3895,18 +3873,17 @@ class SVCDriverTestCase(ZVMTestCase):
                                    farg).AndReturn(None)
         self.mox.ReplayAll()
 
-        self.driver.attach_volume_inactive(farg, farg, fake_instance,
+        self.driver.attach_volume_inactive(farg, farg, self.fake_inst,
                                            farg, rollback)
-        self.assertTrue(self.driver._is_fcp_in_use(fake_instance))
+        self.assertTrue(self.driver._is_fcp_in_use(self.fake_inst))
         self.mox.VerifyAll()
         self.driver._instance_fcp_map = {}
 
     def test_detach_volume_inactive_error_no_rollback(self):
         fake_info = ('lun', 'wwpn', '1G', '1faa')
-        fake_instance = {'name': 'fake',
-                         'system_metadata': {'image_os_version': 'sles11'}}
-        self.driver._instance_fcp_map = {'fake': {'fcp_list': ['1faa'],
-                                                  'count': 1}}
+        self.fake_inst.system_metadata = {'image_os_version': 'sles11'}
+        self.driver._instance_fcp_map = {self.inst_name: {'fcp_list': ['1faa'],
+                                                          'count': 1}}
         self.driver._fcp_pool = {'1faa': self.driver.FCP([])}
         rollback = False
 
@@ -3928,17 +3905,16 @@ class SVCDriverTestCase(ZVMTestCase):
 
         self.assertRaises(exception.ZVMVolumeError,
                           self.driver.detach_volume_inactive,
-                          farg, fake_instance, farg, rollback)
-        self.assertTrue(self.driver._is_fcp_in_use(fake_instance))
+                          farg, self.fake_inst, farg, rollback)
+        self.assertTrue(self.driver._is_fcp_in_use(self.fake_inst))
         self.mox.VerifyAll()
         self.driver._instance_fcp_map = {}
 
     def test_detach_volume_inactive_error_detach_rollback(self):
         fake_info = ('lun', 'wwpn', '1G', '1faa')
-        fake_instance = {'name': 'fake',
-                         'system_metadata': {'image_os_version': 'sles11'}}
-        self.driver._instance_fcp_map = {'fake': {'fcp_list': ['1faa'],
-                                                  'count': 1}}
+        self.fake_inst.system_metadata = {'image_os_version': 'sles11'}
+        self.driver._instance_fcp_map = {self.inst_name: {'fcp_list': ['1faa'],
+                                                          'count': 1}}
         self.driver._fcp_pool = {'1faa': self.driver.FCP([])}
         rollback = True
 
@@ -3972,17 +3948,16 @@ class SVCDriverTestCase(ZVMTestCase):
 
         self.assertRaises(exception.ZVMVolumeError,
                           self.driver.detach_volume_inactive,
-                          farg, fake_instance, farg, rollback)
-        self.assertTrue(self.driver._is_fcp_in_use(fake_instance))
+                          farg, self.fake_inst, farg, rollback)
+        self.assertTrue(self.driver._is_fcp_in_use(self.fake_inst))
         self.mox.VerifyAll()
         self.driver._instance_fcp_map = {}
 
     def test_detach_volume_inactive_error_no_detach_rollback(self):
         fake_info = ('lun', 'wwpn', '1G', '1faa')
-        fake_instance = {'name': 'fake',
-                         'system_metadata': {'image_os_version': 'sles11'}}
-        self.driver._instance_fcp_map = {'fake': {'fcp_list': ['1faa'],
-                                                  'count': 2}}
+        self.fake_inst.system_metadata = {'image_os_version': 'sles11'}
+        self.driver._instance_fcp_map = {self.inst_name: {'fcp_list': ['1faa'],
+                                                          'count': 2}}
         self.driver._fcp_pool = {'1faa': self.driver.FCP([])}
         rollback = True
 
@@ -4015,17 +3990,16 @@ class SVCDriverTestCase(ZVMTestCase):
 
         self.assertRaises(exception.ZVMVolumeError,
                           self.driver.detach_volume_inactive,
-                          farg, fake_instance, farg, rollback)
-        self.assertTrue(self.driver._is_fcp_in_use(fake_instance))
+                          farg, self.fake_inst, farg, rollback)
+        self.assertTrue(self.driver._is_fcp_in_use(self.fake_inst))
         self.mox.VerifyAll()
         self.driver._instance_fcp_map = {}
 
     def test_detach_volume_inactive_and_detach(self):
         fake_info = ('lun', 'wwpn', '1G', '1faa')
-        fake_instance = {'name': 'fake',
-                         'system_metadata': {'image_os_version': 'sles11'}}
-        self.driver._instance_fcp_map = {'fake': {'fcp_list': ['1faa'],
-                                                  'count': 1}}
+        self.fake_inst.system_metadata = {'image_os_version': 'sles11'}
+        self.driver._instance_fcp_map = {self.inst_name: {'fcp_list': ['1faa'],
+                                                          'count': 1}}
         self.driver._fcp_pool = {'1faa': self.driver.FCP([])}
         rollback = True
 
@@ -4044,18 +4018,17 @@ class SVCDriverTestCase(ZVMTestCase):
         self.driver._detach_device(farg, farg).AndReturn(None)
         self.mox.ReplayAll()
 
-        self.driver.detach_volume_inactive(farg, fake_instance,
+        self.driver.detach_volume_inactive(farg, self.fake_inst,
                                            farg, rollback)
-        self.assertFalse(self.driver._is_fcp_in_use(fake_instance))
+        self.assertFalse(self.driver._is_fcp_in_use(self.fake_inst))
         self.mox.VerifyAll()
         self.driver._instance_fcp_map = {}
 
     def test_detach_volume_inactive_no_detach(self):
         fake_info = ('lun', 'wwpn', '1G', '1faa')
-        fake_instance = {'name': 'fake',
-                         'system_metadata': {'image_os_version': 'sles11'}}
-        self.driver._instance_fcp_map = {'fake': {'fcp_list': ['1faa'],
-                                                  'count': 2}}
+        self.fake_inst.system_metadata = {'image_os_version': 'sles11'}
+        self.driver._instance_fcp_map = {self.inst_name: {'fcp_list': ['1faa'],
+                                                          'count': 2}}
         self.driver._fcp_pool = {'1faa': self.driver.FCP([])}
         rollback = True
 
@@ -4072,17 +4045,17 @@ class SVCDriverTestCase(ZVMTestCase):
                                    farg).AndReturn(None)
         self.mox.ReplayAll()
 
-        self.driver.detach_volume_inactive(farg, fake_instance, farg, rollback)
-        self.assertTrue(self.driver._is_fcp_in_use(fake_instance))
+        self.driver.detach_volume_inactive(farg, self.fake_inst,
+                                           farg, rollback)
+        self.assertTrue(self.driver._is_fcp_in_use(self.fake_inst))
         self.mox.VerifyAll()
         self.driver._instance_fcp_map = {}
 
     def test_detach_volume_inactive_multi_path(self):
         fake_info = ('lun', 'wwpn', '1G', '1faa')
-        fake_instance = {'name': 'fake',
-                         'system_metadata': {'image_os_version': 'sles11'}}
-        self.driver._instance_fcp_map = {'fake': {'fcp_list': ['1faa'],
-                                                  'count': 2}}
+        self.fake_inst.system_metadata = {'image_os_version': 'sles11'}
+        self.driver._instance_fcp_map = {self.inst_name: {'fcp_list': ['1faa'],
+                                                          'count': 2}}
         self.driver._fcp_pool = {'1faa': self.driver.FCP([]),
                                  '1fab': self.driver.FCP([])}
         rollback = True
@@ -4100,8 +4073,9 @@ class SVCDriverTestCase(ZVMTestCase):
                                    farg).AndReturn(None)
         self.mox.ReplayAll()
 
-        self.driver.detach_volume_inactive(farg, fake_instance, farg, rollback)
-        self.assertTrue(self.driver._is_fcp_in_use(fake_instance))
+        self.driver.detach_volume_inactive(farg, self.fake_inst,
+                                           farg, rollback)
+        self.assertTrue(self.driver._is_fcp_in_use(self.fake_inst))
         self.mox.VerifyAll()
         self.driver._instance_fcp_map = {}
 
@@ -4113,26 +4087,25 @@ class SVCDriverTestCase(ZVMTestCase):
 
     def test_is_fcp_in_use_no_record(self):
         self.driver._instance_fcp_map = {}
-        fake_instance = {'name': 'fake'}
-        self.assertFalse(self.driver._is_fcp_in_use(fake_instance))
+        self.assertFalse(self.driver._is_fcp_in_use(self.fake_inst))
         self.mox.VerifyAll()
 
     def test_is_fcp_in_use_reserved(self):
-        self.driver._instance_fcp_map = {'fake': {'fcp': '1faa', 'count': 0}}
-        fake_instance = {'name': 'fake'}
-        self.assertFalse(self.driver._is_fcp_in_use(fake_instance))
+        self.driver._instance_fcp_map = {self.inst_name: {'fcp': '1faa',
+                                                          'count': 0}}
+        self.assertFalse(self.driver._is_fcp_in_use(self.fake_inst))
         self.mox.VerifyAll()
 
     def test_is_fcp_in_use_only_one(self):
-        self.driver._instance_fcp_map = {'fake': {'fcp': '1faa', 'count': 1}}
-        fake_instance = {'name': 'fake'}
-        self.assertTrue(self.driver._is_fcp_in_use(fake_instance))
+        self.driver._instance_fcp_map = {self.inst_name: {'fcp': '1faa',
+                                                          'count': 1}}
+        self.assertTrue(self.driver._is_fcp_in_use(self.fake_inst))
         self.mox.VerifyAll()
 
     def test_is_fcp_in_use_multi_volume(self):
-        self.driver._instance_fcp_map = {'fake': {'fcp': '1faa', 'count': 3}}
-        fake_instance = {'name': 'fake'}
-        self.assertTrue(self.driver._is_fcp_in_use(fake_instance))
+        self.driver._instance_fcp_map = {self.inst_name: {'fcp': '1faa',
+                                                          'count': 3}}
+        self.assertTrue(self.driver._is_fcp_in_use(self.fake_inst))
         self.mox.VerifyAll()
 
 
