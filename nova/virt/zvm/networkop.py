@@ -14,13 +14,10 @@
 
 
 from oslo_config import cfg
-from oslo_log import log as logging
 
 from nova.virt.zvm import exception
 from nova.virt.zvm import utils as zvmutils
 
-
-LOG = logging.getLogger(__name__)
 
 CONF = cfg.CONF
 
