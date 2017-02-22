@@ -295,7 +295,7 @@ Possible values:
     user directory.
 """),
     cfg.StrOpt('zvm_user_default_password',
-               default='dfltpass',
+               default='nolog',
                secret=True,
                help="""
 Default password for a new created z/VM user.
@@ -303,6 +303,32 @@ Default password for a new created z/VM user.
 This is the password for any z/VM user IDs created when OpenStack deploys new
 virtual servers (also called nova instances), defined in the USER directory
 statement.
+
+Deprecated: will be removed in the near future.
+
+Possible values:
+    A 1-8 character string.
+"""),
+    cfg.StrOpt('zvm_default_admin_userid',
+               default='',
+               help="""
+Default LOGONBY userid for the cloud.
+
+Blank-delimited list of z/VM userids allowed to logon using the BY keyword
+to the guests created by zVM openstack solution, compatible with the LOGONBY
+keyword of the user directory statement.  This value is only used when a guest
+is created. If you change this value existing guests' directory entries are not
+automatically updated with the new value.
+When an ESM is installed, this parameter only governs when the ESM 
+defers to CP's processing.
+
+Usage note:
+    The default is an empty list (''). When the list is empty, you can't log on
+    your cloud created instance using the 3270 protocol; When a non-empty list
+    is provied, you can use LOGONBY xxx command to log on the OpenStack-created
+    guest using the correspondingadmin userid's password.
+
+    see zVM CP Planning and Administration for additional information.
 
 Possible values:
     A 1-8 character string.
