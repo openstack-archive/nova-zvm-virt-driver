@@ -714,14 +714,6 @@ def punch_adminpass_file(instance_path, instance_name, admin_password,
     punch_file(instance_name, adminpass_fn, 'X', remote_host=get_host())
 
 
-def punch_xcat_auth_file(instance_path, instance_name):
-    """Make xCAT MN authorized by virtual machines."""
-    mn_pub_key = get_mn_pub_key()
-    auth_fn = ''.join([instance_path, '/xcatauth.sh'])
-    _generate_auth_file(auth_fn, mn_pub_key)
-    punch_file(instance_name, auth_fn, 'X', remote_host=get_host())
-
-
 def _generate_iucv_cmd_file(iucv_cmd_file_path, cmd):
     lines = ['#!/bin/bash\n', cmd]
     with open(iucv_cmd_file_path, 'w') as f:

@@ -361,8 +361,6 @@ class ZVMDriver(driver.ComputeDriver):
                 # Change vm's admin password during spawn
                 zvmutils.punch_adminpass_file(instance_path, zvm_inst._name,
                                               admin_password, linuxdist)
-                # Unlock the instance
-                zvmutils.punch_xcat_auth_file(instance_path, zvm_inst._name)
                 if zvmutils.xcat_support_iucv(self._xcat_version):
                     # Punch IUCV server files to reader.
                     zvmutils.punch_iucv_file(os_version, zhcp, zhcp_userid,
@@ -1618,8 +1616,6 @@ class ZVMDriver(driver.ComputeDriver):
         zhcp_userid = hcp_info['userid']
 
         new_inst = ZVMInstance(self, instance)
-        instance_path = self._pathutils.get_instance_path(
-                            CONF.zvm_host, new_inst._name)
         if same_xcat_mn:
             # Same xCAT MN
             # cleanup networking, will re-configure later
@@ -1720,7 +1716,6 @@ class ZVMDriver(driver.ComputeDriver):
 
         bdm = driver.block_device_info_get_mapping(block_device_info)
         try:
-            zvmutils.punch_xcat_auth_file(instance_path, new_inst._name)
             if zvmutils.xcat_support_iucv(self._xcat_version):
                 if same_xcat_mn:
                     zvmutils.punch_iucv_authorized_file(old_inst._name,
