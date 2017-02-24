@@ -148,7 +148,7 @@ class ZVMTestCase(test.TestCase):
         for res_data in fake_resp_list:
             res = {'message': jsonutils.dumps(res_data)}
             zvmutils.XCATConnection.request(mox.IgnoreArg(), mox.IgnoreArg(),
-                mox.IgnoreArg(), mox.IgnoreArg()).AndReturn(res)
+                mox.IgnoreArg(), mox.IgnoreArg()).AndReturn((0, res))
         self.mox.ReplayAll()
 
     def _set_fake_xcat_resp(self, fake_resp_list):
@@ -165,7 +165,7 @@ class ZVMTestCase(test.TestCase):
             body = res[2] or mox.IgnoreArg()
             res = {'message': jsonutils.dumps(res[3])}
             zvmutils.XCATConnection.request(method, url, body,
-                                            mox.IgnoreArg()).AndReturn(res)
+                mox.IgnoreArg()).AndReturn((0, res))
         self.mox.ReplayAll()
 
     def _gen_resp(self, **kwargs):
@@ -2218,6 +2218,17 @@ class ZVMXCATConnectionTestCases(test.TestCase):
         conn = zvmutils.XCATConnection()
         self.assertRaises(exception.ZVMXCATRequestFailed,
                           conn.request, "GET", 'fakeurl')
+
+    @mock.patch.object(zvmutils.LOG, "warning")
+    @mock.patch.object(zvmutils.LOG, "info")
+    @mock.patch.object(zvmutils.XCATConnection, 'request')
+    def test_xcat_request_503(self, mock_req, mock_info, mock_warn):
+        res = {'message': jsonutils.dumps({"data": [{'data': 1}]})}
+        mock_req.return_value = (1, res)
+
+        zvmutils.xcat_request("GET", "/dummy")
+        self.assertEqual(5, len(mock_info.call_args_list))
+        self.assertEqual(1, len(mock_warn.call_args_list))
 
 
 class ZVMNetworkTestCases(ZVMTestCase):
