@@ -148,7 +148,7 @@ class ZVMTestCase(test.TestCase):
         for res_data in fake_resp_list:
             res = {'message': jsonutils.dumps(res_data)}
             zvmutils.XCATConnection.request(mox.IgnoreArg(), mox.IgnoreArg(),
-                mox.IgnoreArg(), mox.IgnoreArg()).AndReturn(res)
+                mox.IgnoreArg(), mox.IgnoreArg()).AndReturn((0, res))
         self.mox.ReplayAll()
 
     def _set_fake_xcat_resp(self, fake_resp_list):
@@ -165,7 +165,7 @@ class ZVMTestCase(test.TestCase):
             body = res[2] or mox.IgnoreArg()
             res = {'message': jsonutils.dumps(res[3])}
             zvmutils.XCATConnection.request(method, url, body,
-                                            mox.IgnoreArg()).AndReturn(res)
+                                            mox.IgnoreArg()).AndReturn((0, res))
         self.mox.ReplayAll()
 
     def _gen_resp(self, **kwargs):
