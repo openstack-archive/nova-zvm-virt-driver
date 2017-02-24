@@ -362,25 +362,58 @@ class XCATConnection(object):
         # Only "200" or "201" returned from xCAT can be considered
         # as good status
         err = None
-        if method == "POST":
-            if res.status != 201:
-                err = str(resp)
+        need_retry = 0
+        if res.status != 503:
+            if method == "POST":
+                if res.status != 201:
+                    err = str(resp)
+            else:
+                if res.status != 200:
+                    err = str(resp)
         else:
-            if res.status != 200:
-                err = str(resp)
+            need_retry = 1
 
         if err is not None:
             raise exception.ZVMXCATRequestFailed(xcatserver=self.host,
                                                  msg=err)
 
-        return resp
+        return need_retry, resp
 
 
 def xcat_request(method, url, body=None, headers=None, ignore_warning=False):
     headers = headers or {}
     conn = XCATConnection()
-    resp = conn.request(method, url, body, headers)
-    return load_xcat_resp(resp['message'], ignore_warning=ignore_warning)
+
+    # Maximum allow 5 retry for service unavailable
+    _rep_ptn = ''.join(('&password=', CONF.zvm_xcat_password))
+
+    retry = 5
+    while (retry > 0):
+        need_retry, resp = conn.request(method, url, body, headers)
+        if not need_retry:
+            ret = load_xcat_resp(resp['message'],
+                                 ignore_warning=ignore_warning)
+            # Yes, we finished the request, let's return or handle error
+            return ret
+
+        LOG.info(_LI("xCAT returned http error code 503 and is busy. "
+                     "Retry attempts remaining: %(retry)s "
+                     "request: xCAT-Server: %(xcat_server)s "
+                     "Request-method: %(method)s "
+                     "URL: %(url)s."),
+                 {'retry': retry,
+                  'xcat_server': CONF.zvm_xcat_server,
+                  'method': method,
+                  'url': url.replace(_rep_ptn, '')})
+
+        time.sleep(2)
+        retry -= 1
+
+    LOG.warning(_LW('request exceed maximum number, service not available'))
+    ret = load_xcat_resp(resp['message'],
+                         ignore_warning=ignore_warning)
+    # ok, we tried all we can do here, let upper layer handle 503 error
+    return ret
 
 
 def jsonloads(jsonstr):
