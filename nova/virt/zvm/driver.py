@@ -322,7 +322,11 @@ class ZVMDriver(driver.ComputeDriver):
                 tmp_file_fn = None
                 bundle_file_path = None
                 with self._imageop_semaphore:
-                    if 'root_disk_units' not in image_meta['properties']:
+                    root_disk_units = ''
+                    if 'root_disk_units' in image_meta['properties']:
+                        root_disk_units = image_meta['properties'][
+                                        'root_disk_units']
+                    if ':' not in root_disk_units:
                         (tmp_file_fn, image_file_path,
                         bundle_file_path) = self._import_image_to_nova(
                                                     context,

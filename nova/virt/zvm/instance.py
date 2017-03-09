@@ -337,7 +337,18 @@ class ZVMInstance(object):
                 size = '%ig' % self._instance['root_gb']
                 # use a flavor the disk size is 0
                 if size == '0g':
-                    size = image_meta['properties']['root_disk_units']
+                    root_disk_units = image_meta['properties'][
+                                    'root_disk_units']
+                    size = root_disk_units.split(":")[0]
+                    disk_units = root_disk_units.split(":")[1]
+
+                    if ((disk_units == "CYL" and
+                         CONF.zvm_diskpool_type == "FBA") or
+                        (disk_units == "BLK" and
+                         CONF.zvm_diskpool_type == "ECKD")):
+                            msg = (_("The image's disk type doesn't match the"
+                                     " specified disk type in nova.conf."))
+                            raise exception.ZVMImageError(msg=msg)
                 # Add root disk and set ipl
                 self.add_mdisk(CONF.zvm_diskpool,
                                CONF.zvm_user_root_vdev,
@@ -370,7 +381,8 @@ class ZVMInstance(object):
         except (exception.ZVMXCATRequestFailed,
                 exception.ZVMInvalidXCATResponseDataError,
                 exception.ZVMXCATInternalError,
-                exception.ZVMDriverError) as err:
+                exception.ZVMDriverError,
+                exception.ZVMImageError) as err:
             msg = _("Failed to create z/VM userid: %s") % err.format_message()
             LOG.error(msg)
             raise exception.ZVMXCATCreateUserIdFailed(instance=self._name,
