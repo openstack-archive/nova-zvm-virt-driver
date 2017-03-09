@@ -337,7 +337,10 @@ class ZVMInstance(object):
                 size = '%ig' % self._instance['root_gb']
                 # use a flavor the disk size is 0
                 if size == '0g':
-                    size = image_meta['properties']['root_disk_units']
+                    root_disk_units = image_meta['properties'][
+                                    'root_disk_units']
+                    size = root_disk_units.split(":")[0]
+
                 # Add root disk and set ipl
                 self.add_mdisk(CONF.zvm_diskpool,
                                CONF.zvm_user_root_vdev,

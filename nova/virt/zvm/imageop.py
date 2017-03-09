@@ -778,9 +778,11 @@ class ZVMImages(object):
 
         LOG.debug("hexdump result is %s", output)
         try:
-            root_disk_units = int(output[144:156])
+            root_disk_size = int(output[144:156])
+            disk_units = output[220:223]
+            root_disk_units = ':'.join([str(root_disk_size), disk_units])
         except ValueError:
-            msg = (_("Image file at %s is missing imbeded disk size "
+            msg = (_("Image file at %s is missing built-in disk size "
                     "metadata, it was probably not captured with xCAT")
                     % image_file_path)
             raise exception.ZVMImageError(msg=msg)
@@ -802,7 +804,7 @@ class ZVMImages(object):
         (glance_image_service, image_id) = glance.get_remote_image_service(
                                                 context, image_meta['id'])
         new_image_meta = glance_image_service.show(context, image_id)
-        new_image_meta['properties']['root_disk_units'] = str(root_disk_units)
+        new_image_meta['properties']['root_disk_units'] = root_disk_units
 
         try:
             glance_image_service.update(context, image_id,

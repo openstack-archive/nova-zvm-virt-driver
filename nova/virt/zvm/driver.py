@@ -321,8 +321,11 @@ class ZVMDriver(driver.ComputeDriver):
             if not boot_from_volume:
                 tmp_file_fn = None
                 bundle_file_path = None
+
                 with self._imageop_semaphore:
-                    if 'root_disk_units' not in image_meta['properties']:
+                    root_disk_units = image_meta['properties'].get(
+                                      'root_disk_units', '')
+                    if ':' not in root_disk_units:
                         (tmp_file_fn, image_file_path,
                         bundle_file_path) = self._import_image_to_nova(
                                                     context,
@@ -330,6 +333,15 @@ class ZVMDriver(driver.ComputeDriver):
                         image_meta = self._zvm_images.\
                                         set_image_root_disk_units(
                                         context, image_meta, image_file_path)
+                root_disk_units = image_meta['properties']['root_disk_units']
+                disk_units = root_disk_units.split(":")[1]
+                if ((disk_units == "CYL" and CONF.zvm_diskpool_type == "FBA")
+                    or (disk_units == "BLK" and
+                        CONF.zvm_diskpool_type == "ECKD")):
+                    msg = (_("The image's disk type doesn't match the"
+                             " specified disk type in nova.conf."))
+                    raise exception.ZVMImageError(msg=msg)
+
                 image_in_xcat = self._zvm_images.image_exist_xcat(
                                     instance['image_ref'])
                 if not image_in_xcat:
