@@ -25,6 +25,8 @@ Overview
 .. toctree::
     :maxdepth: 2
 
+    support-matrix
+
 Using the driver
 ================
 
