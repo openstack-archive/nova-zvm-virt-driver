@@ -276,10 +276,17 @@ class ZVMInstance(object):
     def _create_user_id_body(self, boot_from_volume):
         kwprofile = 'profile=%s' % CONF.zvm_user_profile
         body = [kwprofile,
-                'password=%s' % CONF.zvm_user_default_password,
                 'cpu=%i' % self._instance['vcpus'],
                 'memory=%im' % self._instance['memory_mb'],
                 'privilege=%s' % CONF.zvm_user_default_privilege]
+
+        # if we don't set admin userid, then we will used old password
+        # field, otherwise, will use logon by method.
+        if not CONF.zvm_default_admin_userid:
+            body.append('password=%s' % CONF.zvm_user_default_password)
+        else:
+            body.append('password=LBYONLY')
+            body.append('logonby=%s' % CONF.zvm_default_admin_userid)
 
         # if mkvm in lower version xcat won't support it
         # they will ignore this param.
