@@ -296,6 +296,12 @@ Possible values:
 """),
     cfg.StrOpt('zvm_user_default_password',
                default='dfltpass',
+               deprecated_for_removal=True,
+               deprecated_reason="""
+zvm_user_default_password is not secure so it will be replaced by
+zvm_default_admin_userid from Pike release and removed in the near future,
+those previously created instances will not be affected.
+"""
                secret=True,
                help="""
 Default password for a new created z/VM user.
