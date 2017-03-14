@@ -277,9 +277,12 @@ class ZVMInstance(object):
             zvmutils.xcat_request("POST", url, body)
 
     def _create_user_id_body(self, boot_from_volume):
+        if not CONF.zvm_default_admin_userid:
+            passwd = CONF.zvm_user_default_password
+        
         kwprofile = 'profile=%s' % CONF.zvm_user_profile
         body = [kwprofile,
-                'password=%s' % CONF.zvm_user_default_password,
+                'password=%s' % passwd,
                 'cpu=%i' % self._instance['vcpus'],
                 'memory=%im' % self._instance['memory_mb'],
                 'privilege=%s' % CONF.zvm_user_default_privilege]
