@@ -38,6 +38,10 @@ extensions = [
     'oslosphinx',
     'oslo_config.sphinxconfiggen',
     'sphinx.ext.autodoc',
+    'ext.support_matrix',
+    'sphinx.ext.autodoc',
+    'oslosphinx',
+    'oslo_config.sphinxconfiggen',
 ]
 
 config_generator_config_file = '../../etc/nova/nova-zvm-oslo-conf-generator.conf'
