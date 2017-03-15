@@ -31,6 +31,9 @@ import shlex
 # ones.
 extensions = ['oslosphinx']
 
+config_generator_config_file = '../../etc/nova-zvm-oslo-conf-generator.conf'
+sample_config_basename = '_static/nova-zvm'
+
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['.templates']
 
