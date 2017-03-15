@@ -20,6 +20,9 @@ import shlex
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #sys.path.insert(0, os.path.abspath('.'))
+sys.path.insert(0, os.path.abspath('../..'))
+sys.path.insert(0, os.path.abspath('../'))
+sys.path.insert(0, os.path.abspath('./'))
 
 # -- General configuration ------------------------------------------------
 
@@ -29,7 +32,14 @@ import shlex
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions = ['oslosphinx']
+extensions = [
+    'sphinx.ext.autodoc',
+    'oslosphinx',
+    'oslo_config.sphinxconfiggen',
+]
+
+config_generator_config_file = '../../etc/nova-zvm-oslo-conf-generator.conf'
+sample_config_basename = '_static/nova-zvm'
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['.templates']
@@ -109,7 +119,9 @@ todo_include_todos = False
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #html_theme = 'alabaster'
-html_theme = 'default'
+#html_theme = 'default'
+html_theme_path = [os.path.join(os.path.dirname(oslosphinx.__file__), 'theme')]
+html_theme = 'openstack'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
@@ -138,7 +150,7 @@ html_theme = 'default'
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['.static']
+html_static_path = ['_static']
 
 # Add any extra paths that contain custom files (such as robots.txt or
 # .htaccess) here, relative to this directory. These files are copied
@@ -223,8 +235,10 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-  (master_doc, 'nova-zvm-virt-driver.tex', u'nova-zvm-virt-driver Documentation',
-   u'IBM', 'manual'),
+    ('index',
+     '%s.tex' % project,
+     u'%s Documentation' % project,
+     u'OpenStack Foundation', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
