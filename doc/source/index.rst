@@ -31,6 +31,8 @@ Using the driver
 .. toctree::
     :maxdepth: 2
 
+    configurations
+
 Creating zVM Images
 ===================
 
