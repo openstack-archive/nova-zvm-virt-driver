@@ -1969,87 +1969,25 @@ class ZVMInstanceTestCases(ZVMTestCase):
         self.assertRaises(exception.ZVMXCATDeployNodeFailed,
                           self._instance.deploy_node, 'fakeimg', '/fake/file')
 
-    def test_delete_userid_is_locked(self):
-        resp = {'error': [['Return Code: 400\nReason Code: 16\n']]}
-
-        self.mox.StubOutWithMock(zvmutils, 'xcat_request')
-        self.mox.StubOutWithMock(self._instance, '_wait_for_unlock')
-        zvmutils.xcat_request("DELETE", mox.IgnoreArg()).AndRaise(
-            exception.ZVMXCATInternalError(msg=str(resp)))
-        self._instance._wait_for_unlock('fakehcp')
-        zvmutils.xcat_request("DELETE", mox.IgnoreArg())
-        self.mox.ReplayAll()
-
+    @mock.patch('nova.virt.zvm.instance.ZVMInstance.unlock_userid')
+    @mock.patch('nova.virt.zvm.instance.ZVMInstance._delete_userid')
+    def test_delete_userid_is_locked(self, delete_uid, unlock_uid):
+        delete_uid.side_effect = [exception.ZVMXCATInternalError(
+                                    'Return Code: 400\nReason Code: 12\n'),
+                                  None]
         self._instance.delete_userid('fakehcp', {})
-        self.mox.VerifyAll()
+        delete_uid.assert_called()
+        unlock_uid.assert_called_once_with('fakehcp')
 
-    def test_delete_userid_is_locked_and_notexist(self):
-        resp = {'error': [['Return Code: 400\nReason Code: 16\n']]}
-
-        self.mox.StubOutWithMock(self._instance, 'delete_xcat_node')
-        self.mox.StubOutWithMock(zvmutils, 'xcat_request')
-        self.mox.StubOutWithMock(self._instance, '_wait_for_unlock')
-        zvmutils.xcat_request("DELETE", mox.IgnoreArg()).AndRaise(
-            exception.ZVMXCATInternalError(msg=str(resp)))
-        self._instance._wait_for_unlock('fakehcp')
-
-        resp = {'error': [['Return Code: 400\nReason Code: 4\n']]}
-        zvmutils.xcat_request("DELETE", mox.IgnoreArg()).AndRaise(
-            exception.ZVMXCATInternalError(msg=str(resp)))
-        self._instance.delete_xcat_node()
-        self.mox.ReplayAll()
-
+    @mock.patch('nova.virt.zvm.instance.ZVMInstance.unlock_devices')
+    @mock.patch('nova.virt.zvm.instance.ZVMInstance._delete_userid')
+    def test_delete_userid_device_is_locked(self, delete_uid, unlock_dev):
+        delete_uid.side_effect = [exception.ZVMXCATInternalError(
+                                    'Return Code: 408\nReason Code: 12\n'),
+                                  None]
         self._instance.delete_userid('fakehcp', {})
-        self.mox.VerifyAll()
-
-    def test_delete_userid_400012(self):
-        resp = {'error': [['Return Code: 400\nReason Code: 12\n']]}
-
-        self.mox.StubOutWithMock(zvmutils, 'xcat_request')
-        self.mox.StubOutWithMock(self._instance, '_wait_for_unlock')
-        zvmutils.xcat_request("DELETE", mox.IgnoreArg()).AndRaise(
-            exception.ZVMXCATInternalError(msg=str(resp)))
-        self._instance._wait_for_unlock('fakehcp')
-        zvmutils.xcat_request("DELETE", mox.IgnoreArg())
-        self.mox.ReplayAll()
-
-        self._instance.delete_userid('fakehcp', {})
-        self.mox.VerifyAll()
-
-    def test_is_locked_true(self):
-        resp = {'data': [['os000001: os000001 is locked']]}
-
-        self.mox.StubOutWithMock(zvmutils, 'xdsh')
-        execstr = "/opt/zhcp/bin/smcli Image_Lock_Query_DM -T os000001"
-        zvmutils.xdsh('fakehcp', execstr).AndReturn(resp)
-        self.mox.ReplayAll()
-
-        locked = self._instance.is_locked('fakehcp')
-        self.mox.VerifyAll()
-
-        self.assertTrue(locked)
-
-    def test_is_locked_false(self):
-        resp = {'data': [['os000001: os000001 is Unlocked...']]}
-
-        self.mox.StubOutWithMock(zvmutils, 'xdsh')
-        execstr = "/opt/zhcp/bin/smcli Image_Lock_Query_DM -T os000001"
-        zvmutils.xdsh('fakehcp', execstr).AndReturn(resp)
-        self.mox.ReplayAll()
-
-        locked = self._instance.is_locked('fakehcp')
-        self.mox.VerifyAll()
-
-        self.assertFalse(locked)
-
-    def test_wait_for_unlock(self):
-        self.mox.StubOutWithMock(self._instance, 'is_locked')
-        self._instance.is_locked('fakehcp').AndReturn(True)
-        self._instance.is_locked('fakehcp').AndReturn(False)
-        self.mox.ReplayAll()
-
-        self._instance._wait_for_unlock('fakehcp', 1)
-        self.mox.VerifyAll()
+        delete_uid.assert_called()
+        unlock_dev.assert_called_once_with('fakehcp')
 
     def test_modify_storage_format(self):
         mem = self._instance._modify_storage_format('0')
@@ -2165,6 +2103,24 @@ class ZVMInstanceTestCases(ZVMTestCase):
         self.assertEqual(2, inst_info.num_cpu)
         self.assertEqual(0, inst_info.cpu_time_ns)
         self.assertEqual(1048576, inst_info.max_mem_kb)
+
+    @mock.patch('nova.virt.zvm.utils.xdsh')
+    @mock.patch('nova.virt.zvm.instance.ZVMInstance.get_userid')
+    def test_unlock_devices(self, get_uid, xdsh):
+        get_uid.return_value = 'fakeuid'
+        xdshv1 = {'data': [['Locked type: DEVICE\nDevice address: 0100\n'
+                            'Device locked by: fake\nDevice address: 0101\n'
+                            'Device locked by: fake']]}
+        xdsh.side_effect = [xdshv1, None, None]
+        self._instance.unlock_devices('fakezhcp')
+
+        get_uid.assert_called_with()
+        xdsh.assert_any_call('fakezhcp',
+            '/opt/zhcp/bin/smcli Image_Lock_Query_DM -T fakeuid')
+        xdsh.assert_any_call('fakezhcp',
+            '/opt/zhcp/bin/smcli Image_Unlock_DM -T fakeuid -v 0100')
+        xdsh.assert_any_call('fakezhcp',
+            '/opt/zhcp/bin/smcli Image_Unlock_DM -T fakeuid -v 0101')
 
 
 class ZVMXCATConnectionTestCases(test.TestCase):

@@ -14,14 +14,11 @@
 
 
 import binascii
-import datetime
 import six
 import time
 
 from oslo_config import cfg
 from oslo_log import log as logging
-from oslo_service import loopingcall
-from oslo_utils import timeutils
 
 from nova.compute import power_state
 from nova import exception as nova_exception
@@ -460,29 +457,35 @@ class ZVMInstance(object):
         url = self._xcat_url.chvm('/' + self._name)
         zvmutils.xcat_request("PUT", url, body)
 
-    def is_locked(self, zhcp_node):
-        cmd = "/opt/zhcp/bin/smcli Image_Lock_Query_DM -T %s" % self._name
+    def get_userid(self):
+        return zvmutils.get_userid(self._name)
+
+    def unlock_userid(self, zhcp_node):
+        _uid = self.get_userid()
+        cmd = "/opt/zhcp/bin/smcli Image_Unlock_DM -T %s" % _uid
+        zvmutils.xdsh(zhcp_node, cmd)
+
+    def unlock_devices(self, zhcp_node):
+        _uid = self.get_userid()
+        cmd = "/opt/zhcp/bin/smcli Image_Lock_Query_DM -T %s" % _uid
         resp = zvmutils.xdsh(zhcp_node, cmd)
+        with zvmutils.expect_invalid_xcat_resp_data(resp):
+            resp_str = resp['data'][0][0]
 
-        return "is Unlocked..." not in str(resp)
+        if resp_str.__contains__("is Unlocked..."):
+            # unlocked automatically, do nothing
+            return
 
-    def _wait_for_unlock(self, zhcp_node, interval=60, timeout=300):
-        LOG.debug("Waiting for unlock instance %s", self._name)
+        def _unlock_device(vdev):
+            cmd = ("/opt/zhcp/bin/smcli Image_Unlock_DM -T %(uid)s -v %(vdev)s"
+                   % {'uid': _uid, 'vdev': vdev})
+            zvmutils.xdsh(zhcp_node, cmd)
 
-        def _wait_unlock(expiration):
-            if timeutils.utcnow() > expiration:
-                LOG.debug("Waiting for unlock instance %s timeout", self._name)
-                raise loopingcall.LoopingCallDone()
-
-            if not self.is_locked(zhcp_node):
-                LOG.debug("Instance %s is unlocked", self._name)
-                raise loopingcall.LoopingCallDone()
-
-        expiration = timeutils.utcnow() + datetime.timedelta(seconds=timeout)
-
-        timer = loopingcall.FixedIntervalLoopingCall(_wait_unlock,
-                                                     expiration)
-        timer.start(interval=interval).wait()
+        resp_list = resp_str.split('\n')
+        for s in resp_list:
+            if s.__contains__('Device address:'):
+                vdev = s.rpartition(':')[2].strip()
+                _unlock_device(vdev)
 
     def _delete_userid(self, url):
         try:
@@ -511,15 +514,19 @@ class ZVMInstance(object):
         except exception.ZVMXCATInternalError as err:
             emsg = err.format_message()
             if (emsg.__contains__("Return Code: 400") and
-               (emsg.__contains__("Reason Code: 16") or
-                emsg.__contains__("Reason Code: 12"))):
-                # The vm or vm device was locked. Unlock before deleting
-                self._wait_for_unlock(zhcp_node)
-                self._delete_userid(url)
+                    emsg.__contains__("Reason Code: 12")):
+                # The vm was locked. Unlock before deleting
+                self.unlock_userid(zhcp_node)
+            elif (emsg.__contains__("Return Code: 408") and
+                    emsg.__contains__("Reason Code: 12")):
+                # The vm device was locked. Unlock the device before deleting
+                self.unlock_devices(zhcp_node)
             else:
                 LOG.debug("exception not able to handle in delete_userid "
                           "%s", self._name)
                 raise err
+            # delete the vm after unlock
+            self._delete_userid(url)
         except exception.ZVMXCATRequestFailed as err:
             emsg = err.format_message()
             if (emsg.__contains__("Invalid nodes and/or groups") and
