@@ -1,0 +1,8 @@
+Code-Review+2: jichenjc <jichenjc@cn.ibm.com>
+Workflow+1: jichenjc <jichenjc@cn.ibm.com>
+Verified+2: Jenkins
+Submitted-by: Jenkins
+Submitted-at: Mon, 20 Mar 2017 08:26:27 +0000
+Reviewed-on: https://review.openstack.org/445854
+Project: openstack/nova-zvm-virt-driver
+Branch: refs/heads/master
