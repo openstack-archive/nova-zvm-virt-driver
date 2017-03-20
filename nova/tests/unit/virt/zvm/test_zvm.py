@@ -431,7 +431,7 @@ class ZVMDriverTestCases(ZVMTestCase):
                                'os_name': 'Linux',
                                'os_version': 'rhel6.2',
                                'provisioning_method': 'netboot',
-                               'root_disk_units': 578181045,
+                               'root_disk_units': '578181045:BLK',
                                },
                 'size': 578181045,
                 'status': 'active',
@@ -533,6 +533,7 @@ class ZVMDriverTestCases(ZVMTestCase):
                        self._fake_fun())
         self.stubs.Set(self.driver._zvm_images, 'image_exist_xcat',
                        self._fake_fun(False))
+        self.stubs.Set(self.driver, '_import_image_to_nova', self._fake_fun())
         self.stubs.Set(self.driver, '_import_image_to_xcat', self._fake_fun())
         self.stubs.Set(instance.ZVMInstance, 'create_userid', self._fake_fun())
         self.stubs.Set(instance.ZVMInstance, 'update_node_info',
@@ -1858,7 +1859,8 @@ class ZVMInstanceTestCases(ZVMTestCase):
                       'properties': {'os_version': 'fake',
                                      'architecture': 'fake',
                                      'provisioning_method': 'fake',
-                                     'root_disk_units': '3'}}
+                                     'root_disk_units': '3338:CYL'}}
+        self.flags(zvm_diskpool_type='ECKD')
         self._instance._instance['ephemeral_gb'] = 20
         self._instance._instance['root_gb'] = 0
         cu_info = ['os000001: Defining OS000001 in directory... Done\n'
@@ -1892,7 +1894,8 @@ class ZVMInstanceTestCases(ZVMTestCase):
                       'properties': {'os_version': 'fake',
                                      'architecture': 'fake',
                                      'provisioning_method': 'fake',
-                                     'root_disk_units': '3338'}}
+                                     'root_disk_units': '3338:CYL'}}
+        self.flags(zvm_diskpool_type='ECKD')
 
         self.mox.StubOutWithMock(zvmutils, 'xcat_request')
         self.mox.StubOutWithMock(self._instance, 'add_mdisk')
@@ -1929,7 +1932,7 @@ class ZVMInstanceTestCases(ZVMTestCase):
                       'properties': {'os_version': 'fake',
                                      'architecture': 'fake',
                                      'provisioning_method': 'fake',
-                                     'root_disk_units': '3'}}
+                                     'root_disk_units': '3:CYL'}}
         self.mox.StubOutWithMock(zvmutils, 'xcat_request')
         self.mox.StubOutWithMock(self._instance, 'add_mdisk')
         self.mox.StubOutWithMock(self._instance, '_set_ipl')
@@ -4263,8 +4266,13 @@ class ZVMImageOPTestCases(ZVMTestCase):
 
     @mock.patch('nova.utils.execute')
     def test_get_root_disk_units(self, mk_exec):
-        mk_exec.return_value = (''.join(['CKD', '1' * 160]), None)
-        self.assertEqual(111111111111,
+        # mk_exec.return_value = (''.join(['CKD', '1' * 160]), None)
+        mk_exec.return_value = (('00000000  78 43 41 54 20 43 4b 44  20 44 69'
+        ' 73 6b 20 49 6d  |xCAT CKD Disk Im| 00000010  61 67 65 3a 20 20 20 20'
+        '  20 20 20 20 33 33 33 38  |age:        3338| 00000020  20 43 59 4c'
+        ' 20 48 4c 65  6e 3a 20 30 30 35 35 20  | CYL HLen: 0055 | 00000030'),
+                                None)
+        self.assertEqual('3338:CYL',
                          self.imageop.get_root_disk_units('/fake'))
 
     @mock.patch('nova.utils.execute')
