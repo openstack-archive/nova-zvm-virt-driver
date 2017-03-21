@@ -3091,6 +3091,32 @@ class SVCDriverTestCase(ZVMTestCase):
 
         self.driver._fcp_pool = {}
 
+    def test_update_instance_fcp_map_force_remove(self):
+        fcp1 = self.driver.FCP([])
+        self.driver._fcp_pool = {'0001': fcp1}
+        fcp_list = ['0001']
+        self.driver._instance_fcp_map = {'inst1': {'fcp_list': ['0001'],
+                                                   'count': 2}}
+        fcp1.set_in_use()
+
+        self.driver._update_instance_fcp_map('inst1', fcp_list,
+                                             self.driver._FORCE_REMOVE)
+        self.assertEqual({}, self.driver._instance_fcp_map)
+        self.assertFalse(fcp1.is_in_use())
+        self.assertFalse(fcp1.is_reserved())
+
+        self.driver._instance_fcp_map = {'inst1': {'fcp_list': ['0001'],
+                                                   'count': 0}}
+        fcp1.set_in_use()
+
+        self.driver._update_instance_fcp_map('inst1', fcp_list,
+                                             self.driver._FORCE_REMOVE)
+        self.assertEqual({}, self.driver._instance_fcp_map)
+        self.assertFalse(fcp1.is_in_use())
+        self.assertFalse(fcp1.is_reserved())
+
+        self.driver._fcp_pool = {}
+
     def test_update_instance_fcp_map_unknown_action(self):
         self.assertRaises(exception.ZVMVolumeError,
                           self.driver._update_instance_fcp_map,
