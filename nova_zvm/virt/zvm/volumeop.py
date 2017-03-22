@@ -17,21 +17,20 @@ import re
 import six
 import time
 
+import nova.context
+from nova.i18n import _, _LW
+from nova.objects import block_device as block_device_obj
+from nova.objects import instance as instance_obj
+from nova.volume import cinder
 from oslo_config import cfg
 from oslo_log import log as logging
 from oslo_serialization import jsonutils
 from oslo_utils import excutils
 
-import nova.context
-from nova.i18n import _, _LW
-from nova.objects import block_device as block_device_obj
-from nova.objects import instance as instance_obj
-from nova.virt.zvm import const
-from nova.virt.zvm import dist
-from nova.virt.zvm import exception
-from nova.virt.zvm import utils as zvmutils
-from nova.volume import cinder
-
+from nova_zvm.virt.zvm import const
+from nova_zvm.virt.zvm import dist
+from nova_zvm.virt.zvm import exception
+from nova_zvm.virt.zvm import utils as zvmutils
 
 LOG = logging.getLogger(__name__)
 CONF = cfg.CONF

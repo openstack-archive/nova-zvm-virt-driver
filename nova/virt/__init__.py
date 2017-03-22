@@ -14,18 +14,5 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-"""Shim layer for nova_zvm.virt.zvm.driver.PowerVMDriver.
-
-Duplicate all public symbols.  This is necessary for the constants as well as
-the classes - because instances of the classes need to be able to resolve
-references to the constants.
-"""
-
-
-import nova_zvm.virt.zvm.driver as real_drv
-
-
-LOG = real_drv.LOG
-CONF = real_drv.CONF
-ZVMInstance = real_drv.ZVMInstance
-ZVMDriver = real_drv.ZVMDriver
+# Required to play nicely with namespace composition (PEP420).
+__import__('pkg_resources').declare_namespace(__name__)

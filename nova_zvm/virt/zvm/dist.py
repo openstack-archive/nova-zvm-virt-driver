@@ -14,12 +14,12 @@
 
 import abc
 
+from nova.i18n import _
 from oslo_config import cfg
 from oslo_log import log as logging
 import six
 
-from nova.i18n import _
-from nova.virt.zvm import exception
+from nova_zvm.virt.zvm import exception
 
 CONF = cfg.CONF
 

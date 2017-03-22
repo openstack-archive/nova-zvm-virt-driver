@@ -23,19 +23,19 @@ import socket
 import ssl
 import time
 
-from oslo_config import cfg
-from oslo_log import log as logging
-from oslo_serialization import jsonutils
-from oslo_utils import excutils
-
 from nova import block_device
 from nova.compute import power_state
 from nova import exception as nova_exception
 from nova.i18n import _, _LE, _LI, _LW
 from nova.virt import driver
-from nova.virt.zvm import const
-from nova.virt.zvm import dist
-from nova.virt.zvm import exception
+from oslo_config import cfg
+from oslo_log import log as logging
+from oslo_serialization import jsonutils
+from oslo_utils import excutils
+
+from nova_zvm.virt.zvm import const
+from nova_zvm.virt.zvm import dist
+from nova_zvm.virt.zvm import exception
 
 
 LOG = logging.getLogger(__name__)

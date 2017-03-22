@@ -15,13 +15,13 @@
 import os
 import tarfile
 
-from oslo_config import cfg
-from oslo_log import log as logging
-
 from nova import exception
 from nova import utils
 from nova.virt import configdrive
-from nova.virt.zvm import utils as zvmutils
+from oslo_config import cfg
+from oslo_log import log as logging
+
+from nova_zvm.virt.zvm import utils as zvmutils
 
 
 LOG = logging.getLogger(__name__)

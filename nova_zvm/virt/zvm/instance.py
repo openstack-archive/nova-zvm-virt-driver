@@ -17,18 +17,18 @@ import binascii
 import six
 import time
 
-from oslo_config import cfg
-from oslo_log import log as logging
-
 from nova.compute import power_state
 from nova import exception as nova_exception
 from nova.i18n import _, _LW
 from nova.virt import hardware
-from nova.virt.zvm import const
-from nova.virt.zvm import dist
-from nova.virt.zvm import exception
-from nova.virt.zvm import utils as zvmutils
-from nova.virt.zvm import volumeop
+from oslo_config import cfg
+from oslo_log import log as logging
+
+from nova_zvm.virt.zvm import const
+from nova_zvm.virt.zvm import dist
+from nova_zvm.virt.zvm import exception
+from nova_zvm.virt.zvm import utils as zvmutils
+from nova_zvm.virt.zvm import volumeop
 
 LOG = logging.getLogger(__name__)
 CONF = cfg.CONF

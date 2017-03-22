@@ -15,8 +15,8 @@
 
 from oslo_config import cfg
 
-from nova.virt.zvm import exception
-from nova.virt.zvm import utils as zvmutils
+from nova_zvm.virt.zvm import exception
+from nova_zvm.virt.zvm import utils as zvmutils
 
 
 CONF = cfg.CONF

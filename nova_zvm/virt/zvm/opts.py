@@ -12,9 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 import itertools
 
-import nova.virt.zvm.driver
+from nova_zvm.virt.zvm import conf as zvm_conf
 
 
 def list_opts():
@@ -23,8 +24,8 @@ def list_opts():
         # we keep this into DEFAULT.
         ('DEFAULT',
          itertools.chain(
-             nova.virt.zvm.conf.zvm_image_opts,
-             nova.virt.zvm.conf.zvm_opts,
-             nova.virt.zvm.conf.zvm_user_opts,
+             zvm_conf.zvm_image_opts,
+             zvm_conf.zvm_opts,
+             zvm_conf.zvm_user_opts,
          )),
     ]

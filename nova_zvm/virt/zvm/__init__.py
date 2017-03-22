@@ -1,6 +1,4 @@
-# Copyright 2017 IBM Corp.
-#
-# All Rights Reserved.
+# Copyright 2013 IBM Corp.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -14,18 +12,18 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-"""Shim layer for nova_zvm.virt.zvm.driver.PowerVMDriver.
+"""A connection to an IBM z/VM Virtualization system.
 
-Duplicate all public symbols.  This is necessary for the constants as well as
-the classes - because instances of the classes need to be able to resolve
-references to the constants.
+Generally, OpenStack z/VM virt driver will call xCat REST API to operate
+to z/VM hypervisors.xCat has a control point(a virtual machine) in z/VM
+system, which enables xCat management node to control the z/VM system.
+OpenStack z/VM driver will communicate with xCat management node through
+xCat REST API. Thus OpenStack can operate to z/VM system indirectly.
+
 """
 
 
-import nova_zvm.virt.zvm.driver as real_drv
+from nova_zvm.virt.zvm import driver
 
 
-LOG = real_drv.LOG
-CONF = real_drv.CONF
-ZVMInstance = real_drv.ZVMInstance
-ZVMDriver = real_drv.ZVMDriver
+ZVMDriver = driver.ZVMDriver

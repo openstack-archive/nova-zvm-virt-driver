@@ -21,11 +21,6 @@ import time
 
 import mock
 from mox3 import mox
-from oslo_concurrency import processutils
-from oslo_config import cfg
-from oslo_serialization import jsonutils
-from oslo_utils import fileutils
-
 from nova.compute import power_state
 from nova.compute import vm_states
 from nova import context
@@ -38,15 +33,20 @@ from nova.tests.unit import fake_instance
 from nova.virt import configdrive as virt_configdrive
 from nova.virt import fake
 from nova.virt import hardware
-from nova.virt.zvm import configdrive
-from nova.virt.zvm import dist
-from nova.virt.zvm import driver
-from nova.virt.zvm import exception
-from nova.virt.zvm import imageop
-from nova.virt.zvm import instance
-from nova.virt.zvm import networkop
-from nova.virt.zvm import utils as zvmutils
-from nova.virt.zvm import volumeop
+from oslo_concurrency import processutils
+from oslo_config import cfg
+from oslo_serialization import jsonutils
+from oslo_utils import fileutils
+
+from nova_zvm.virt.zvm import configdrive
+from nova_zvm.virt.zvm import dist
+from nova_zvm.virt.zvm import driver
+from nova_zvm.virt.zvm import exception
+from nova_zvm.virt.zvm import imageop
+from nova_zvm.virt.zvm import instance
+from nova_zvm.virt.zvm import networkop
+from nova_zvm.virt.zvm import utils as zvmutils
+from nova_zvm.virt.zvm import volumeop
 
 
 CONF = cfg.CONF
@@ -250,7 +250,7 @@ class ZVMDriverTestCases(ZVMTestCase):
             self._old_inst[k] = ''
 
     @mock.patch.object(driver.ZVMDriver, 'update_host_status')
-    @mock.patch('nova.virt.zvm.driver.ZVMDriver._get_xcat_version')
+    @mock.patch('nova_zvm.virt.zvm.driver.ZVMDriver._get_xcat_version')
     def setUp(self, mock_version, mock_update):
         super(ZVMDriverTestCases, self).setUp()
         self._setup_fake_inst_obj()
@@ -348,7 +348,7 @@ class ZVMDriverTestCases(ZVMTestCase):
         # return {"data": [{"node": [{"name": ["os000001"], "data": [stat]}]}]}
         return self._set_reachable(stat)
 
-    @mock.patch('nova.virt.zvm.instance.ZVMInstance.get_info')
+    @mock.patch('nova_zvm.virt.zvm.instance.ZVMInstance.get_info')
     def test_get_info(self, mk_get_info):
         _fake_inst_obj = hardware.InstanceInfo(state=0x01, mem_kb=131072,
                             num_cpu=4, cpu_time_ns=330528353,
@@ -362,9 +362,10 @@ class ZVMDriverTestCases(ZVMTestCase):
         self.assertEqual(330528353, inst_info.cpu_time_ns)
         self.assertEqual(1048576, inst_info.max_mem_kb)
 
-    @mock.patch('nova.virt.zvm.exception.ZVMXCATRequestFailed.format_message')
-    @mock.patch('nova.virt.zvm.exception.ZVMXCATRequestFailed.msg_fmt')
-    @mock.patch('nova.virt.zvm.instance.ZVMInstance.get_info')
+    @mock.patch('nova_zvm.virt.zvm.exception.ZVMXCATRequestFailed.'
+                'format_message')
+    @mock.patch('nova_zvm.virt.zvm.exception.ZVMXCATRequestFailed.msg_fmt')
+    @mock.patch('nova_zvm.virt.zvm.instance.ZVMInstance.get_info')
     def test_get_info_not_exist(self, mk_get_info, mk_msg_fmt, mk_fm):
         mk_get_info.side_effect = exception.ZVMXCATRequestFailed
         _emsg = "Forbidden Invalid nodes and/or groups"
@@ -374,8 +375,8 @@ class ZVMDriverTestCases(ZVMTestCase):
         self.assertRaises(nova_exception.InstanceNotFound,
                           self.driver.get_info, self.instance)
 
-    @mock.patch('nova.virt.zvm.exception.ZVMXCATRequestFailed.msg_fmt')
-    @mock.patch('nova.virt.zvm.instance.ZVMInstance.get_info')
+    @mock.patch('nova_zvm.virt.zvm.exception.ZVMXCATRequestFailed.msg_fmt')
+    @mock.patch('nova_zvm.virt.zvm.instance.ZVMInstance.get_info')
     def test_get_info_other_err(self, mk_get_info, mk_msg_fmt):
         mk_get_info.side_effect = exception.ZVMXCATRequestFailed
         mk_msg_fmt.return_value = "Other error"
@@ -898,20 +899,20 @@ class ZVMDriverTestCases(ZVMTestCase):
                           self.driver.reboot,
                           self.context, self.instance, {}, "SOFT")
 
-    @mock.patch('nova.virt.zvm.instance.ZVMInstance.power_off')
+    @mock.patch('nova_zvm.virt.zvm.instance.ZVMInstance.power_off')
     def test_power_off(self, poff):
         self.driver.power_off(self.instance, 60, 10)
         poff.assert_called_once_with(60, 10)
 
-    @mock.patch('nova.virt.zvm.instance.ZVMInstance._power_state')
+    @mock.patch('nova_zvm.virt.zvm.instance.ZVMInstance._power_state')
     def test_power_off_inactive(self, pst):
         pst.side_effect = exception.ZVMXCATInternalError(
                                         "Return Code: 200 Reason Code: 12")
         self.driver.power_off(self.instance, 60, 10)
         pst.assert_called_once_with("PUT", "softoff")
 
-    @mock.patch('nova.virt.zvm.instance.ZVMInstance._check_power_stat')
-    @mock.patch('nova.virt.zvm.instance.ZVMInstance._power_state')
+    @mock.patch('nova_zvm.virt.zvm.instance.ZVMInstance._check_power_stat')
+    @mock.patch('nova_zvm.virt.zvm.instance.ZVMInstance._power_state')
     def test_power_off_retry(self, pst, get_pst):
         get_pst.side_effect = [0x00, 0x04]
         self.driver.power_off(self.instance, 60, 10)
@@ -1934,15 +1935,15 @@ class ZVMInstanceTestCases(ZVMTestCase):
         self._set_fake_xcat_responses([self._generate_xcat_resp(info)])
         self._instance.update_node_info(image_meta)
 
-    @mock.patch('nova.virt.zvm.utils.xcat_request')
-    @mock.patch('nova.virt.zvm.utils.get_host')
+    @mock.patch('nova_zvm.virt.zvm.utils.xcat_request')
+    @mock.patch('nova_zvm.virt.zvm.utils.get_host')
     def test_deploy_node(self, get_host, xcat_req):
         get_host.return_value = 'fake@fakehost'
         xcat_req.return_value = 'fake'
         self._instance.deploy_node('fakeimg', '/fake/file', '0100')
 
-    @mock.patch('nova.virt.zvm.utils.xcat_request')
-    @mock.patch('nova.virt.zvm.utils.get_host')
+    @mock.patch('nova_zvm.virt.zvm.utils.xcat_request')
+    @mock.patch('nova_zvm.virt.zvm.utils.get_host')
     def test_deploy_node_failed(self, get_host, xcat_req):
         get_host.return_value = 'fake@fakehost'
         xcat_req.side_effect = exception.ZVMXCATDeployNodeFailed(node="fake",
@@ -1950,8 +1951,8 @@ class ZVMInstanceTestCases(ZVMTestCase):
         self.assertRaises(exception.ZVMXCATDeployNodeFailed,
                           self._instance.deploy_node, 'fakeimg', '/fake/file')
 
-    @mock.patch('nova.virt.zvm.instance.ZVMInstance.unlock_userid')
-    @mock.patch('nova.virt.zvm.instance.ZVMInstance._delete_userid')
+    @mock.patch('nova_zvm.virt.zvm.instance.ZVMInstance.unlock_userid')
+    @mock.patch('nova_zvm.virt.zvm.instance.ZVMInstance._delete_userid')
     def test_delete_userid_is_locked(self, delete_uid, unlock_uid):
         delete_uid.side_effect = [exception.ZVMXCATInternalError(
                                     'Return Code: 400\nReason Code: 12\n'),
@@ -1960,8 +1961,8 @@ class ZVMInstanceTestCases(ZVMTestCase):
         delete_uid.assert_called()
         unlock_uid.assert_called_once_with('fakehcp')
 
-    @mock.patch('nova.virt.zvm.instance.ZVMInstance.unlock_devices')
-    @mock.patch('nova.virt.zvm.instance.ZVMInstance._delete_userid')
+    @mock.patch('nova_zvm.virt.zvm.instance.ZVMInstance.unlock_devices')
+    @mock.patch('nova_zvm.virt.zvm.instance.ZVMInstance._delete_userid')
     def test_delete_userid_device_is_locked(self, delete_uid, unlock_dev):
         delete_uid.side_effect = [exception.ZVMXCATInternalError(
                                     'Return Code: 408\nReason Code: 12\n'),
@@ -1974,9 +1975,9 @@ class ZVMInstanceTestCases(ZVMTestCase):
         mem = self._instance._modify_storage_format('0')
         self.assertEqual(0, mem)
 
-    @mock.patch('nova.virt.zvm.instance.ZVMInstance._get_rinv_info')
-    @mock.patch('nova.virt.zvm.instance.ZVMInstance.is_reachable')
-    @mock.patch('nova.virt.zvm.instance.ZVMInstance._check_power_stat')
+    @mock.patch('nova_zvm.virt.zvm.instance.ZVMInstance._get_rinv_info')
+    @mock.patch('nova_zvm.virt.zvm.instance.ZVMInstance.is_reachable')
+    @mock.patch('nova_zvm.virt.zvm.instance.ZVMInstance._check_power_stat')
     def test_get_info_cpumem(self, mk_get_ps, mk_is_reach,
                              mk_get_rinv_info):
         mk_get_ps.return_value = power_state.RUNNING
@@ -1993,7 +1994,7 @@ class ZVMInstanceTestCases(ZVMTestCase):
         self.assertEqual(330528353, inst_info.cpu_time_ns)
         self.assertEqual(1048576, inst_info.max_mem_kb)
 
-    @mock.patch('nova.virt.zvm.instance.ZVMInstance._get_rinv_info')
+    @mock.patch('nova_zvm.virt.zvm.instance.ZVMInstance._get_rinv_info')
     def test_get_info_cpumempowerstat(self, mk_get_rinv_info):
         mk_get_rinv_info.return_value = self._fake_inst_info_list_cpumempower
 
@@ -2007,10 +2008,10 @@ class ZVMInstanceTestCases(ZVMTestCase):
         self.assertEqual(3305.3, inst_info.cpu_time_ns)
         self.assertEqual(1048576, inst_info.max_mem_kb)
 
-    @mock.patch('nova.virt.zvm.exception.ZVMXCATInternalError.msg_fmt')
-    @mock.patch('nova.virt.zvm.instance.ZVMInstance._get_rinv_info')
-    @mock.patch('nova.virt.zvm.instance.ZVMInstance.is_reachable')
-    @mock.patch('nova.virt.zvm.instance.ZVMInstance._check_power_stat')
+    @mock.patch('nova_zvm.virt.zvm.exception.ZVMXCATInternalError.msg_fmt')
+    @mock.patch('nova_zvm.virt.zvm.instance.ZVMInstance._get_rinv_info')
+    @mock.patch('nova_zvm.virt.zvm.instance.ZVMInstance.is_reachable')
+    @mock.patch('nova_zvm.virt.zvm.instance.ZVMInstance._check_power_stat')
     def test_get_info_inv_err(self, mk_get_ps, mk_is_reach, mk_get_rinv_info,
                               mk_msg_fmt):
         mk_get_ps.return_value = power_state.RUNNING
@@ -2023,12 +2024,12 @@ class ZVMInstanceTestCases(ZVMTestCase):
             self.assertRaises(nova_exception.InstanceNotFound,
                               self._instance.get_info)
 
-    @mock.patch('nova.virt.zvm.exception.ZVMInvalidXCATResponseDataError.'
+    @mock.patch('nova_zvm.virt.zvm.exception.ZVMInvalidXCATResponseDataError.'
                 'msg_fmt')
-    @mock.patch('nova.virt.zvm.instance.ZVMInstance._get_current_memory')
-    @mock.patch('nova.virt.zvm.instance.ZVMInstance._get_rinv_info')
-    @mock.patch('nova.virt.zvm.instance.ZVMInstance.is_reachable')
-    @mock.patch('nova.virt.zvm.instance.ZVMInstance._check_power_stat')
+    @mock.patch('nova_zvm.virt.zvm.instance.ZVMInstance._get_current_memory')
+    @mock.patch('nova_zvm.virt.zvm.instance.ZVMInstance._get_rinv_info')
+    @mock.patch('nova_zvm.virt.zvm.instance.ZVMInstance.is_reachable')
+    @mock.patch('nova_zvm.virt.zvm.instance.ZVMInstance._check_power_stat')
     def test_get_info_invalid_data(self, mk_get_ps, mk_is_reach,
                                    mk_get_rinv_info, mk_get_mem, mk_msg_fmt):
         mk_get_ps.return_value = power_state.RUNNING
@@ -2047,9 +2048,9 @@ class ZVMInstanceTestCases(ZVMTestCase):
         self.assertEqual(0, inst_info.cpu_time_ns)
         self.assertEqual(1048576, inst_info.max_mem_kb)
 
-    @mock.patch('nova.virt.zvm.instance.ZVMInstance._get_rinv_info')
-    @mock.patch('nova.virt.zvm.instance.ZVMInstance.is_reachable')
-    @mock.patch('nova.virt.zvm.instance.ZVMInstance._check_power_stat')
+    @mock.patch('nova_zvm.virt.zvm.instance.ZVMInstance._get_rinv_info')
+    @mock.patch('nova_zvm.virt.zvm.instance.ZVMInstance.is_reachable')
+    @mock.patch('nova_zvm.virt.zvm.instance.ZVMInstance._check_power_stat')
     def test_get_info_down(self, mk_get_ps, mk_is_reach, mk_get_rinv_info):
         mk_get_ps.return_value = power_state.SHUTDOWN
         mk_is_reach.return_value = False
@@ -2065,8 +2066,8 @@ class ZVMInstanceTestCases(ZVMTestCase):
         self.assertEqual(0, inst_info.cpu_time_ns)
         self.assertEqual(1048576, inst_info.max_mem_kb)
 
-    @mock.patch('nova.virt.zvm.instance.ZVMInstance.is_reachable')
-    @mock.patch('nova.virt.zvm.instance.ZVMInstance._check_power_stat')
+    @mock.patch('nova_zvm.virt.zvm.instance.ZVMInstance.is_reachable')
+    @mock.patch('nova_zvm.virt.zvm.instance.ZVMInstance._check_power_stat')
     def test_get_info_paused(self, mk_get_ps, mk_is_reach):
         mk_get_ps.return_value = power_state.RUNNING
         mk_is_reach.return_value = False
@@ -2085,8 +2086,8 @@ class ZVMInstanceTestCases(ZVMTestCase):
         self.assertEqual(0, inst_info.cpu_time_ns)
         self.assertEqual(1048576, inst_info.max_mem_kb)
 
-    @mock.patch('nova.virt.zvm.utils.xdsh')
-    @mock.patch('nova.virt.zvm.instance.ZVMInstance.get_userid')
+    @mock.patch('nova_zvm.virt.zvm.utils.xdsh')
+    @mock.patch('nova_zvm.virt.zvm.instance.ZVMInstance.get_userid')
     def test_unlock_devices(self, get_uid, xdsh):
         get_uid.return_value = 'fakeuid'
         xdshv1 = {'data': [['Locked type: DEVICE\nDevice address: 0100\n'
