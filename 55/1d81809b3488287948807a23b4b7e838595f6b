@@ -1,0 +1,10 @@
+Code-Review+1: Huang Rui <bjhuangr@cn.ibm.com>
+Verified+1: IBM zVM CI <zvmosci@us.ibm.com>
+Code-Review+2: jichenjc <jichenjc@cn.ibm.com>
+Workflow+1: jichenjc <jichenjc@cn.ibm.com>
+Verified+2: Jenkins
+Submitted-by: Jenkins
+Submitted-at: Wed, 22 Mar 2017 05:01:57 +0000
+Reviewed-on: https://review.openstack.org/447927
+Project: openstack/nova-zvm-virt-driver
+Branch: refs/heads/master
