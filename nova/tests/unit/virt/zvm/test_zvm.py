@@ -403,8 +403,10 @@ class ZVMDriverTestCases(ZVMTestCase):
             ("PUT", None, None, self._fake_reachable_data(': reachable')),
             ("DELETE", None, None, det_res)]
         self._set_fake_xcat_resp(fake_resp_list)
-        self.assertRaises(exception.ZVMXCATInternalError,
-                          self.driver.destroy, {}, self.instance, {}, {})
+        # Will not reraise xcat error anymore because it could interrupt the
+        # process of removing resources from the failed instance. Instead there
+        # will be a warning message in the log.
+        self.driver.destroy({}, self.instance, {}, {})
         self.mox.VerifyAll()
 
     def test_destroy_non_exist(self):

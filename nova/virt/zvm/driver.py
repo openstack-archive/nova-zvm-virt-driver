@@ -621,7 +621,12 @@ class ZVMDriver(driver.ComputeDriver):
                                  "destroying z/VM instance %s") % inst_name,
                              instance=instance)
 
-            zvm_inst.delete_userid(self._get_hcp_info()['nodename'], context)
+            try:
+                nodename = self._get_hcp_info()['nodename']
+                zvm_inst.delete_userid(nodename, context)
+            except exception.ZVMBaseException as err:
+                LOG.warning(_LW("Failed to delete user node: %s"),
+                         err.format_message(), instance=instance)
         else:
             LOG.warning(_LW('Instance %s does not exist') % inst_name,
                      instance=instance)
