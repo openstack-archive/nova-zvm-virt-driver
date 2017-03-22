@@ -326,6 +326,7 @@ class SVCDriver(DriverAPI):
     _INCREASE = 1
     _DECREASE = 2
     _REMOVE = 3
+    _FORCE_REMOVE = 4
 
     def __init__(self):
         self._xcat_url = zvmutils.get_xcat_url()
@@ -551,6 +552,13 @@ class SVCDriver(DriverAPI):
                            ) % {'ins_name': instance_name,
                                 'fcp_list': fcp_list}
                 raise exception.ZVMVolumeError(msg=errmsg)
+
+        elif action == self._FORCE_REMOVE:
+            if instance_name in self._instance_fcp_map:
+                for fcp_no in fcp_list:
+                    fcp = self._fcp_pool.get(fcp_no)
+                    fcp.release_device()
+                self._instance_fcp_map.pop(instance_name)
 
         else:
             errmsg = _("Unrecognized option: %s") % action
@@ -899,8 +907,8 @@ class SVCDriver(DriverAPI):
         self._attach_device(instance['name'], fcp)
 
     def volume_boot_cleanup(self, instance, fcp):
-        self._update_instance_fcp_map_if_unlocked(instance['name'],
-                                                  [fcp], self._DECREASE)
+        self._update_instance_fcp_map_if_unlocked(instance['name'], [fcp],
+                                                  self._FORCE_REMOVE)
         self._detach_device(instance['name'], fcp)
 
     def _expand_fcp_list(self, fcp_list):
