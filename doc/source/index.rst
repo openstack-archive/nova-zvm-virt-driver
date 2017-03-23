@@ -71,6 +71,7 @@ Contributing to the project
 .. toctree::
     :maxdepth: 2
 
+    contributing
 
 Links
 =====
