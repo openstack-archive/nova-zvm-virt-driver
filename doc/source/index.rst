@@ -62,6 +62,8 @@ Creating zVM Images
 .. toctree::
     :maxdepth: 2
 
+    images
+
 
 Contributing to the project
 ===========================
