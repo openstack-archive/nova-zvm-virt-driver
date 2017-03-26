@@ -859,6 +859,11 @@ def process_eph_disk(instance_name, vdev=None, fmt=None, mntdir=None):
     aemod_handler(instance_name, const.DISK_FUNC_NAME, eph_parms)
 
 
+def process_swap_disk(instance_name, vdev):
+    swap_parms = _generate_swap_parmline(vdev)
+    aemod_handler(instance_name, const.DISK_FUNC_NAME, swap_parms)
+
+
 def aemod_handler(instance_name, func_name, parms):
     url = get_xcat_url().chvm('/' + instance_name)
     body = [" ".join(['--aemod', func_name, parms])]
@@ -895,8 +900,8 @@ def generate_vdev(base, offset=1):
     return vdev.rjust(4, '0')
 
 
-def generate_eph_vdev(offset=1):
-    """Generate virtual device number for ephemeral disks.
+def generate_disk_vdev(offset=1):
+    """Generate virtual device number for ephemeral and swap disks.
 
     :parm offset: offset to zvm_user_adde_vdev.
 
@@ -918,6 +923,16 @@ def _generate_eph_parmline(vdev, fmt, mntdir):
         'vaddr=' + vdev,
         'filesys=' + fmt,
         'mntdir=' + mntdir
+        ]
+    parmline = ' '.join(parms)
+    return parmline
+
+
+def _generate_swap_parmline(vdev):
+
+    parms = [
+        'action=addSwap',
+        'vaddr=' + vdev,
         ]
     parmline = ' '.join(parms)
     return parmline
