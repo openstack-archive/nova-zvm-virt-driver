@@ -387,19 +387,29 @@ class ZVMDriver(driver.ComputeDriver):
                     zvmutils.punch_iucv_file(os_version, zhcp, zhcp_userid,
                                             zvm_inst._name, instance_path)
 
+            swap_idx = 0
             # punch ephemeral disk info to the instance
             if instance['ephemeral_gb'] != 0:
                 eph_disks = block_device_info.get('ephemerals', [])
                 if eph_disks == []:
                     zvmutils.process_eph_disk(zvm_inst._name)
+                    swap_idx += 1
                 else:
                     for idx, eph in enumerate(eph_disks):
-                        vdev = zvmutils.generate_eph_vdev(idx)
+                        vdev = zvmutils.generate_disk_vdev(idx)
                         fmt = eph.get('guest_format')
                         mount_dir = ''.join([CONF.zvm_default_ephemeral_mntdir,
                                              str(idx)])
                         zvmutils.process_eph_disk(zvm_inst._name, vdev, fmt,
                                                   mount_dir)
+                        swap_idx += 1
+
+            # add swap disk info to the instance
+            swap_disk = block_device_info.get('swap', 0)
+            if swap_disk != 0:
+                vdev = zvmutils.generate_disk_vdev(swap_idx)
+                fmt = swap_disk.get('guest_format')
+                zvmutils.process_swap_disk(zvm_inst._name, vdev, fmt)
 
             # Wait neutron zvm-agent add NIC information to user direct.
             self._wait_and_get_nic_direct(zvm_inst._name, instance)

@@ -2220,17 +2220,17 @@ class ZVMUtilsTestCases(ZVMTestCase):
     def setUp(self):
         super(ZVMUtilsTestCases, self).setUp()
 
-    def test_generate_eph_vdev(self):
-        vdev0 = zvmutils.generate_eph_vdev(0)
-        vdev1 = zvmutils.generate_eph_vdev(1)
-        vdev2 = zvmutils.generate_eph_vdev(253)
+    def test_generate_disk_vdev(self):
+        vdev0 = zvmutils.generate_disk_vdev(0)
+        vdev1 = zvmutils.generate_disk_vdev(1)
+        vdev2 = zvmutils.generate_disk_vdev(253)
         self.assertEqual(vdev0, '0102')
         self.assertEqual(vdev1, '0103')
         self.assertEqual(vdev2, '01ff')
         self.assertRaises(exception.ZVMDriverError,
-                          zvmutils.generate_eph_vdev, -1)
+                          zvmutils.generate_disk_vdev, -1)
         self.assertRaises(exception.ZVMDriverError,
-                          zvmutils.generate_eph_vdev, 254)
+                          zvmutils.generate_disk_vdev, 254)
 
     def test__log_warnings(self):
         resp = {'info': [''],

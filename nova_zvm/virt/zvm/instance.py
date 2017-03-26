@@ -361,7 +361,7 @@ class ZVMInstance(object):
                     # Create ephemeral disks according --ephemeral option
                     for idx, eph in enumerate(eph_disks):
                         vdev = (eph.get('vdev') or
-                                zvmutils.generate_eph_vdev(idx))
+                                zvmutils.generate_disk_vdev(idx))
                         size = eph['size']
                         size_in_units = eph.get('size_in_units', False)
                         if not size_in_units:
