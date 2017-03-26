@@ -347,6 +347,7 @@ class ZVMInstance(object):
                                size)
                 self._check_set_ipl()
 
+            swap_idx = 0
             # Add additional ephemeral disk
             if self._instance['ephemeral_gb'] != 0:
                 if eph_disks == []:
@@ -357,11 +358,12 @@ class ZVMInstance(object):
                                    CONF.zvm_user_adde_vdev,
                                    '%ig' % self._instance['ephemeral_gb'],
                                    fmt)
+                    swap_idx += 1
                 else:
                     # Create ephemeral disks according --ephemeral option
                     for idx, eph in enumerate(eph_disks):
                         vdev = (eph.get('vdev') or
-                                zvmutils.generate_eph_vdev(idx))
+                                zvmutils.generate_disk_vdev(idx))
                         size = eph['size']
                         size_in_units = eph.get('size_in_units', False)
                         if not size_in_units:
@@ -370,6 +372,17 @@ class ZVMInstance(object):
                                CONF.default_ephemeral_format or
                                const.DEFAULT_EPH_DISK_FMT)
                         self.add_mdisk(CONF.zvm_diskpool, vdev, size, fmt)
+                        swap_idx += 1
+
+            # Add additional swap disk
+            swap_disk = block_device_info.get('swap', None)
+            if swap_disk is not None:
+                size = swap_disk.get('swap_size', 0)
+                if size > 0:
+                    size = '%im' % size
+                    vdev = zvmutils.generate_disk_vdev(swap_idx)
+                    self.add_mdisk(CONF.zvm_diskpool, vdev, size, 'swap')
+
         except (exception.ZVMXCATRequestFailed,
                 exception.ZVMInvalidXCATResponseDataError,
                 exception.ZVMXCATInternalError,
