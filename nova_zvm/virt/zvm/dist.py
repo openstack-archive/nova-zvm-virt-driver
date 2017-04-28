@@ -56,8 +56,9 @@ class LinuxDist(object):
                                                 base_vdev, device_num)
             target_net_conf_file_name = file_path + file_name
             cfg_str_for_log = cfg_str.replace('\n', ' ')
-            LOG.debug('Network configure file[%s] content is: %s',
-                    (target_net_conf_file_name, cfg_str_for_log))
+            LOG.debug('Network configure file[%(file)s] content is: %(cfg)s',
+                    {'file': target_net_conf_file_name,
+                     'cfg': cfg_str_for_log})
             cfg_files.append((target_net_conf_file_name, cfg_str))
             udev_cfg_str += self._get_udev_configuration(device_num,
                                 '0.0.' + str(base_vdev).zfill(4))
