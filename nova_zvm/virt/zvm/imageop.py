@@ -811,7 +811,7 @@ class ZVMImages(object):
                                         new_image_meta, None)
         except nova_exception.ImageNotAuthorized:
             msg = _('Not allowed to modify attributes for image %s') % image_id
-            LOG.error(msg)
+            LOG.info(msg)
 
         return new_image_meta
 
