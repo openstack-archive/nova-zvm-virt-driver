@@ -55,6 +55,7 @@ Using the driver
 .. toctree::
     :maxdepth: 2
 
+    planning
     configurations
 
 Creating zVM Images
