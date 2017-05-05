@@ -64,6 +64,7 @@ Creating zVM Images
     :maxdepth: 2
 
     imageguide
+    activeengine
 
 
 Contributing to the project
