@@ -83,3 +83,42 @@ copied to a disk smaller than the source disk, as this would result in loss of d
 the flavor should therefore be equal to or slightly larger than the source virtual machine's root disk.
 IBM recommends specifying the disk size as 0 in the flavor, which will cause the virtual machine to be
 created with the same disk size as the source disk.
+
+z/VM required image properties
+------------------------------
+
+In addition to common image property, following image properties are needed:
+
+* image_type_xcat:
+
+Fixed value, must be ``linux``
+
+* hypervisor_type:
+
+Fixed value, must be ``zvm``
+
+* architecture:
+
+Fixed value, must be ``s390x``
+
+* os_name:
+
+Fixed value, must be ``Linux``
+
+* os_version:
+
+is the OS version of your capture source node.
+Currently, only Red Hat, SUSE, and Ubuntu type images are supported. For a Red Hat type
+image, you can specify the OS version as rhelx.y, redhatx.y, or red hatx.y, where x.y is the
+release number. For a SUSE type image, you can specify the OS version as slesx.y or susex.y,
+where x.y is the release number. For an Ubuntu type image, you can specify the OS version as
+ubuntux.y, where x.y is the release number. (If you don't know the real value, you can get it
+from the osvers property value in the manifest.xml file.)
+
+* provisioning_method: 
+
+Fixed value, must be ``netboot``
+
+* image_file_name:
+
+Image file name, mostly it's ``0100.img``
