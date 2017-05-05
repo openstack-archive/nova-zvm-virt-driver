@@ -60,26 +60,65 @@ Image Requirements
 * The virtual server/Linux instance used as the source of the new image should meet the following criteria:
   1. The root filesystem must not be on a logical volume.
   2. The minidisk on which the root filesystem resides should be a minidisk of the same type as 
-     desired for a subsequent deploy (for example, an ECKD disk image should be captured 
-     for a subsequent deploy to an ECKD disk),
+  desired for a subsequent deploy (for example, an ECKD disk image should be captured 
+  for a subsequent deploy to an ECKD disk),
   3. not be a full-pack minidisk, since cylinder 0 on full-pack minidisks is reserved, and be
-     defined with virtual address 0100.
+  defined with virtual address 0100.
   4. The root disk should have a single partition.
   5. The image being captured should support SSH access using keys instead of specifying a password. The
-     subsequent steps to capture the image will perform a key exchange to allow xCAT to access the server.
+  subsequent steps to capture the image will perform a key exchange to allow xCAT to access the server.
   6. The image being captured should not have any network interface cards (NICs) defined below virtual
-     address 1100.
+  address 1100.
 
 In addition to the specified criteria, the following recommendations allow for efficient use of the image:
 
 * The minidisk on which the root filesystem resides should be defined as a multiple of full gigabytes in
-size (for example, 1GB or 2GB). OpenStack specifies disk sizes in full gigabyte values, whereas z/VM
-handles disk sizes in other ways (cylinders for ECKD disks, blocks for FBA disks, and so on). See the
-appropriate online information if you need to convert cylinders or blocks to gigabytes; for example:
-http://www.mvsforums.com/helpboards/viewtopic.php?t=8316.
+  size (for example, 1GB or 2GB). OpenStack specifies disk sizes in full gigabyte values, whereas z/VM
+  handles disk sizes in other ways (cylinders for ECKD disks, blocks for FBA disks, and so on). See the
+  appropriate online information if you need to convert cylinders or blocks to gigabytes; for example:
+  http://www.mvsforums.com/helpboards/viewtopic.php?t=8316.
 
 * During subsequent deploys of the image, the OpenStack code will ensure that a disk image is not
-copied to a disk smaller than the source disk, as this would result in loss of data. The disk specified in
-the flavor should therefore be equal to or slightly larger than the source virtual machine's root disk.
-IBM recommends specifying the disk size as 0 in the flavor, which will cause the virtual machine to be
-created with the same disk size as the source disk.
+  copied to a disk smaller than the source disk, as this would result in loss of data. The disk specified in
+  the flavor should therefore be equal to or slightly larger than the source virtual machine's root disk.
+  IBM recommends specifying the disk size as 0 in the flavor, which will cause the virtual machine to be
+  created with the same disk size as the source disk.
+
+z/VM required image properties
+------------------------------
+
+In addition to common image property, following image properties are needed:
+
+* image_type_xcat:
+
+Fixed value, must be ``linux``
+
+* hypervisor_type:
+
+Fixed value, must be ``zvm``
+
+* architecture:
+
+Fixed value, must be ``s390x``
+
+* os_name:
+
+Fixed value, must be ``Linux``
+
+* os_version:
+
+is the OS version of your capture source node.
+Currently, only Red Hat, SUSE, and Ubuntu type images are supported. For a Red Hat type
+image, you can specify the OS version as rhelx.y, redhatx.y, or red hatx.y, where x.y is the
+release number. For a SUSE type image, you can specify the OS version as slesx.y or susex.y,
+where x.y is the release number. For an Ubuntu type image, you can specify the OS version as
+ubuntux.y, where x.y is the release number. (If you don't know the real value, you can get it
+from the osvers property value in the manifest.xml file.)
+
+* provisioning_method:
+
+Fixed value, must be ``netboot``
+
+* image_file_name:
+
+Image file name, mostly it's ``0100.img``
