@@ -27,7 +27,7 @@ from nova.compute import task_states
 from nova.compute import utils as compute_utils
 from nova.compute import vm_states
 from nova import exception as nova_exception
-from nova.i18n import _, _LI, _LW
+from nova.i18n import _
 from nova.image import api as image_api
 from nova.image import glance
 from nova.objects import fields
@@ -87,12 +87,12 @@ class ZVMDriver(driver.ComputeDriver):
         self._xcat_version = self._get_xcat_version()
         version_ok = self.has_min_version(const.XCAT_MINIMUM_VERSION)
         while (not version_ok):
-            LOG.warning(_LW("WARNING: the xcat version communicating with is "
-                            "%(xcat_version)s, but the minimum requested "
-                            "version by openstack zvm driver is %(minimum)s "
-                            "will sleep some time and check again"),
-                            {'xcat_version': self._xcat_version,
-                             'minimum': const.XCAT_MINIMUM_VERSION})
+            LOG.warning(_("WARNING: the xcat version communicating with is "
+                          "%(xcat_version)s, but the minimum requested "
+                          "version by openstack zvm driver is %(minimum)s "
+                          "will sleep some time and check again"),
+                         {'xcat_version': self._xcat_version,
+                          'minimum': const.XCAT_MINIMUM_VERSION})
             self._xcat_version = self._get_xcat_version()
             version_ok = self.has_min_version(const.XCAT_MINIMUM_VERSION)
 
@@ -108,9 +108,9 @@ class ZVMDriver(driver.ComputeDriver):
             except Exception as e:
                 # Ignore any exceptions and log as warning
                 _slp = len(_inc_slp) != 0 and _inc_slp.pop(0) or _slp
-                msg = _LW("Failed to get host stats while initializing zVM "
-                          "driver due to reason %(reason)s, will re-try in "
-                          "%(slp)d seconds")
+                msg = _("Failed to get host stats while initializing zVM "
+                        "driver due to reason %(reason)s, will re-try in "
+                        "%(slp)d seconds")
                 LOG.warning(msg, {'reason': six.text_type(e),
                                'slp': _slp})
                 time.sleep(_slp)
@@ -139,8 +139,8 @@ class ZVMDriver(driver.ComputeDriver):
             self._volumeop.init_host(self._host_stats)
         except Exception as e:
             emsg = zvmutils.format_exception_msg(e)
-            LOG.warning(_LW("Exception raised while initializing z/VM driver: "
-                            "%s"), emsg)
+            LOG.warning(_("Exception raised while initializing z/VM driver: "
+                          "%s"), emsg)
 
     def get_info(self, instance):
         """Get the current status of an instance, by name (not ID!)
@@ -162,7 +162,7 @@ class ZVMDriver(driver.ComputeDriver):
             emsg = err.format_message()
             if (emsg.__contains__("Invalid nodes and/or groups") and
                     emsg.__contains__("Forbidden")):
-                LOG.warning(_LW("z/VM instance %s does not exist"), inst_name,
+                LOG.warning(_("z/VM instance %s does not exist"), inst_name,
                          instance=instance)
                 raise nova_exception.InstanceNotFound(instance_id=inst_name)
             else:
@@ -310,7 +310,7 @@ class ZVMDriver(driver.ComputeDriver):
                                 instance, injected_files, admin_password,
                                 net_conf_cmds, linuxdist, image_type)
 
-        LOG.info(_LI("The instance %(name)s is spawning at %(node)s"),
+        LOG.info(_("The instance %(name)s is spawning at %(node)s"),
                  {'name': zvm_inst._name, 'node': compute_node},
                  instance=instance)
 
@@ -422,7 +422,7 @@ class ZVMDriver(driver.ComputeDriver):
             # Power on the instance, then put MN's public key into instance
             zvm_inst.power_on()
             spawn_time = time.time() - spawn_start
-            LOG.info(_LI("Instance spawned succeeded in %s seconds"),
+            LOG.info(_("Instance spawned succeeded in %s seconds"),
                      spawn_time, instance=instance)
         except (exception.ZVMXCATCreateNodeFailed,
                 exception.ZVMImageError):
@@ -605,7 +605,7 @@ class ZVMDriver(driver.ComputeDriver):
         zvm_inst = ZVMInstance(self, instance)
 
         if self._instance_exists(inst_name):
-            LOG.info(_LI("Destroying instance %s"), inst_name,
+            LOG.info(_("Destroying instance %s"), inst_name,
                      instance=instance)
 
             # Collect diagnostics when the instance is unreachable, since this
@@ -637,7 +637,7 @@ class ZVMDriver(driver.ComputeDriver):
                     zvm_inst.clean_volume_boot(context, instance, bdm,
                                                root_mount_device)
             except exception.ZVMBaseException as err:
-                LOG.warning(_LW("Failed to detach volume: %s"),
+                LOG.warning(_("Failed to detach volume: %s"),
                          err.format_message(), instance=instance)
 
             if network_info:
@@ -645,7 +645,7 @@ class ZVMDriver(driver.ComputeDriver):
                     for vif in network_info:
                         self._networkop.clean_mac_switch_host(inst_name)
                 except exception.ZVMNetworkError:
-                    LOG.warning(_LW("Clean MAC and VSWITCH failed while "
+                    LOG.warning(_("Clean MAC and VSWITCH failed while "
                                  "destroying z/VM instance %s"), inst_name,
                              instance=instance)
 
@@ -653,15 +653,15 @@ class ZVMDriver(driver.ComputeDriver):
                 nodename = self._get_hcp_info()['nodename']
                 zvm_inst.delete_userid(nodename, context)
             except exception.ZVMBaseException as err:
-                LOG.warning(_LW("Failed to delete user node: %s"),
+                LOG.warning(_("Failed to delete user node: %s"),
                          err.format_message(), instance=instance)
         else:
-            LOG.warning(_LW('Instance %s does not exist'), inst_name,
+            LOG.warning(_('Instance %s does not exist'), inst_name,
                      instance=instance)
 
     def manage_image_cache(self, context, filtered_instances):
         """Clean the image cache in xCAT MN."""
-        LOG.info(_LI("Check and clean image cache in xCAT"))
+        LOG.info(_("Check and clean image cache in xCAT"))
         clean_period = CONF.xcat_image_clean_period
         self._zvm_images.clean_image_cache_xcat(clean_period)
 
@@ -765,7 +765,7 @@ class ZVMDriver(driver.ComputeDriver):
             try:
                 self.power_on({}, instance, [])
             except nova_exception.InstancePowerOnFailure as err:
-                LOG.warning(_LW("Power On instance %(inst)s fail after "
+                LOG.warning(_("Power On instance %(inst)s fail after "
                     "capture, please check manually. The error is: %(err)s"),
                     {'inst': instance['name'], 'err': err.format_message()},
                     instance=instance)
@@ -775,7 +775,7 @@ class ZVMDriver(driver.ComputeDriver):
             except (exception.ZVMXCATRequestFailed,
                     exception.ZVMInvalidXCATResponseDataError,
                     exception.ZVMXCATInternalError) as err:
-                LOG.warning(_LW("Pause instance %(inst)s fail after capture, "
+                LOG.warning(_("Pause instance %(inst)s fail after capture, "
                     "please check manually. The error is: %(err)s"),
                     {'inst': instance['name'], 'err': err.format_message()},
                     instance=instance)
@@ -959,7 +959,7 @@ class ZVMDriver(driver.ComputeDriver):
 
         cleanup_temp_image()
 
-        LOG.info(_LI("Snapshot complete successfully"), instance=instance)
+        LOG.info(_("Snapshot complete successfully"), instance=instance)
 
     def pause(self, instance):
         """Pause the specified instance."""
@@ -1060,7 +1060,7 @@ class ZVMDriver(driver.ComputeDriver):
         :param dest_check_data: result of check_can_live_migrate_destination
 
         """
-        LOG.info(_LI("Checking source host for live-migration for %s"),
+        LOG.info(_("Checking source host for live-migration for %s"),
                  instance_ref['name'], instance=instance_ref)
 
         migrate_data = dest_check_data.get('migrate_data', {})
@@ -1170,7 +1170,7 @@ class ZVMDriver(driver.ComputeDriver):
         """
         inst_name = instance_ref['name']
         dest_host = migrate_data['dest_host']
-        LOG.info(_LI("Live-migrating %(inst)s to %(dest)s"),
+        LOG.info(_("Live-migrating %(inst)s to %(dest)s"),
                  {'inst': inst_name, 'dest': dest_host}, instance=instance_ref)
 
         same_mn = migrate_data['pre_live_migration_result']['same_xcat_mn']
@@ -1533,11 +1533,11 @@ class ZVMDriver(driver.ComputeDriver):
                                            instance, mountpoint, is_active,
                                            rollback=False)
                 except exception.ZVMVolumeError as err:
-                    LOG.warning(_LW("Failed to detach volume from %(inst)s: "
-                                    "%(err)s"),
-                                    {'inst': instance['name'],
-                                     'err': err.format_message()},
-                                    instance=instance)
+                    LOG.warning(_("Failed to detach volume from %(inst)s: "
+                                  "%(err)s"),
+                                {'inst': instance['name'],
+                                 'err': err.format_message()},
+                                 instance=instance)
 
     def _capture_disk_for_instance(self, context, instance):
         """Capture disk."""
@@ -1926,18 +1926,18 @@ class ZVMDriver(driver.ComputeDriver):
 
             except exception.ZVMBaseException as e:
                 # Ignore any zvm driver exceptions
-                LOG.info(_LI('encounter error %s during get vswitch info'),
+                LOG.info(_('encounter error %s during get vswitch info'),
                          e.format_message(), instance=instance)
                 return
 
             # Enter here means all NIC granted
-            LOG.info(_LI("All NICs are added in user direct for "
-                         "instance %s."), inst_name, instance=instance)
+            LOG.info(_("All NICs are added in user direct for "
+                       "instance %s."), inst_name, instance=instance)
             raise loopingcall.LoopingCallDone()
 
         expiration = timeutils.utcnow() + datetime.timedelta(
                              seconds=CONF.zvm_reachable_timeout)
-        LOG.info(_LI("Wait neturon-zvm-agent to add NICs to %s user direct."),
+        LOG.info(_("Wait neturon-zvm-agent to add NICs to %s user direct."),
                  inst_name, instance=instance)
         timer = loopingcall.FixedIntervalLoopingCall(
                     _wait_for_nic_add_in_direct, inst_name, expiration)
@@ -1962,7 +1962,7 @@ class ZVMDriver(driver.ComputeDriver):
             console_log = zvm_inst.get_console_log(logsize)
         except exception.ZVMXCATInternalError:
             # Ignore no console log avaiable error
-            LOG.info(_LI("No new console log avaiable."))
+            LOG.info(_("No new console log avaiable."))
         log_path = self._pathutils.get_console_log_path(CONF.zvm_host,
                        zvm_inst._name)
         # TODO(jichenjc): need consider shrink log file size
@@ -1971,7 +1971,7 @@ class ZVMDriver(driver.ComputeDriver):
         log_fp = file(log_path, 'rb')
         log_data, remaining = utils.last_bytes(log_fp, logsize)
         if remaining > 0:
-            LOG.info(_LI('Truncated console log returned, %d bytes ignored'),
+            LOG.info(_('Truncated console log returned, %d bytes ignored'),
                 remaining, instance=instance)
 
         return log_data

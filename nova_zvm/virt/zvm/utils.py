@@ -26,7 +26,7 @@ import time
 from nova import block_device
 from nova.compute import power_state
 from nova import exception as nova_exception
-from nova.i18n import _, _LE, _LI, _LW
+from nova.i18n import _
 from nova.virt import driver
 from oslo_config import cfg
 from oslo_log import log as logging
@@ -268,7 +268,7 @@ class HTTPSClientAuthConnection(httplib.HTTPSConnection):
 
         if (self.ca_file is not None and
             not os.path.exists(self.ca_file)):
-            LOG.warning(_LW("the CA file %(ca_file) does not exist!"),
+            LOG.warning(_("the CA file %(ca_file) does not exist!"),
                         {'ca_file': self.ca_file})
             self.use_ca = False
 
@@ -401,11 +401,11 @@ def xcat_request(method, url, body=None, headers=None, ignore_warning=False):
             # Yes, we finished the request, let's return or handle error
             return ret
 
-        LOG.info(_LI("xCAT encounter service handling error (http 503), "
-                     "Attempt %(retry)s of %(max_retry)s "
-                     "request: xCAT-Server: %(xcat_server)s "
-                     "Request-method: %(method)s "
-                     "URL: %(url)s."),
+        LOG.info(_("xCAT encounter service handling error (http 503), "
+                   "Attempt %(retry)s of %(max_retry)s "
+                   "request: xCAT-Server: %(xcat_server)s "
+                   "Request-method: %(method)s "
+                   "URL: %(url)s."),
                  {'retry': max_attempts - retry_attempts + 1,
                   'max_retry': max_attempts,
                   'xcat_server': CONF.zvm_xcat_server,
@@ -416,11 +416,11 @@ def xcat_request(method, url, body=None, headers=None, ignore_warning=False):
         if retry_attempts > 0:
             time.sleep(2)
 
-    LOG.warning(_LW("xCAT encounter service handling error (http 503), "
-                    "Retried %(max_retry)s times but still failed. "
-                    "request: xCAT-Server: %(xcat_server)s "
-                    "Request-method: %(method)s "
-                    "URL: %(url)s."),
+    LOG.warning(_("xCAT encounter service handling error (http 503), "
+                  "Retried %(max_retry)s times but still failed. "
+                  "request: xCAT-Server: %(xcat_server)s "
+                  "Request-method: %(method)s "
+                  "URL: %(url)s."),
                 {'max_retry': max_attempts,
                  'xcat_server': CONF.zvm_xcat_server,
                  'method': method,
@@ -491,7 +491,7 @@ def except_xcat_call_failed_and_reraise(exc, **kwargs):
             exception.ZVMXCATInternalError) as err:
         msg = err.format_message()
         kwargs['msg'] = msg
-        LOG.error(_LE('XCAT response return error: %s'), msg)
+        LOG.error(_('XCAT response return error: %s'), msg)
         raise exc(**kwargs)
 
 
@@ -597,7 +597,7 @@ def _log_warnings(resp):
     for msg in (resp['info'], resp['node'], resp['data']):
         msgstr = str(msg)
         if 'warn' in msgstr.lower():
-            LOG.info(_LI("Warning from xCAT: %s"), msgstr)
+            LOG.info(_("Warning from xCAT: %s"), msgstr)
 
 
 def _is_warning_or_recoverable_issue(err_str):
@@ -868,8 +868,8 @@ def aemod_handler(instance_name, func_name, parms):
     except Exception as err:
         emsg = format_exception_msg(err)
         with excutils.save_and_reraise_exception():
-            LOG.error(_LE('Invoke AE method function: %(func)s on %(node)s '
-                          'failed with reason: %(msg)s'),
+            LOG.error(_('Invoke AE method function: %(func)s on %(node)s '
+                        'failed with reason: %(msg)s'),
                      {'func': func_name, 'node': instance_name, 'msg': emsg})
 
 

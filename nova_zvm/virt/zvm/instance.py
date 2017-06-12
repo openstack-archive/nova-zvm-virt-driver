@@ -19,7 +19,7 @@ import time
 
 from nova.compute import power_state
 from nova import exception as nova_exception
-from nova.i18n import _, _LW
+from nova.i18n import _
 from nova.virt import hardware
 from oslo_config import cfg
 from oslo_log import log as logging
@@ -83,7 +83,7 @@ class ZVMInstance(object):
             if ("Return Code: 200" in err_str and
                     "Reason Code: 12" in err_str):
                 # Instance already not active
-                LOG.warning(_LW("z/VM instance %s not active"), self._name)
+                LOG.warning(_("z/VM instance %s not active"), self._name)
                 return
             else:
                 msg = _("Failed to power off instance: %s") % err_str
@@ -101,7 +101,7 @@ class ZVMInstance(object):
                 time.sleep(retry_interval)
                 retry_count -= 1
 
-        LOG.warning(_LW("Failed to shutdown instance %(inst)s in %(time)d "
+        LOG.warning(_("Failed to shutdown instance %(inst)s in %(time)d "
                      "seconds"), {'inst': self._name, 'time': timeout})
 
     def power_on(self):
@@ -113,7 +113,7 @@ class ZVMInstance(object):
             if ("Return Code: 200" in err_str and
                     "Reason Code: 8" in err_str):
                 # Instance already active
-                LOG.warning(_LW("z/VM instance %s already active"), self._name)
+                LOG.warning(_("z/VM instance %s already active"), self._name)
                 return
             raise nova_exception.InstancePowerOnFailure(reason=err_str)
 
@@ -135,7 +135,7 @@ class ZVMInstance(object):
             if ("Return Code: 200" in err_str and
                     "Reason Code: 12" in err_str):
                 # Be able to reset in power state of SHUTDOWN
-                LOG.warning(_LW("Reset z/VM instance %s from SHUTDOWN state"),
+                LOG.warning(_("Reset z/VM instance %s from SHUTDOWN state"),
                          self._name)
                 return
             else:
@@ -230,7 +230,7 @@ class ZVMInstance(object):
                 _instance_info.cpu_time_ns = cpu_time
 
             except exception.ZVMInvalidXCATResponseDataError:
-                LOG.warning(_LW("Failed to get inventory info for %s"),
+                LOG.warning(_("Failed to get inventory info for %s"),
                             self._name)
                 _instance_info.state = power_stat
                 _instance_info.max_mem_kb = max_mem_kb
@@ -434,8 +434,8 @@ class ZVMInstance(object):
                 exception.ZVMVolumeError,
                 exception.ZVMDriverError) as err:
             emsg = err.format_message()
-            msg = _LW("Failed to clean boot from volume "
-                      "preparations: %s") % emsg
+            msg = _("Failed to clean boot from volume "
+                    "preparations: %s") % emsg
             LOG.warning(msg)
             raise exception.ZVMVolumeError(msg=msg)
 

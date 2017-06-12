@@ -21,7 +21,7 @@ import tarfile
 import xml.dom.minidom as Dom
 
 from nova import exception as nova_exception
-from nova.i18n import _, _LW
+from nova.i18n import _
 from nova.image import glance
 from nova import utils
 from nova.virt import images
@@ -151,7 +151,7 @@ class ZVMImages(object):
         except (exception.ZVMXCATInternalError,
                 exception.ZVMInvalidXCATResponseDataError,
                 exception.ZVMXCATRequestFailed):
-            LOG.warning(_LW("Failed to delete image file %s from xCAT"),
+            LOG.warning(_("Failed to delete image file %s from xCAT"),
                      image_name_xcat)
 
     def _delete_image_object_from_xcat(self, image_name_xcat):
@@ -168,7 +168,7 @@ class ZVMImages(object):
         except (exception.ZVMXCATInternalError,
                 exception.ZVMInvalidXCATResponseDataError,
                 exception.ZVMXCATRequestFailed):
-            LOG.warning(_LW("Failed to delete image definition %s from xCAT"),
+            LOG.warning(_("Failed to delete image definition %s from xCAT"),
                      image_name_xcat)
 
     def get_image_file_path_from_image_name(self, image_name_xcat):
@@ -198,7 +198,7 @@ class ZVMImages(object):
         if os.path.exists(manifest_xml):
             xml_file = Dom.parse(manifest_xml)  # nosec
         else:
-            LOG.warning(_LW('manifest.xml does not exist'))
+            LOG.warning(_('manifest.xml does not exist'))
             manifest['imagename'] = ''
             manifest['imagetype'] = ''
             manifest['osarch'] = ''
@@ -518,7 +518,7 @@ class ZVMImages(object):
         except (exception.ZVMXCATRequestFailed,
                 exception.ZVMInvalidXCATResponseDataError,
                 exception.ZVMXCATInternalError) as err:
-            LOG.warning(_LW("Illegal date for last_use_date %s"),
+            LOG.warning(_("Illegal date for last_use_date %s"),
                      err.format_message())
 
         return last_use_date_string
@@ -533,7 +533,7 @@ class ZVMImages(object):
                 re.match(timere, last_use_date_string)):
             LOG.debug("The format for last_use_date is valid ")
         else:
-            LOG.warning(_LW("The format for image %s record in xcat table "
+            LOG.warning(_("The format for image %s record in xcat table "
                 "osimage's last_used_date is not valid. The correct "
                 "format is auto:last_use_date:yyyy-mm-dd"), image_name)
             return
@@ -542,7 +542,7 @@ class ZVMImages(object):
             last_use_date_datetime = datetime.datetime.strptime(
                                     last_use_date_string, '%Y-%m-%d')
         except Exception as err:
-            LOG.warning(_LW("Illegal date for last_use_date %(msg)s"), err)
+            LOG.warning(_("Illegal date for last_use_date %(msg)s"), err)
             return
 
         return last_use_date_datetime.date()
@@ -702,7 +702,7 @@ class ZVMImages(object):
         to_be_deleted_image_profile = []
 
         if len(image_list) <= 0:
-            msg = _LW("No image to be deleted, please create space manually "
+            msg = _("No image to be deleted, please create space manually "
                     "on xcat(%s).") % CONF.zvm_xcat_server
             LOG.warning(msg)
         else:
@@ -721,7 +721,7 @@ class ZVMImages(object):
                         return to_be_deleted_image_profile
 
         if size_sum < current_needed:
-            msg = _LW("xCAT MN space not enough for current image operation: "
+            msg = _("xCAT MN space not enough for current image operation: "
                     "%(n)d G needed,%(a)d G available") % {'n': current_needed,
                                                            'a': size_sum}
             LOG.warning(msg)

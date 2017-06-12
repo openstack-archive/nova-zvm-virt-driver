@@ -18,7 +18,7 @@ import six
 import time
 
 import nova.context
-from nova.i18n import _, _LW
+from nova.i18n import _
 from nova.objects import block_device as block_device_obj
 from nova.objects import instance as instance_obj
 from nova.volume import cinder
@@ -50,7 +50,7 @@ class VolumeOperator(object):
         try:
             self._svc_driver.init_host(host_stats)
         except (exception.ZVMDriverError, exception.ZVMVolumeError) as err:
-            LOG.warning(_LW("Initialize zhcp failed. Reason: %s"),
+            LOG.warning(_("Initialize zhcp failed. Reason: %s"),
                         err.format_message())
 
     def attach_volume_to_instance(self, context, connection_info, instance,
