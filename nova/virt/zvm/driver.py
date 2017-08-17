@@ -14,7 +14,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-"""Shim layer for nova_zvm.virt.zvm.driver.PowerVMDriver.
+"""Shim layer for nova_zvm.virt.zvm.driver.ZVMDriver.
 
 Duplicate all public symbols.  This is necessary for the constants as well as
 the classes - because instances of the classes need to be able to resolve
@@ -27,5 +27,4 @@ import nova_zvm.virt.zvm.driver as real_drv
 
 LOG = real_drv.LOG
 CONF = real_drv.CONF
-ZVMInstance = real_drv.ZVMInstance
 ZVMDriver = real_drv.ZVMDriver

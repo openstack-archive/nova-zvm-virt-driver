@@ -26,18 +26,6 @@ class ZVMDriverError(ZVMBaseException):
     msg_fmt = _('z/VM driver error: %(msg)s')
 
 
-class ZVMXCATRequestFailed(ZVMBaseException):
-    msg_fmt = _('Request to xCAT server %(xcatserver)s failed: %(msg)s')
-
-
-class ZVMInvalidXCATResponseDataError(ZVMBaseException):
-    msg_fmt = _('Invalid data returned from xCAT: %(msg)s')
-
-
-class ZVMXCATInternalError(ZVMBaseException):
-    msg_fmt = _('Error returned from xCAT: %(msg)s')
-
-
 class ZVMVolumeError(ZVMBaseException):
     msg_fmt = _('Volume error: %(msg)s')
 
@@ -46,32 +34,8 @@ class ZVMImageError(ZVMBaseException):
     msg_fmt = _("Image error: %(msg)s")
 
 
-class ZVMGetImageFromXCATFailed(ZVMBaseException):
-    msg_fmt = _('Get image from xCAT failed: %(msg)s')
-
-
 class ZVMNetworkError(ZVMBaseException):
     msg_fmt = _("z/VM network error: %(msg)s")
-
-
-class ZVMXCATXdshFailed(ZVMBaseException):
-    msg_fmt = _('Execute xCAT xdsh command failed: %(msg)s')
-
-
-class ZVMXCATCreateNodeFailed(ZVMBaseException):
-    msg_fmt = _('Create xCAT node %(node)s failed: %(msg)s')
-
-
-class ZVMXCATCreateUserIdFailed(ZVMBaseException):
-    msg_fmt = _('Create xCAT user id %(instance)s failed: %(msg)s')
-
-
-class ZVMXCATUpdateNodeFailed(ZVMBaseException):
-    msg_fmt = _('Update node %(node)s info failed: %(msg)s')
-
-
-class ZVMXCATDeployNodeFailed(ZVMBaseException):
-    msg_fmt = _('Deploy image on node %(node)s failed: %(msg)s')
 
 
 class ZVMConfigDriveError(ZVMBaseException):

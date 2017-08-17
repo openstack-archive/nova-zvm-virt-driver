@@ -12,7 +12,9 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+
 import os
+import six
 import tarfile
 
 from nova import exception
@@ -20,8 +22,6 @@ from nova import utils
 from nova.virt import configdrive
 from oslo_config import cfg
 from oslo_log import log as logging
-
-from nova_zvm.virt.zvm import utils as zvmutils
 
 
 LOG = logging.getLogger(__name__)
@@ -43,7 +43,7 @@ class ZVMConfigDriveBuilder(configdrive.ConfigDriveBuilder):
         :raises ProcessExecuteError if a helper process has failed.
 
         """
-        if CONF.config_drive_format in ['tgz', 'iso9660']:
+        if CONF.config_drive_format in ['iso9660']:
             self._make_tgz(path)
         else:
             raise exception.ConfigDriveUnknownFormat(
@@ -64,7 +64,7 @@ class ZVMConfigDriveBuilder(configdrive.ConfigDriveBuilder):
             try:
                 os.chdir(olddir)
             except Exception as e:
-                emsg = zvmutils.format_exception_msg(e)
+                emsg = six.text_type(e)
                 LOG.debug('exception in _make_tgz %s', emsg)
 
             tar.close()
