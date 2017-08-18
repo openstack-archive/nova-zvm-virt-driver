@@ -44,7 +44,7 @@ extensions = [
     'oslo_config.sphinxconfiggen',
 ]
 
-config_generator_config_file = '../../etc/nova/nova-zvm-oslo-conf-generator.conf'
+# config_generator_config_file = '../../etc/nova/nova-zvm-oslo-conf-generator.conf'
 sample_config_basename = '_static/nova_zvm'
 
 # Add any paths that contain templates here, relative to this directory.
