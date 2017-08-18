@@ -48,6 +48,7 @@ Overview
 
     topology    
     support-matrix
+    cloudlib4zvm
 
 Using the driver
 ================
@@ -67,6 +68,14 @@ Creating zVM Images
     imageguide
     activeengine
 
+Continuous integration(CI)
+==========================
+
+.. toctree::
+    :maxdepth: 2
+
+    ci_info
+    ci_arch
 
 Contributing to the project
 ===========================
