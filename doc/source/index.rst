@@ -41,6 +41,7 @@ Overview
 .. toctree::
     :maxdepth: 2
 
+    zvm
     topology    
     support-matrix
     cloudlib4zvm

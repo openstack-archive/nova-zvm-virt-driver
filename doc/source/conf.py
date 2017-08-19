@@ -36,15 +36,12 @@ sys.path.insert(0, os.path.abspath('./'))
 # ones.
 extensions = [
     'oslosphinx',
-    'oslo_config.sphinxconfiggen',
     'sphinx.ext.autodoc',
     'ext.support_matrix',
-    'sphinx.ext.autodoc',
-    'oslosphinx',
     'oslo_config.sphinxconfiggen',
 ]
 
-# config_generator_config_file = '../../etc/nova/nova-zvm-oslo-conf-generator.conf'
+config_generator_config_file = '../../etc/nova/nova-zvm-oslo-conf-generator.conf'
 sample_config_basename = '_static/nova_zvm'
 
 # Add any paths that contain templates here, relative to this directory.
