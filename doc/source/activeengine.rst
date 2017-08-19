@@ -5,26 +5,24 @@ Active Engine Guide
 ===================
 
 Active engine is used as initial configuration and management tool during deployed machine startup.
-Currently z/VM driver use xcatconf4z and cloud-init as 2 stage active engine.
+Currently z/VM driver use zvmguestconfigure and cloud-init as 2 stage active engine.
 
-Installation and Configuration of xcatconf4z
---------------------------------------------
+Installation and Configuration of zvmguestconfigure
+---------------------------------------------------
 
-xCAT supports initiating changes to a Linux on z Systems virtual machine while Linux is shut down or
+Cloudlib4zvm supports initiating changes to a Linux on z Systems virtual machine while Linux is shut down or
 the virtual machine is logged off. The changes to Linux are implemented using an activation engine (AE)
-that is run when Linux is booted the next time. The xCAT activation engine, xcatconf4z, handles changes
-initiated by xCAT. The script/service must be installed in the Linux on z Systems virtual server so it can
-process change request files transmitted by the xCAT ZHCP service to the reader of the virtual machine
-as a class X file. The script is xcatconf4z and is located at /opt/xcat/share/xcat/scripts in the xCAT
-MN machine.
+that is run when Linux is booted the next time. The 1st active engine, zvmguestconfigure, must be installed
+in the Linux on z Systems virtual server so it can process change request files transmitted by the cloudlib4sdk
+service to the reader of the virtual machine as a class X file.
 
-The xcatconf4z script should be installed in a machine that can be managed while it is logged off. This
+zvmguestconfigure script should be installed in a machine that can be managed while it is logged off. This
 includes a Linux on z Systems that will be captured for netboot or sysclone deploys.
 
 .. note::
 
    An additional activation engine, cloud-init, should be installed to handle OpenStack related
-   tailoring of the system. The cloud-init AE relies on tailoring performed by the xCAT AE, xcatconf4z.
+   tailoring of the system. The cloud-init AE relies on tailoring performed by the zvmguestconfigure.
 
 Installation and Configuration of cloud-init
 --------------------------------------------
