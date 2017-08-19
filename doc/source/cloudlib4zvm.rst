@@ -21,3 +21,5 @@ Links
 
 * Pypi: `<https://pypi.python.org/pypi/CloudLib4zvm>`_
 * Doc: `<http://cloudlib4zvm.readthedocs.io/en/latest>`_
+* Gerrit: `<https://review.gerrithub.io/#/q/project:mfcloud/python-zvm-sdk>`_
+* Github: `<https://github.com/mfcloud/python-zvm-sdk>`_
