@@ -22,8 +22,7 @@ Image Requirements
   ECKD
 
 * Images created with the previous version of the OpenStack support should be recaptured with an
-  updated xcatconf4z installed, version 2.0 or later. see below chapter for more detail on
-  xcatconf4z.
+  updated zvmguestconfigure installed
 
 * An image deployed on a compute node must match the disk type supported by that compute node, as
   configured by the zvm_diskpool_type property in the nova.conf configuration file. A compute node
@@ -40,15 +39,10 @@ Image Requirements
   disk.
 
 * For glance image-create, it is strongly suggested that you capture an instance with a root disk size no
-  greater than 5GB. If you really want to capture a larger root device, you will need to logon xCAT MN
-  and modify the timeout value in for httpd service to make image-create work as expected.
+  greater than 5GB. 
 
-* For nova boot, it is recommended that you deploy an instance with a root disk size no greater than
-  5GB. If you really want to deploy a larger root device, you will need to logon xCAT MN and modify
-  the timeout value in for httpd service to make boot work as expected.
-
-* For nova resize operation, we suggest that you resize an instance with a root disk size no greater than
-  5GB.
+* For nova boot, resize, it is recommended that you deploy an instance with a root disk size no greater than
+  5GB. 
 
 * The network interfaces must be IPv4 interfaces.
 
@@ -65,8 +59,7 @@ Image Requirements
   3. not be a full-pack minidisk, since cylinder 0 on full-pack minidisks is reserved, and be
      defined with virtual address 0100.
   4. The root disk should have a single partition.
-  5. The image being captured should support SSH access using keys instead of specifying a password. The
-     subsequent steps to capture the image will perform a key exchange to allow xCAT to access the server.
+  5. The image being captured should support SSH access using keys instead of specifying a password. 
   6. The image being captured should not have any network interface cards (NICs) defined below virtual
      address 1100.
 

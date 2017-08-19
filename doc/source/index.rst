@@ -35,11 +35,6 @@ zVM drivers, consist of a set of drivers/plugins for different OpenStack compone
 enables OpenStack to communicate with z/VM hypervisor to manage z/VM system and
 virtual machines running on the system.
 
-xCAT is an open source scalable distributed computing management and provisioning
-tool that provides a unified interface for hardware control, discovery,
-and OS diskful/diskfree deployment. For more info, please refer to
-http://xcat.org/ and https://github.com/xcat2/xcat-core.
-
 Overview
 ========
 
