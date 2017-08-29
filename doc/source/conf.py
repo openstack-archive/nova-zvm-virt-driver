@@ -39,10 +39,14 @@ extensions = [
     'sphinx.ext.autodoc',
     'ext.support_matrix',
     'oslo_config.sphinxconfiggen',
+    'sphinxcontrib.actdiag'
 ]
 
 config_generator_config_file = '../../etc/nova/nova-zvm-oslo-conf-generator.conf'
 sample_config_basename = '_static/nova_zvm'
+
+actdiag_html_image_format = 'SVG'
+actdiag_antialias = True
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['.templates']

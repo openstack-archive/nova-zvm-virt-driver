@@ -28,6 +28,44 @@ run on remote server other than z/VM itself or run on top of virtual server whic
 
 .. image:: ./images/arch.jpg
 
+Function Call flow
+------------------
+
+Following is a picture describe the call routine of spawn function,
+openstack zvm driver managed zvm through REST API call provided by
+zvm cloud connector.
+
+.. actdiag::
+
+    actdiag {
+        nova.spawn -> driver.spawn -> sdk.createuser -> zvm.createuser ->
+            sdk.adddisk -> zvm.adddisk -> sdk.setupnet -> zvm.setupnet
+
+        lane nova-compute {
+            label = "nova compute"
+            nova.spawn [label = "nova compute driver spawn"]
+        }
+
+        lane zvm-driver {
+            label = "zvm driver"
+            driver.spawn [label = "zvm driver spawn"]
+        }
+
+        lane zvm-cloud-connector {
+            label = "zvm cloud connector"
+            sdk.createuser [label = "create zvm user definition"]
+            sdk.adddisk [label = "add disk to created user"]
+            sdk.setupnet [label = "setup network to created user"]
+        }
+
+        lane zvm-system-management {
+            label = "zvm system management interface"
+            zvm.createuser [label = "use zvm dirmaint to create user"]
+            zvm.adddisk [label = "use zvm dirmaint and cp to add disk"]
+            zvm.setupnet [label = "use zvm cp to setup network"]
+        }
+    }
+
 Compare between vmware
 ----------------------
 

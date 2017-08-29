@@ -49,7 +49,9 @@ z/VM CI reference and logs
 
 * Logs: `<http://extbasicopstackcilog01.podc.sl.edst.ibm.com/test_logs/>`_
 * Status: 
-Currently the z/VM CI external status report is still under construction, will
-be available soon, the internal status report looks like:
+  Currently the z/VM CI external status report is still under construction, will
+  be available soon, the internal status report looks like:
+
+.. image:: ./images/zuul_status.jpg
 
 .. image:: ./images/jenkins_status.jpg
