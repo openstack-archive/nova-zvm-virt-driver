@@ -25,6 +25,7 @@ Overall architecture
 
 z/VM openstack enablement rely on z/VM cloud connector, the compute service (nova-compute) can either
 run on remote server other than z/VM itself or run on top of virtual server which hosted on z/VM.
+ 
 
 .. image:: ./images/arch.jpg
 
@@ -66,8 +67,8 @@ zvm cloud connector.
         }
     }
 
-Compare between vmware
-----------------------
+Compare with vmware openstack driver
+------------------------------------
 
 Here's architecture comparsion between z/VM and vmware enablement for openstack.
 
