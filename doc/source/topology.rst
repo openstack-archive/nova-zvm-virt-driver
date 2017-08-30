@@ -66,8 +66,8 @@ zvm cloud connector.
         }
     }
 
-Compare between vmware
-----------------------
+Compare with vmware openstack driver
+------------------------------------
 
 Here's architecture comparsion between z/VM and vmware enablement for openstack.
 

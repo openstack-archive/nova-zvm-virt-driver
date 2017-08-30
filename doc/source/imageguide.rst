@@ -25,24 +25,14 @@ Image Requirements
   updated zvmguestconfigure installed
 
 * An image deployed on a compute node must match the disk type supported by that compute node, as
-  configured by the zvm_diskpool_type property in the nova.conf configuration file. A compute node
+  configured by the zvm_diskpool_type property in the zvmsdk.conf configuration file. A compute node
   supports deployment on either an ECKD or FBA image, but not both at the same time. If you wish to
   switch image types, you need to change the zvm_diskpool_type and zvm_diskpool properties in the
-  nova.conf file, accordingly. Then restart the nova-compute service to make the changes take effect.
- 
+  zvmsdk.conf file, accordingly. Then restart the nova-compute service to make the changes take effect.
+
 * If you deploy an instance with an ephemeral disk, both the root disk and the ephemeral disk will be
-  created with the disk type that was specified by zvm_diskpool_type property in the nova.conf file. That
+  created with the disk type that was specified by zvm_diskpool_type property in the zvmsdk.conf file. That
   property can specify either ECKD or FBA.
-
-* When resizing, remember that you can only resize an instance to the same type of disk. For example, if
-  an instance is built on an FBA type disk, you can resize it to a larger FBA disk, but not to an ECKD
-  disk.
-
-* For glance image-create, it is strongly suggested that you capture an instance with a root disk size no
-  greater than 5GB. 
-
-* For nova boot, resize, it is recommended that you deploy an instance with a root disk size no greater than
-  5GB. 
 
 * The network interfaces must be IPv4 interfaces.
 
@@ -54,7 +44,7 @@ Image Requirements
 * The virtual server/Linux instance used as the source of the new image should meet the following criteria:
   1. The root filesystem must not be on a logical volume.
 
-  2. The minidisk on which the root filesystem resides should be a minidisk of the same type as 
+  2. The minidisk on which the root filesystem resides should be a minidisk of the same type as
      desired for a subsequent deploy (for example, an ECKD disk image should be captured
      for a subsequent deploy to an ECKD disk).
 
@@ -63,9 +53,7 @@ Image Requirements
 
   4. The root disk should have a single partition.
 
-  5. The image being captured should support SSH access using keys instead of specifying a password. 
-
-  6. The image being captured should not have any network interface cards (NICs) defined below virtual
+  5. The image being captured should not have any network interface cards (NICs) defined below virtual
      address 1100.
 
 In addition to the specified criteria, the following recommendations allow for efficient use of the image:

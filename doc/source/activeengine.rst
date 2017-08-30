@@ -13,7 +13,7 @@ Installation and Configuration of zvmguestconfigure
 Cloudlib4zvm supports initiating changes to a Linux on z Systems virtual machine while Linux is shut down or
 the virtual machine is logged off. The changes to Linux are implemented using an activation engine (AE)
 that is run when Linux is booted the next time. The 1st active engine, zvmguestconfigure, must be installed
-in the Linux on z Systems virtual server so it can process change request files transmitted by the cloudlib4sdk
+in the Linux on z Systems virtual server so it can process change request files transmitted by the cloudlib4zvm
 service to the reader of the virtual machine as a class X file.
 
 zvmguestconfigure script should be installed in a machine that can be managed while it is logged off. This
