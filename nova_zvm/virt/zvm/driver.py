@@ -18,7 +18,6 @@ import eventlet
 import six
 import time
 
-from nova.compute import power_state
 from nova import exception as nova_exception
 from nova.i18n import _
 from nova.image import api as image_api
@@ -95,36 +94,15 @@ class ZVMDriver(driver.ComputeDriver):
         pass
 
     def _get_instance_info(self, instance):
-        inst_name = instance['name']
-        vm_info = self._sdk_api.guest_get_info(inst_name)
-        _instance_info = hardware.InstanceInfo()
+        power_stat = self._sdk_api.guest_get_power_state(instance['name'])
+        power_stat = zvmutils.mapping_power_stat(power_stat)
 
-        power_stat = zvmutils.mapping_power_stat(vm_info['power_state'])
-        if ((power_stat == power_state.RUNNING) and
-            (instance['power_state'] == power_state.PAUSED)):
-            # return paused state only previous power state is paused
-            _instance_info.state = power_state.PAUSED
-        else:
-            _instance_info.state = power_stat
-
-        _instance_info.max_mem_kb = vm_info['max_mem_kb']
-        _instance_info.mem_kb = vm_info['mem_kb']
-        _instance_info.num_cpu = vm_info['num_cpu']
-        _instance_info.cpu_time_ns = vm_info['cpu_time_us'] * 1000
+        _instance_info = hardware.InstanceInfo(power_stat)
 
         return _instance_info
 
     def get_info(self, instance):
-        """Get the current status of an instance, by name (not ID!)
-
-        Returns a dict containing:
-        :state:           the running state, one of the power_state codes
-        :max_mem:         (int) the maximum memory in KBytes allowed
-        :mem:             (int) the memory in KBytes used by the domain
-        :num_cpu:         (int) the number of virtual CPUs for the domain
-        :cpu_time:        (int) the CPU time used in nanoseconds
-
-        """
+        """Get the current status of an instance."""
         inst_name = instance['name']
 
         try:
