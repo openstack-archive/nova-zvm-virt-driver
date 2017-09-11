@@ -214,50 +214,22 @@ class ZVMDriverTestCases(test.NoDBTestCase):
         self.driver.list_instances()
         guest_list.assert_called_once_with()
 
-    @mock.patch.object(sdkapi.SDKAPI, 'guest_get_info')
+    @mock.patch.object(sdkapi.SDKAPI, 'guest_get_power_state')
     @mock.patch.object(zvmutils, 'mapping_power_stat')
-    def test_get_instance_info_paused(self, mapping_power_stat,
-                                      guest_get_info):
-        guest_get_info.return_value = {'power_state': 'on',
-                                    'max_mem_kb': 2097152,
-                                    'mem_kb': 44,
-                                    'num_cpu': 2,
-                                    'cpu_time_us': 796000,
-                                    }
-        mapping_power_stat.return_value = power_state.RUNNING
-        fake_inst = fake_instance.fake_instance_obj(self._context,
-                    name='fake', power_state=power_state.PAUSED,
-                    memory_mb='1024',
-                    vcpus='4')
-        inst_info = self.driver._get_instance_info(fake_inst)
-        mapping_power_stat.assert_called_once_with('on')
-        self.assertEqual(inst_info.state, power_state.PAUSED)
-        self.assertEqual(inst_info.mem_kb, 44)
-
-    @mock.patch.object(sdkapi.SDKAPI, 'guest_get_info')
-    @mock.patch.object(zvmutils, 'mapping_power_stat')
-    def test_get_instance_info_off(self, mapping_power_stat, guest_get_info):
-        guest_get_info.return_value = {'power_state': 'off',
-                                    'max_mem_kb': 2097152,
-                                    'mem_kb': 44,
-                                    'num_cpu': 2,
-                                    'cpu_time_us': 796000,
-                                    }
+    def test_get_instance_info_off(self, mapping_power_stat, get_power_state):
+        get_power_state.return_value = 'off'
         mapping_power_stat.return_value = power_state.SHUTDOWN
         fake_inst = fake_instance.fake_instance_obj(self._context,
-                    name='fake', power_state=power_state.PAUSED,
+                    name='fake', power_state=power_state.SHUTDOWN,
                     memory_mb='1024',
                     vcpus='4')
         inst_info = self.driver._get_instance_info(fake_inst)
         mapping_power_stat.assert_called_once_with('off')
         self.assertEqual(inst_info.state, power_state.SHUTDOWN)
-        self.assertEqual(inst_info.mem_kb, 44)
 
     @mock.patch.object(driver.ZVMDriver, '_get_instance_info')
     def test_get_info(self, _get_instance_info):
-        _fake_inst_info = hardware.InstanceInfo(state=0x01, mem_kb=131072,
-                            num_cpu=4, cpu_time_ns=330528353,
-                            max_mem_kb=1048576)
+        _fake_inst_info = hardware.InstanceInfo(state=0x01)
         _get_instance_info.return_value = _fake_inst_info
         fake_inst = fake_instance.fake_instance_obj(self._context,
                     name='fake', power_state=power_state.RUNNING,
