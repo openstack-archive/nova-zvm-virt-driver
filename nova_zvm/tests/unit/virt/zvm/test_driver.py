@@ -292,8 +292,8 @@ class ZVMDriverTestCases(test.NoDBTestCase):
         os_distro = self._image_meta.properties.os_distro
 
         self.driver.spawn(self._context, self._instance, self._image_meta,
-                          injected_files=None,
-                          admin_password=None,
+                          injected_files=None, admin_password=None,
+                          allocations=None,
                           network_info=self._network_info,
                           block_device_info=self._block_device_info,
                           flavor=self._flavor)
