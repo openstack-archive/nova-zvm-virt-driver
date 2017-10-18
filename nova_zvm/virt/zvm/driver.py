@@ -132,8 +132,8 @@ class ZVMDriver(driver.ComputeDriver):
         return self._instance_exists(instance.name)
 
     def spawn(self, context, instance, image_meta, injected_files,
-              admin_password, network_info=None, block_device_info=None,
-              flavor=None):
+              admin_password, allocations, network_info=None,
+              block_device_info=None, flavor=None):
         LOG.info(_("Spawning new instance %s on zVM hypervisor") %
                  instance['name'], instance=instance)
         # For zVM instance, limit the maximum length of instance name to \ 8
