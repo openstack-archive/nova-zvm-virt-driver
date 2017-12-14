@@ -17,6 +17,7 @@
 
 import os
 
+from nova import exception
 from nova import test
 from oslo_utils import fileutils
 
@@ -38,14 +39,13 @@ class ZVMConfigDriveTestCase(test.NoDBTestCase):
         super(ZVMConfigDriveTestCase, self).setUp()
         self.flags(config_drive_format='iso9660',
                    tempdir='/tmp/os')
-
+        self._file_path = CONF.tempdir
+        self._file_name = self._file_path + '/cfgdrive.tgz'
         self.inst_md = FakeInstMeta()
 
     def test_create_configdrive_tgz(self):
         self._file_path = CONF.tempdir
         fileutils.ensure_tree(self._file_path)
-        self._file_name = self._file_path + '/cfgdrive.tgz'
-
         try:
             with zvmconfigdrive.ZVMConfigDriveBuilder(
                                             instance_md=self.inst_md) as c:
@@ -53,5 +53,15 @@ class ZVMConfigDriveTestCase(test.NoDBTestCase):
 
             self.assertTrue(os.path.exists(self._file_name))
 
+        finally:
+            fileutils.remove_path_on_error(self._file_path)
+
+    def test_make_drive_unknown_format(self):
+        self.flags(config_drive_format='vfat')
+        try:
+            with zvmconfigdrive.ZVMConfigDriveBuilder(
+                                            instance_md=self.inst_md) as c:
+                self.assertRaises(exception.ConfigDriveUnknownFormat,
+                                  c.make_drive, self._file_name)
         finally:
             fileutils.remove_path_on_error(self._file_path)

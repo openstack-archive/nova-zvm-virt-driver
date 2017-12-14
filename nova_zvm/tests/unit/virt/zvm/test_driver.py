@@ -12,67 +12,37 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-
-"""Test suite for ZVMDriver."""
-
+import copy
 import eventlet
 import mock
 
 from nova.compute import power_state
 from nova import context
-from nova import exception as nova_exception
-from nova.image import api as image_api
+from nova import exception
 from nova.network import model as network_model
 from nova import objects
-from nova.objects import fields as obj_fields
 from nova import test
 from nova.tests.unit import fake_instance
 from nova.tests import uuidsentinel
-from nova.virt import fake
-from nova.virt import hardware
-from zvmsdk import api as sdkapi
-from zvmsdk import dist
-from zvmsdk import exception as sdkexception
 
-from nova_zvm.virt.zvm import conf
-from nova_zvm.virt.zvm import const
-from nova_zvm.virt.zvm import driver
+from nova_zvm.virt.zvm import driver as zvmdriver
 from nova_zvm.virt.zvm import utils as zvmutils
 
 
-CONF = conf.CONF
-CONF.import_opt('host', 'nova.conf')
-CONF.import_opt('my_ip', 'nova.conf')
+class TestZVMDriver(test.NoDBTestCase):
 
-
-class ZVMDriverTestCases(test.NoDBTestCase):
-    """Unit tests for z/VM driver methods."""
-
-    @mock.patch.object(driver.ZVMDriver, 'update_host_status')
-    def setUp(self, update_host_status):
-        super(ZVMDriverTestCases, self).setUp()
-
-        self.flags(host='fakehost',
-                   my_ip='10.1.1.10',
-                   instance_name_template = 'test%04x')
-        update_host_status.return_value = [{
-            'host': 'fakehost',
-            'allowed_vm_type': 'zLinux',
-            'vcpus': 10,
-            'vcpus_used': 10,
-            'cpu_info': {'Architecture': 's390x', 'CEC model': '2097'},
-            'disk_total': 406105,
-            'disk_used': 367263,
-            'disk_available': 38842,
-            'host_memory_total': 16384,
-            'host_memory_free': 8096,
-            'hypervisor_type': 'zvm',
-            'hypervisor_version': '630',
-            'hypervisor_hostname': 'fakenode',
-            'supported_instances': [('s390x', 'zvm', 'hvm')],
-            'ipl_time': 'IPL at 03/13/14 21:43:12 EDT',
-        }]
-        self.driver = driver.ZVMDriver(fake.FakeVirtAPI())
+    def setUp(self):
+        super(TestZVMDriver, self).setUp()
+        self.flags(zvm_cloud_connector_url='https://1.1.1.1:1111',
+                   zvm_image_tmp_path='/test/image',
+                   zvm_reachable_timeout=300)
+        self.flags(my_ip='192.168.1.1',
+                   instance_name_template='test%04x')
+        with mock.patch('nova_zvm.virt.zvm.utils.'
+                        'zVMConnectorRequestHandler.call') as mcall:
+            mcall.return_value = {'hypervisor_hostname': 'TESTHOST',
+                                  'ipl_time': 'TESTTIME'}
+            self.driver = zvmdriver.ZVMDriver('virtapi')
         self._context = context.RequestContext('fake_user', 'fake_project')
         self._uuid = uuidsentinel.foo
         self._image_id = uuidsentinel.foo
@@ -82,7 +52,7 @@ class ZVMDriverTestCases(test.NoDBTestCase):
             'vcpus': 1,
             'memory_mb': 1024,
             'image_ref': self._image_id,
-            'root_gb': 3,
+            'root_gb': 0,
         }
         self._instance = fake_instance.fake_instance_obj(
                                 self._context, **self._instance_values)
@@ -91,7 +61,7 @@ class ZVMDriverTestCases(test.NoDBTestCase):
                                       swap=0, extra_specs={})
         self._instance.flavor = self._flavor
 
-        eph_disks = [{'guest_format': u'ext3',
+        self._eph_disks = [{'guest_format': u'ext3',
                       'device_name': u'/dev/sdb',
                       'disk_bus': None,
                       'device_type': None,
@@ -103,9 +73,8 @@ class ZVMDriverTestCases(test.NoDBTestCase):
                       'size': 2}]
         self._block_device_info = {'swap': None,
                                    'root_device_name': u'/dev/sda',
-                                   'ephemerals': eph_disks,
+                                   'ephemerals': self._eph_disks,
                                    'block_device_mapping': []}
-
         fake_image_meta = {'status': 'active',
                                  'properties': {'os_distro': 'rhel7.2'},
                                  'name': 'rhel72eckdimage',
@@ -148,226 +117,321 @@ class ZVMDriverTestCases(test.NoDBTestCase):
                 network_model.VIF(**self._network_values)
         ])
 
-    def test_init_driver(self):
-        self.assertIsInstance(self.driver._sdk_api, sdkapi.SDKAPI)
+    def test_driver_init(self):
+        self.assertEqual(self.driver._hypervisor_hostname, 'TESTHOST')
+        self.assertIsInstance(self.driver._reqh,
+                              zvmutils.zVMConnectorRequestHandler)
         self.assertIsInstance(self.driver._vmutils, zvmutils.VMUtils)
-        self.assertIsInstance(self.driver._image_api, image_api.API)
-        self.assertIsInstance(self.driver._pathutils, zvmutils.PathUtils)
-        self.assertIsInstance(self.driver._imageutils, zvmutils.ImageUtils)
-        self.assertIsInstance(self.driver._networkutils,
-                              zvmutils.NetworkUtils)
         self.assertIsInstance(self.driver._imageop_semaphore,
                               eventlet.semaphore.Semaphore)
-        self.assertEqual(self.driver._host_stats[0]['host'], "fakehost")
-        self.assertEqual(self.driver._host_stats[0]['disk_available'], 38842)
 
-    @mock.patch.object(sdkapi.SDKAPI, 'host_get_info')
-    def test_update_host_status(self, host_get_info):
-        host_get_info.return_value = {
-            'vcpus': 10,
-            'vcpus_used': 10,
-            'cpu_info': {'Architecture': 's390x', 'CEC model': '2097'},
-            'disk_total': 406105,
-            'disk_used': 367263,
-            'disk_available': 38842,
-            'memory_mb': 876543,
-            'memory_mb_used': 111111,
-            'hypervisor_type': 'zvm',
-            'hypervisor_version': '630',
-            'hypervisor_hostname': 'fakenode',
-            'ipl_time': 'IPL at 03/13/14 21:43:12 EDT',
-            }
-        info = self.driver.update_host_status()
-        host_get_info.assert_called_with()
-        self.assertEqual(info[0]['host'], CONF.host)
-        self.assertEqual(info[0]['hypervisor_hostname'], 'fakenode')
-        self.assertEqual(info[0]['host_memory_free'], 765432)
+    @mock.patch('nova_zvm.virt.zvm.utils.zVMConnectorRequestHandler.call')
+    def test_list_instance(self, call):
+        call.return_value = ['vm1', 'vm2']
+        inst_list = self.driver.list_instances()
+        self.assertEqual(['vm1', 'vm2'], inst_list)
 
-    @mock.patch.object(driver.ZVMDriver, 'update_host_status')
-    def test_get_available_resource(self, update_host_status):
-        update_host_status.return_value = [{
-            'host': CONF.host,
-            'allowed_vm_type': const.ALLOWED_VM_TYPE,
-            'vcpus': 10,
-            'vcpus_used': 10,
-            'cpu_info': {'Architecture': 's390x', 'CEC model': '2097'},
-            'disk_total': 406105,
-            'disk_used': 367263,
-            'disk_available': 38842,
-            'host_memory_total': 876543,
-            'host_memory_free': 111111,
-            'hypervisor_type': 'zvm',
-            'hypervisor_version': '630',
-            'hypervisor_hostname': 'fakenode',
-            'supported_instances': [(const.ARCHITECTURE,
-                                     const.HYPERVISOR_TYPE,
-                                     obj_fields.VMMode.HVM)],
-            'ipl_time': 'IPL at 03/13/14 21:43:12 EDT',
-            }]
-        res = self.driver.get_available_resource('fakenode')
-        self.assertEqual(res['vcpus'], 10)
-        self.assertEqual(res['memory_mb_used'], 765432)
-        self.assertEqual(res['disk_available_least'], 38842)
+    @mock.patch('nova_zvm.virt.zvm.utils.zVMConnectorRequestHandler.call')
+    def test_get_available_resource(self, call):
+        host_info = {'disk_available': 1144,
+                     'ipl_time': u'IPL at 11/14/17 10:47:44 EST',
+                     'vcpus_used': 4,
+                     'hypervisor_type': u'zvm',
+                     'disk_total': 2000,
+                     'zvm_host': u'TESTHOST',
+                     'memory_mb': 78192.0,
+                     'cpu_info': {u'cec_model': u'2827',
+                                  u'architecture': u's390x'},
+                     'vcpus': 84,
+                     'hypervisor_hostname': u'TESTHOST',
+                     'hypervisor_version': 640,
+                     'disk_used': 856,
+                     'memory_mb_used': 8192.0}
+        call.return_value = host_info
+        results = self.driver.get_available_resource()
+        self.assertEqual(84, results['vcpus'])
+        self.assertEqual(8192.0, results['memory_mb_used'])
+        self.assertEqual(1144, results['disk_available_least'])
+        self.assertEqual('TESTHOST', results['hypervisor_hostname'])
 
-    @mock.patch.object(sdkapi.SDKAPI, 'guest_list')
-    def test_list_instances(self, guest_list):
-        self.driver.list_instances()
-        guest_list.assert_called_once_with()
-
-    @mock.patch.object(sdkapi.SDKAPI, 'guest_get_power_state')
-    @mock.patch.object(zvmutils, 'mapping_power_stat')
-    def test_get_instance_info_off(self, mapping_power_stat, get_power_state):
-        get_power_state.return_value = 'off'
-        mapping_power_stat.return_value = power_state.SHUTDOWN
-        fake_inst = fake_instance.fake_instance_obj(self._context,
-                    name='fake', power_state=power_state.SHUTDOWN,
-                    memory_mb='1024',
-                    vcpus='4')
-        inst_info = self.driver._get_instance_info(fake_inst)
-        mapping_power_stat.assert_called_once_with('off')
-        self.assertEqual(inst_info.state, power_state.SHUTDOWN)
-
-    @mock.patch.object(driver.ZVMDriver, '_get_instance_info')
-    def test_get_info(self, _get_instance_info):
-        _fake_inst_info = hardware.InstanceInfo(state=0x01)
-        _get_instance_info.return_value = _fake_inst_info
-        fake_inst = fake_instance.fake_instance_obj(self._context,
-                    name='fake', power_state=power_state.RUNNING,
-                    memory_mb='1024',
-                    vcpus='4')
-        inst_info = self.driver.get_info(fake_inst)
-        self.assertEqual(0x01, inst_info.state)
-
-    @mock.patch.object(driver.ZVMDriver, '_get_instance_info')
-    def test_get_info_instance_not_exist_error(self, _get_instance_info):
-        _get_instance_info.side_effect = sdkexception.ZVMVirtualMachineNotExist
-        fake_inst = fake_instance.fake_instance_obj(self._context,
-                    name='fake', power_state=power_state.RUNNING,
-                    memory_mb='1024',
-                    vcpus='4')
-        self.assertRaises(nova_exception.InstanceNotFound,
-                          self.driver.get_info,
-                          fake_inst)
+    @mock.patch('nova_zvm.virt.zvm.utils.zVMConnectorRequestHandler.call')
+    def test_get_available_resource_err_case(self, call):
+        call.side_effect = exception.NovaException
+        results = self.driver.get_available_resource()
+        self.assertEqual(0, results['vcpus'])
+        self.assertEqual(0, results['memory_mb_used'])
+        self.assertEqual(0, results['disk_available_least'])
+        self.assertEqual('', results['hypervisor_hostname'])
 
     def test_get_available_nodes(self):
         nodes = self.driver.get_available_nodes()
-        self.assertEqual(nodes[0], 'fakenode')
+        self.assertEqual(['TESTHOST'], nodes)
 
-    @mock.patch.object(sdkapi.SDKAPI, 'guest_get_console_output')
-    def test_get_console_output(self, gco):
-        self.driver.get_console_output({}, self._instance)
-        gco.assert_called_with('test0001')
+    def test_private_mapping_power_stat(self):
+        status = self.driver._mapping_power_stat('on')
+        self.assertEqual(power_state.RUNNING, status)
+        status = self.driver._mapping_power_stat('off')
+        self.assertEqual(power_state.SHUTDOWN, status)
+        status = self.driver._mapping_power_stat('bad')
+        self.assertEqual(power_state.NOSTATE, status)
 
-    @mock.patch.object(sdkapi.SDKAPI, 'guest_start')
-    @mock.patch.object(driver.ZVMDriver, '_wait_network_ready')
-    @mock.patch.object(sdkapi.SDKAPI, 'guest_config_minidisks')
-    @mock.patch.object(sdkapi.SDKAPI, 'guest_deploy')
-    @mock.patch.object(driver.ZVMDriver, '_setup_network')
-    @mock.patch.object(sdkapi.SDKAPI, 'guest_create')
-    @mock.patch.object(zvmutils.ImageUtils, 'import_spawn_image')
-    @mock.patch.object(sdkapi.SDKAPI, 'image_query')
-    @mock.patch.object(zvmutils.VMUtils, 'generate_configdrive')
-    @mock.patch.object(dist.LinuxDistManager, 'get_linux_dist')
-    def _test_spawn(self, mock_linux_dist,
-                    generate_configdrive, image_query, import_spawn_image,
-                    guest_create, setup_network, guest_deploy,
-                    guest_config_minidisks, wait_network_ready,
-                    guest_start, image_query_result, eph_disks):
-        generate_configdrive.return_value = '/tmp/fakecfg.tgz'
-        image_query.side_effect = image_query_result
+    @mock.patch('nova_zvm.virt.zvm.utils.zVMConnectorRequestHandler.call')
+    def test_get_info_err_InstanceNotFound(self, call):
+        call.side_effect = exception.NovaException(results={'overallRC': 404})
+        self.assertRaises(exception.InstanceNotFound, self.driver.get_info,
+                          self._instance)
 
-        self._block_device_info['ephemerals'] = eph_disks
-        root_disk = {'size': '3g', 'is_boot_disk': True}
-        disk_list = [root_disk]
-        eph_list = []
-        for eph in eph_disks:
-            eph_dict = {'size': '%ig' % eph['size'],
-                        'format': (eph['guest_format'] or
-                                   CONF.default_ephemeral_format or
-                                   const.DEFAULT_EPH_DISK_FMT)}
-            eph_list.append(eph_dict)
-        if eph_list:
-            disk_list.extend(eph_list)
+    @mock.patch('nova_zvm.virt.zvm.utils.zVMConnectorRequestHandler.call')
+    def test_get_info_err_general(self, call):
+        call.side_effect = exception.NovaException(results={'overallRC': 500})
+        self.assertRaises(exception.NovaException, self.driver.get_info,
+                          self._instance)
 
-        os_distro = self._image_meta.properties.os_distro
+    @mock.patch('nova.virt.hardware.InstanceInfo')
+    @mock.patch('nova_zvm.virt.zvm.utils.zVMConnectorRequestHandler.call')
+    def test_get_info(self, call, InstanceInfo):
+        call.return_value = 'on'
+        self.driver.get_info(self._instance)
+        call.assert_called_once_with('guest_get_power_state',
+                                     self._instance['name'])
+        InstanceInfo.assert_called_once_with(power_state.RUNNING)
 
-        self.driver.spawn(self._context, self._instance, self._image_meta,
-                          injected_files=None, admin_password=None,
-                          allocations=None,
-                          network_info=self._network_info,
-                          block_device_info=self._block_device_info,
-                          flavor=self._flavor)
-        generate_configdrive.assert_called_once_with(self._context,
-                                                     self._instance,
-                                                     os_distro,
-                                                     self._network_info,
-                                                     None, None)
-        image_query.assert_called_with(self._image_meta.id)
-        if not image_query_result[0]:
-            import_spawn_image.assert_called_once_with(self._context,
-                                                       self._image_meta.id,
-                                                       os_distro)
+    @mock.patch('nova_zvm.virt.zvm.driver.ZVMDriver.list_instances')
+    def test_private_instance_exists_True(self, list_instances):
+        list_instances.return_value = ['vm1', 'vm2']
+        res = self.driver._instance_exists('vm1')
+        self.assertTrue(res)
 
-        guest_create.assert_called_once_with('test0001', 1, 1024, disk_list)
-        setup_network.assert_called_once_with('test0001', self._network_info)
-        guest_deploy.assert_called_once_with('test0001',
-            'rhel7.2-s390x-netboot-0a0c576a_157f_42c8_bde5_2a254d8b77fc',
-            '/tmp/fakecfg.tgz', zvmutils.get_host())
+    @mock.patch('nova_zvm.virt.zvm.driver.ZVMDriver.list_instances')
+    def test_private_instance_exists_False(self, list_instances):
+        list_instances.return_value = ['vm1', 'vm2']
+        res = self.driver._instance_exists('vm3')
+        self.assertFalse(res)
 
-        if eph_disks:
-            guest_config_minidisks.assert_called_once_with('test0001',
-                                                           eph_list)
+    @mock.patch('nova_zvm.virt.zvm.driver.ZVMDriver._instance_exists')
+    def test_instance_exists(self, is_exists):
+        is_exists_response = []
+        is_exists_response.append(True)
+        is_exists_response.append(False)
+        is_exists.side_effect = is_exists_response
+        res = self.driver.instance_exists(self._instance)
+        is_exists.assert_any_call(self._instance.name)
+        self.assertTrue(res)
 
-        wait_network_ready.assert_called_once_with('test0001',
-                                                   self._instance)
-        guest_start.assert_called_once_with('test0001')
+        res = self.driver.instance_exists(self._instance)
+        is_exists.assert_any_call(self._instance.name)
+        self.assertFalse(res)
 
-    def test_spawn_simple_path(self):
-        self._test_spawn(image_query_result=(
-            ["rhel7.2-s390x-netboot-0a0c576a_157f_42c8_bde5_2a254d8b77fc"],
-            ["rhel7.2-s390x-netboot-0a0c576a_157f_42c8_bde5_2a254d8b77fc"]),
-            eph_disks=[])
+    @mock.patch('nova_zvm.virt.zvm.utils.zVMConnectorRequestHandler.call')
+    def test_private_get_image_info_err(self, call):
+        call.side_effect = exception.NovaException(results={'overallRC': 500})
+        self.assertRaises(exception.NovaException, self.driver._get_image_info,
+                          'context', 'image_meta_id', 'os_distro')
 
-    def test_spawn_image_not_in_backend(self):
-        self._test_spawn(image_query_result=(
-            [],
-            ["rhel7.2-s390x-netboot-0a0c576a_157f_42c8_bde5_2a254d8b77fc"]),
-            eph_disks=[])
+    @mock.patch('nova_zvm.virt.zvm.utils.zVMConnectorRequestHandler.call')
+    @mock.patch('nova_zvm.virt.zvm.driver.ZVMDriver._import_spawn_image')
+    def test_private_get_image_info(self, image_import, call):
+        call_response = []
+        call_response.append(exception.NovaException(results=
+                                                     {'overallRC': 404}))
+        call_response.append('Query_Result')
+        call.side_effect = call_response
+        self.driver._get_image_info('context', 'image_meta_id', 'os_distro')
+        call.assert_any_call('image_query', imagename='image_meta_id')
+        image_import.assert_called_once_with('context', 'image_meta_id',
+                                             'os_distro')
+        call.assert_any_call('image_query', imagename='image_meta_id')
 
-    def test_spawn_with_ephemeral_disks(self):
-        self._test_spawn(image_query_result=(
-            ["rhel7.2-s390x-netboot-0a0c576a_157f_42c8_bde5_2a254d8b77fc"],
-            ["rhel7.2-s390x-netboot-0a0c576a_157f_42c8_bde5_2a254d8b77fc"]),
-            eph_disks=[{'guest_format': u'ext3',
-                        'device_name': u'/dev/sdb',
-                        'disk_bus': None,
-                        'device_type': None,
-                        'size': 1},
-                       {'guest_format': u'ext4',
-                        'device_name': u'/dev/sdc',
-                        'disk_bus': None,
-                        'device_type': None,
-                        'size': 2}])
+    @mock.patch('nova_zvm.virt.zvm.utils.zVMConnectorRequestHandler.call')
+    def test_private_get_image_info_exist(self, call):
+        call.return_value = 'image-info'
+        res = self.driver._get_image_info('context', 'image_meta_id',
+                                          'os_distro')
+        call.assert_any_call('image_query', imagename='image_meta_id')
+        self.assertEqual('image-info', res)
 
-    @mock.patch.object(driver.ZVMDriver, '_instance_exists')
-    @mock.patch.object(sdkapi.SDKAPI, 'guest_delete')
-    def test_destroy(self, guest_delete, instance_exists):
+    @mock.patch('nova_zvm.virt.zvm.utils.zVMConnectorRequestHandler.call')
+    def _test_set_disk_list(self, call, has_get_root_units=False,
+                            has_eph_disks=False):
+        disk_list = [{'is_boot_disk': True, 'size': '3g'}]
+        eph_disk_list = [{'format': u'ext3', 'size': '1g'},
+                         {'format': u'ext4', 'size': '2g'}]
+        _inst = copy.copy(self._instance)
+        _bdi = copy.copy(self._block_device_info)
+
+        if has_get_root_units:
+            # overwrite
+            disk_list = [{'is_boot_disk': True, 'size': '3338'}]
+            call.return_value = '3338'
+            _inst['root_gb'] = 0
+        else:
+            _inst['root_gb'] = 3
+
+        if has_eph_disks:
+            disk_list += eph_disk_list
+        else:
+            _bdi['ephemerals'] = []
+            eph_disk_list = []
+
+        res1, res2 = self.driver._set_disk_list(_inst, self._image_meta.id,
+                                                _bdi)
+
+        if has_get_root_units:
+            call.assert_called_once_with('image_get_root_disk_size',
+                                         self._image_meta.id)
+        self.assertEqual(disk_list, res1)
+        self.assertEqual(eph_disk_list, res2)
+
+    def test_private_set_disk_list_simple(self):
+        self._test_set_disk_list()
+
+    def test_private_set_disk_list_with_eph_disks(self):
+        self._test_set_disk_list(has_eph_disks=True)
+
+    def test_private_set_disk_list_with_get_root_units(self):
+        self._test_set_disk_list(has_get_root_units=True)
+
+    @mock.patch('nova_zvm.virt.zvm.utils.zVMConnectorRequestHandler.call')
+    def test_private_setup_network(self, call):
+        inst_nets = []
+        _net = {'ip_addr': '192.168.0.100',
+                    'gateway_addr': '192.168.0.1',
+                    'cidr': '192.168.0.1/24',
+                    'mac_addr': 'DE:AD:BE:EF:00:00',
+                    'nic_id': None}
+        inst_nets.append(_net)
+        self.driver._setup_network('vm_name', 'os_distro', self._network_info,
+                                   self._instance)
+        call.assert_any_call('guest_create_network_interface',
+                             'vm_name', 'os_distro', inst_nets)
+
+    def test_private_nic_coupled(self):
+        user_direct = {'user_direct':
+                            ['User TEST',
+                             "NICDEF 1000 TYPE QDIO LAN SYSTEM TESTVS"]}
+        res = self.driver._nic_coupled(user_direct, '1000', 'TESTVS')
+        self.assertTrue(res)
+
+        res = self.driver._nic_coupled(user_direct, '2000', 'TESTVS')
+        self.assertFalse(res)
+
+        res = self.driver._nic_coupled(user_direct, '1000', None)
+        self.assertFalse(res)
+
+    @mock.patch('pwd.getpwuid')
+    def test_private_get_host(self, getpwuid):
+        class FakePwuid(object):
+            def __init__(self):
+                self.pw_name = 'test'
+        getpwuid.return_value = FakePwuid()
+        res = self.driver._get_host()
+        self.assertEqual('test@192.168.1.1', res)
+
+    @mock.patch('nova.virt.images.fetch')
+    @mock.patch('os.path.exists')
+    @mock.patch('nova_zvm.virt.zvm.driver.ZVMDriver._get_host')
+    @mock.patch('nova_zvm.virt.zvm.utils.zVMConnectorRequestHandler.call')
+    def test_private_import_spawn_image(self, call, get_host, exists, fetch):
+        get_host.return_value = 'test@192.168.1.1'
+        exists.return_value = False
+
+        image_url = "file:///test/image/image_name"
+        image_meta = {'os_version': 'os_version'}
+        self.driver._import_spawn_image(self._context, 'image_name',
+                                        'os_version')
+        fetch.assert_called_once_with(self._context, 'image_name',
+                                      "/test/image/image_name")
+        get_host.assert_called_once_with()
+        call.assert_called_once_with('image_import', 'image_name', image_url,
+                        image_meta, remote_host='test@192.168.1.1')
+
+    @mock.patch('nova_zvm.virt.zvm.driver.ZVMDriver._instance_exists')
+    @mock.patch('nova_zvm.virt.zvm.utils.zVMConnectorRequestHandler.call')
+    def test_destroy(self, call, instance_exists):
         instance_exists.return_value = True
         self.driver.destroy(self._context, self._instance,
                             network_info=self._network_info)
-        guest_delete.assert_called_once_with(self._instance['name'])
+        call.assert_called_once_with('guest_delete', self._instance['name'])
 
-    @mock.patch.object(driver.ZVMDriver, '_instance_exists')
-    @mock.patch.object(sdkapi.SDKAPI, 'guest_stop')
-    def test_power_off(self, guest_stop, instance_exists):
-        instance_exists.return_value = True
-        self.driver.power_off(self._instance)
-        guest_stop.assert_called_once_with(self._instance['name'], 0, 0)
+    def test_get_host_uptime(self):
+        with mock.patch('nova_zvm.virt.zvm.utils.'
+                        'zVMConnectorRequestHandler.call') as mcall:
+            mcall.return_value = {'hypervisor_hostname': 'TESTHOST',
+                                  'ipl_time': 'TESTTIME'}
+            time = self.driver.get_host_uptime()
+            self.assertEqual('TESTTIME', time)
 
-    @mock.patch.object(driver.ZVMDriver, '_instance_exists')
-    @mock.patch.object(sdkapi.SDKAPI, 'guest_start')
-    def test_power_on(self, guest_start, instance_exists):
-        instance_exists.return_value = True
-        self.driver.power_on(self._context, self._instance,
-                             network_info=self._network_info)
-        guest_start.assert_called_once_with(self._instance['name'])
+    def test_spawn_invalid_userid(self):
+        self.flags(instance_name_template='test%05x')
+        self.addCleanup(self.flags, instance_name_template='test%04x')
+        invalid_inst = fake_instance.fake_instance_obj(self._context,
+                                                       name='123456789')
+        self.assertRaises(exception.InvalidInput, self.driver.spawn,
+                          self._context, invalid_inst, self._image_meta,
+                          injected_files=None, admin_password=None,
+                          allocations=None, network_info=self._network_info,
+                          block_device_info=self._block_device_info,
+                          flavor=self._flavor)
+
+    @mock.patch('nova_zvm.virt.zvm.driver.ZVMDriver._wait_network_ready')
+    @mock.patch('nova_zvm.virt.zvm.driver.ZVMDriver._setup_network')
+    @mock.patch('nova_zvm.virt.zvm.driver.ZVMDriver._get_host')
+    @mock.patch('nova_zvm.virt.zvm.driver.ZVMDriver._set_disk_list')
+    @mock.patch.object(zvmutils.VMUtils, 'generate_configdrive')
+    @mock.patch('nova_zvm.virt.zvm.driver.ZVMDriver._get_image_info')
+    @mock.patch('nova_zvm.virt.zvm.utils.zVMConnectorRequestHandler.call')
+    def test_spawn(self, call, get_image_info, gen_conf_file, set_disk_list,
+                    get_host, setup_network, wait_ready):
+        _inst = copy.copy(self._instance)
+        _bdi = copy.copy(self._block_device_info)
+        get_image_info.return_value = [['image_name']]
+        gen_conf_file.return_value = 'transportfiles'
+        set_disk_list.return_value = 'disk_list', 'eph_list'
+        get_host.return_value = 'test@192.168.1.1'
+        setup_network.return_value = ''
+        wait_ready.return_value = ''
+        call_resp = ['', '', '', '']
+        call.side_effect = call_resp
+
+        self.driver.spawn(self._context, _inst, self._image_meta,
+                          injected_files=None, admin_password=None,
+                          allocations=None, network_info=self._network_info,
+                          block_device_info=_bdi, flavor=self._flavor)
+        gen_conf_file.assert_called_once_with(self._context, _inst,
+                                              None, None)
+        get_image_info.assert_called_once_with(self._context,
+                                    self._image_meta.id,
+                                    self._image_meta.properties.os_distro)
+        set_disk_list.assert_called_once_with(_inst, 'image_name', _bdi)
+        call.assert_any_call('guest_create', _inst['name'],
+                             1, 1024, disk_list='disk_list')
+        get_host.assert_called_once_with()
+        call.assert_any_call('guest_deploy', _inst['name'], 'image_name',
+                             transportfiles='transportfiles',
+                             remotehost='test@192.168.1.1')
+        setup_network.assert_called_once_with(_inst['name'],
+                                self._image_meta.properties.os_distro,
+                                self._network_info, _inst)
+        call.assert_any_call('guest_config_minidisks', _inst['name'],
+                             'eph_list')
+        wait_ready.assert_called_once_with(_inst)
+        call.assert_any_call('guest_start', _inst['name'])
+
+    @mock.patch('nova_zvm.virt.zvm.driver.ZVMDriver._nic_coupled')
+    @mock.patch('nova_zvm.virt.zvm.utils.zVMConnectorRequestHandler.call')
+    def test_private_wait_network_ready(self, call, nic_coupled):
+        call_resp = []
+        switch_dict = {'1000': 'TESTVM'}
+        user_direct = {'user_direct':
+                            ['User TEST',
+                             "NICDEF 1000 TYPE QDIO LAN SYSTEM TESTVS"]}
+        call_resp.append(switch_dict)
+        call_resp.append(user_direct)
+        call.side_effect = call_resp
+        nic_coupled.return_value = True
+        self.driver._wait_network_ready(self._instance)
+        call.assert_any_call('guest_get_nic_vswitch_info',
+                             self._instance['name'])
+
+        call.assert_any_call('guest_get_definition_info',
+                             self._instance['name'])
