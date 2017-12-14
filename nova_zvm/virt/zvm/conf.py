@@ -15,6 +15,11 @@
 from oslo_config import cfg
 
 zvm_opts = [
+    cfg.StrOpt('zvm_cloud_connector_url',
+               help="""
+URL to be used to communicate with z/VM Cloud Connector.
+Example: https://10.10.10.1:8080.
+"""),
     cfg.StrOpt('zvm_image_tmp_path',
                default='/var/lib/nova/images',
                help="""

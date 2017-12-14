@@ -14,31 +14,25 @@
 
 
 import os
-import pwd
 
 from nova.api.metadata import base as instance_metadata
-from nova import block_device
 from nova.compute import power_state
+from nova import exception
 from nova.i18n import _
 from nova.virt import configdrive
-from nova.virt import driver
-from nova.virt import images
-from oslo_config import cfg
 from oslo_log import log as logging
-from zvmsdk import api as zvm_api
-from zvmsdk import dist
+import six.moves.urllib.parse as urlparse
+from zvmconnector import connector
 
+from nova_zvm.virt.zvm import conf
 from nova_zvm.virt.zvm import configdrive as zvmconfigdrive
 from nova_zvm.virt.zvm import const
-from nova_zvm.virt.zvm import exception
 
 
 LOG = logging.getLogger(__name__)
-CONF = cfg.CONF
+CONF = conf.CONF
 
-CONF.import_opt('host', 'nova.conf')
 CONF.import_opt('instances_path', 'nova.compute.manager')
-CONF.import_opt('my_ip', 'nova.conf')
 
 
 def mapping_power_stat(power_stat):
@@ -46,30 +40,23 @@ def mapping_power_stat(power_stat):
     return const.ZVM_POWER_STAT.get(power_stat, power_state.NOSTATE)
 
 
-def _volume_in_mapping(mount_device, block_device_info):
-    block_device_list = [block_device.strip_dev(vol['mount_device'])
-                         for vol in
-                         driver.block_device_info_get_mapping(
-                             block_device_info)]
-    LOG.debug("block_device_list %s", block_device_list)
-    return block_device.strip_dev(mount_device) in block_device_list
+class zVMConnectorRequestHandler(object):
 
+    def __init__(self):
+        _url = urlparse.urlparse(CONF.zvm_cloud_connector_url)
+        self._conn = connector.ZVMConnector(_url.hostname, _url.port)
 
-def is_volume_root(root_device, mountpoint):
-    """This judges if the moutpoint equals the root_device."""
-    return block_device.strip_dev(mountpoint) == block_device.strip_dev(
-                                                                root_device)
-
-
-def is_boot_from_volume(block_device_info):
-    root_mount_device = driver.block_device_info_get_root(block_device_info)
-    boot_from_volume = _volume_in_mapping(root_mount_device,
-                                          block_device_info)
-    return root_mount_device, boot_from_volume
-
-
-def get_host():
-    return ''.join([pwd.getpwuid(os.geteuid()).pw_name, '@', CONF.my_ip])
+    def call(self, func_name, *args, **kwargs):
+        results = self._conn.send_request(func_name, *args, **kwargs)
+        if results['overallRC'] == 0:
+            return results['output']
+        else:
+            msg = ("SDK request %(api)s failed with parameters: %(args)s "
+                   "%(kwargs)s .  Results: %(results)s" %
+                   {'api': func_name, 'args': str(args), 'kwargs': str(kwargs),
+                    'results': str(results)})
+            LOG.debug(msg)
+            raise exception.NovaException(message=msg, results=results)
 
 
 class PathUtils(object):
@@ -89,71 +76,41 @@ class PathUtils(object):
                             "console.log")
 
 
-class NetworkUtils(object):
-    """Utilities for z/VM network operator."""
-    pass
-
-
 class VMUtils(object):
     def __init__(self):
-        self._sdk_api = zvm_api.SDKAPI()
-        self._dist_manager = dist.LinuxDistManager()
         self._pathutils = PathUtils()
-        self._imageutils = ImageUtils()
 
     # Prepare and create configdrive for instance
-    def generate_configdrive(self, context, instance, os_version,
-                             network_info, injected_files, admin_password):
+    def generate_configdrive(self, context, instance, injected_files,
+                             admin_password):
         # Create network configuration files
         LOG.debug('Creating network configuration files '
                   'for instance: %s' % instance['name'], instance=instance)
 
-        linuxdist = self._dist_manager.get_linux_dist(os_version)()
         instance_path = self._pathutils.get_instance_path(instance['uuid'])
-
-        files_and_cmds = linuxdist.create_network_configuration_files(
-                             instance_path, network_info)
-        (net_conf_files, net_conf_cmds) = files_and_cmds
-        # Add network configure files to inject_files
-        if len(net_conf_files) > 0:
-            injected_files.extend(net_conf_files)
 
         transportfiles = None
         if configdrive.required_by(instance):
             transportfiles = self._create_config_drive(context, instance_path,
                                                        instance,
                                                        injected_files,
-                                                       admin_password,
-                                                       net_conf_cmds,
-                                                       linuxdist)
+                                                       admin_password)
         return transportfiles
 
     def _create_config_drive(self, context, instance_path, instance,
-                             injected_files, admin_password, commands,
-                             linuxdist):
+                             injected_files, admin_password):
         if CONF.config_drive_format not in ['tgz', 'iso9660']:
             msg = (_("Invalid config drive format %s") %
                    CONF.config_drive_format)
-            raise exception.ZVMConfigDriveError(msg=msg)
+            LOG.debug(msg)
+            raise exception.ConfigDriveUnsupportedFormat(
+                            format=CONF.config_drive_format)
 
         LOG.debug('Using config drive', instance=instance)
 
         extra_md = {}
         if admin_password:
             extra_md['admin_pass'] = admin_password
-
-        udev_settle = linuxdist.get_znetconfig_contents()
-        if udev_settle:
-            if len(commands) == 0:
-                znetconfig = '\n'.join(('#!/bin/bash', udev_settle))
-            else:
-                znetconfig = '\n'.join(('#!/bin/bash', commands, udev_settle))
-            znetconfig += '\nrm -rf /tmp/znetconfig.sh\n'
-            # Create a temp file in instance to execute above commands
-            net_cmd_file = []
-            net_cmd_file.append(('/tmp/znetconfig.sh', znetconfig))  # nosec
-            injected_files.extend(net_cmd_file)
-            # injected_files.extend(('/tmp/znetconfig.sh', znetconfig))
 
         inst_md = instance_metadata.InstanceMetadata(instance,
                                                      content=injected_files,
@@ -171,24 +128,3 @@ class VMUtils(object):
             cdb.make_drive(configdrive_tgz)
 
         return configdrive_tgz
-
-
-class ImageUtils(object):
-
-    def __init__(self):
-        self._pathutils = PathUtils()
-        self._sdk_api = zvm_api.SDKAPI()
-
-    def import_spawn_image(self, context, image_href, image_os_version):
-        LOG.debug("Downloading the image %s from glance to nova compute "
-                  "server" % image_href)
-
-        image_path = os.path.join(os.path.normpath(CONF.zvm_image_tmp_path),
-                                  image_href)
-        if not os.path.exists(image_path):
-            images.fetch(context, image_href, image_path)
-        image_url = "file://" + image_path
-        image_meta = {'os_version': image_os_version}
-        remote_host = get_host()
-        self._sdk_api.image_import(image_url, image_meta=image_meta,
-                                   remote_host=remote_host)
