@@ -37,7 +37,7 @@ sys.path.insert(0, os.path.abspath('./'))
 extensions = [
     'oslosphinx',
     'sphinx.ext.autodoc',
-    'ext.support_matrix',
+    'sphinx_feature_classification.support_matrix',
     'oslo_config.sphinxconfiggen',
     'sphinxcontrib.actdiag'
 ]
