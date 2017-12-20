@@ -45,7 +45,20 @@ class zVMConnectorRequestHandler(object):
 
     def __init__(self):
         _url = urlparse.urlparse(CONF.zvm_cloud_connector_url)
-        self._conn = connector.ZVMConnector(_url.hostname, _url.port)
+        _ca_file = CONF.zvm_ca_file
+        if _url.scheme == 'https':
+            _ssl_enabled = True
+        else:
+            _ssl_enabled = False
+
+        if _ssl_enabled and _ca_file:
+            self._conn = connector.ZVMConnector(_url.hostname, _url.port,
+                                                ssl_enabled=_ssl_enabled,
+                                                verify=_ca_file)
+        else:
+            self._conn = connector.ZVMConnector(_url.hostname, _url.port,
+                                                ssl_enabled=_ssl_enabled,
+                                                verify=False)
 
     def call(self, func_name, *args, **kwargs):
         results = self._conn.send_request(func_name, *args, **kwargs)
