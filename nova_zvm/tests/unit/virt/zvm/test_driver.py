@@ -435,3 +435,47 @@ class TestZVMDriver(test.NoDBTestCase):
 
         call.assert_any_call('guest_get_definition_info',
                              self._instance['name'])
+
+    @mock.patch('nova_zvm.virt.zvm.utils.zVMConnectorRequestHandler.call')
+    def test_instance_power_action(self, call):
+        call.side_effect = [['test0001', 'test0002'], None]
+        self.driver._instance_power_action(self._instance, 'guest_start')
+        call.assert_any_call('guest_list')
+        call.assert_any_call('guest_start', 'test0001')
+
+    @mock.patch('nova_zvm.virt.zvm.utils.zVMConnectorRequestHandler.call')
+    def test_instance_power_action_not_exist(self, call):
+        call.return_value = ['test0002', 'test0003']
+        self.driver._instance_power_action(self._instance, 'guest_start')
+        call.assert_any_call('guest_list')
+
+    @mock.patch('nova_zvm.virt.zvm.driver.ZVMDriver._instance_power_action')
+    def test_power_off(self, ipa):
+        self.driver.power_off(self._instance)
+        ipa.assert_called_once_with(self._instance, 'guest_softoff')
+        self.driver.power_off(self._instance, 60, 10)
+        ipa.assert_any_call(self._instance, 'guest_softoff',
+                            timeout=60, poll_interval=10)
+
+    @mock.patch('nova_zvm.virt.zvm.driver.ZVMDriver._instance_power_action')
+    def test_power_on(self, ipa):
+        self.driver.power_on(None, self._instance, None)
+        ipa.assert_called_once_with(self._instance, 'guest_start')
+
+    @mock.patch('nova_zvm.virt.zvm.driver.ZVMDriver._instance_power_action')
+    def test_pause(self, ipa):
+        self.driver.pause(self._instance)
+        ipa.assert_called_once_with(self._instance, 'guest_pause')
+
+    @mock.patch('nova_zvm.virt.zvm.driver.ZVMDriver._instance_power_action')
+    def test_unpause(self, ipa):
+        self.driver.unpause(self._instance)
+        ipa.assert_called_once_with(self._instance, 'guest_unpause')
+
+    @mock.patch('nova_zvm.virt.zvm.utils.zVMConnectorRequestHandler.call')
+    def test_get_console_output(self, call):
+        call.return_value = 'console output'
+        outputs = self.driver.get_console_output(None, self._instance)
+        call.test_assert_called_once_with('guest_get_console_output',
+                                          'test0001')
+        self.assertEqual('console output', outputs)

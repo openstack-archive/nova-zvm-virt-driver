@@ -369,3 +369,38 @@ class ZVMDriver(driver.ComputeDriver):
     def get_host_uptime(self):
         res = self._reqh.call('host_get_info')
         return res['ipl_time']
+
+    def _instance_power_action(self, instance, action, *args, **kwargs):
+        inst_name = instance['name']
+        if self._instance_exists(inst_name):
+            LOG.info(_("Power action %(action)s to instance %(inst_name)s"),
+                     action=action, inst_name=inst_name, instance=instance)
+            self._reqh.call(action, inst_name)
+        else:
+            LOG.warning(_('Instance %s does not exist'), inst_name,
+                        instance=instance)
+
+    def power_off(self, instance, timeout=0, retry_interval=0):
+        """Power off the specified instance."""
+        if timeout >= 0 and retry_interval > 0:
+            self._instance_power_action(instance, 'guest_softoff',
+                                        timeout=timeout,
+                                        poll_interval=retry_interval)
+        else:
+            self._instance_power_action(instance, 'guest_softoff')
+
+    def power_on(self, context, instance, network_info,
+                 block_device_info=None):
+        """Power on the specified instance."""
+        self._instance_power_action(instance, 'guest_start')
+
+    def pause(self, instance):
+        """Pause the z/VM instance."""
+        self._instance_power_action(instance, 'guest_pause')
+
+    def unpause(self, instance):
+        """Unpause the z/VM instance."""
+        self._instance_power_action(instance, 'guest_unpause')
+
+    def get_console_output(self, context, instance):
+        return self._reqh.call('guest_get_console_output', instance.name)
