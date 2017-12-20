@@ -50,6 +50,28 @@ Possible Values:
     A value of 0 is used for debug. In this case the underlying z/VM guest
     will not be deleted when the instance is marked in ERROR state.
 """),
+    cfg.BoolOpt('zvm_ssl_enabled',
+               default=True,
+               help="""
+Whether SSL enabled of not.
+
+If enabled, use HTTPS instead of HTTP. The httpd
+server should enable SSL. Default to True.
+"""),
+    cfg.BoolOpt('zvm_verify_enabled',
+               default=True,
+               help="""
+whether we verify the server's TLS certificate or not.
+
+If enabled, zvm_ca_file must be set a value.
+"""),
+    cfg.StrOpt('zvm_ca_file',
+               default='/etc/PKIcerts/certs/cacert.pem',
+               help="""
+CA certificate file to be verified in httpd server
+
+A string, it must be a path to a CA bundle to use.
+"""),
     ]
 
 CONF = cfg.CONF
