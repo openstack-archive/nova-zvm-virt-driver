@@ -50,7 +50,8 @@ class ZVMDriver(driver.ComputeDriver):
         "has_imagecache": True,
         "supports_recreate": False,
         "supports_migrate_to_same_host": True,
-        "supports_attach_interface": False
+        "supports_attach_interface": False,
+        "supports_multiattach": False
     }
 
     def __init__(self, virtapi):
