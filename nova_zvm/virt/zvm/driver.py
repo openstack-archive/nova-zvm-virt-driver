@@ -20,8 +20,10 @@ import pwd
 import time
 
 from nova.compute import power_state
+from nova.compute import task_states
 from nova import exception
 from nova.i18n import _
+from nova.image import glance
 from nova.objects import fields as obj_fields
 from nova.virt import driver
 from nova.virt import hardware
@@ -56,6 +58,7 @@ class ZVMDriver(driver.ComputeDriver):
         super(ZVMDriver, self).__init__(virtapi)
         self._reqh = zvmutils.zVMConnectorRequestHandler()
         self._vmutils = zvmutils.VMUtils()
+        self._pathutils = zvmutils.PathUtils()
         self._imageop_semaphore = eventlet.semaphore.Semaphore(1)
 
         # get hypervisor host name
@@ -183,7 +186,7 @@ class ZVMDriver(driver.ComputeDriver):
                             context, instance, injected_files, admin_password)
 
             resp = self._get_image_info(context, image_meta.id, os_distro)
-            spawn_image_name = resp[0][0]
+            spawn_image_name = resp[0]['imagename']
             disk_list, eph_list = self._set_disk_list(instance,
                                                       spawn_image_name,
                                                       block_device_info)
@@ -405,3 +408,103 @@ class ZVMDriver(driver.ComputeDriver):
 
     def get_console_output(self, context, instance):
         return self._reqh.call('guest_get_console_output', instance.name)
+
+    def snapshot(self, context, instance, image_href, update_task_state):
+        """Snapshots the specified instance.
+
+        :param context: security context
+        :param instance: Instance object as returned by DB layer.
+        :param image_href: Reference to a pre-created image that will
+                         hold the snapshot.
+        """
+        # Check the image status
+        (image_service, image_id) = glance.get_remote_image_service(
+                                                    context, image_href)
+
+        # Make sure the instance is ready for snapshot
+        state = instance['power_state']
+        if (state == power_state.NOSTATE or state == power_state.CRASHED or
+                state == power_state.SUSPENDED):
+            raise exception.InstanceNotReady(instance_id=instance['name'])
+        elif state == power_state.SHUTDOWN:
+            self.power_on({}, instance, [])
+        elif state == power_state.PAUSED:
+            self.unpause(instance)
+
+        # Update the instance task_state to image_pending_upload
+        update_task_state(task_state=task_states.IMAGE_PENDING_UPLOAD)
+
+        # Call zvmsdk guest_capture to generate the image
+        try:
+            self._reqh.call('guest_capture', instance['name'], image_href)
+        except Exception as err:
+            with excutils.save_and_reraise_exception():
+                LOG.error(_("Failed to capture the instance %(instance)s "
+                            "to generate an image with reason: %(err)s"),
+                          {'instance': instance['name'], 'err': err},
+                           instance=instance)
+                # Clean up the image from glance
+                image_service.delete(context, image_href)
+        finally:
+            self._reset_power_state(state, instance)
+
+        # Export the image to nova-compute server temporary
+        image_path = os.path.join(os.path.normpath(
+                            CONF.zvm_image_tmp_path), image_href)
+        dest_path = "file://" + image_path
+        resp = self._reqh.call('image_export', image_href,
+                               dest_path,
+                               remote_host=self._get_host())
+
+        # Save image to glance
+        new_image_meta = {
+            'is_public': False,
+            'status': 'active',
+            'properties': {
+                 'image_location': 'snapshot',
+                 'image_state': 'available',
+                 'owner_id': instance['project_id'],
+                 'os_distro': resp['os_version'],
+                 'architecture': const.ARCHITECTURE,
+                 'hypervisor_type': const.HYPERVISOR_TYPE
+            },
+            'disk_format': 'raw',
+            'container_format': 'bare',
+        }
+
+        update_task_state(task_state=task_states.IMAGE_UPLOADING,
+                          expected_state=task_states.IMAGE_PENDING_UPLOAD)
+        # Save the image to glance
+        try:
+            with open(image_path, 'r') as image_file:
+                image_service.update(context,
+                                     image_href,
+                                     new_image_meta,
+                                     image_file,
+                                     purge_props=False)
+        except Exception:
+            with excutils.save_and_reraise_exception():
+                image_service.delete(context, image_href)
+        finally:
+            self._pathutils.clean_up_file(image_path)
+        LOG.debug("Snapshot image upload complete", instance=instance)
+
+    def _reset_power_state(self, state, instance):
+        # If the instance's power_state is "RUNNING", power it on after
+        # capture. If "PAUSED", pause it after capture.
+        if state == power_state.RUNNING or state == power_state.PAUSED:
+            try:
+                self.power_on({}, instance, [])
+            except exception.InstancePowerOnFailure as err:
+                LOG.warning(_("Power On instance %(inst)s fail after "
+                    "capture, please check manually. The error is: %(err)s"),
+                    {'inst': instance['name'], 'err': err.format_message()},
+                    instance=instance)
+        if state == power_state.PAUSED:
+            try:
+                self.pause(instance)
+            except Exception as err:
+                LOG.warning(_("Pause instance %(inst)s fail after capture, "
+                    "please check manually. The error is: %(err)s"),
+                    {'inst': instance['name'], 'err': err.format_message()},
+                    instance=instance)

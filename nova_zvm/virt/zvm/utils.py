@@ -14,6 +14,7 @@
 
 
 import os
+import shutil
 
 from nova.api.metadata import base as instance_metadata
 from nova.compute import power_state
@@ -70,6 +71,14 @@ class PathUtils(object):
             LOG.debug("Creating the instance path %s", instance_folder)
             os.makedirs(instance_folder)
         return instance_folder
+
+    def clean_up_folder(self, fpath):
+        if os.path.isdir(fpath):
+            shutil.rmtree(fpath)
+
+    def clean_up_file(self, filepath):
+        if os.path.exists(filepath):
+            os.remove(filepath)
 
 
 class VMUtils(object):
