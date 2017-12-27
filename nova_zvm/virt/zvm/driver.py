@@ -373,8 +373,9 @@ class ZVMDriver(driver.ComputeDriver):
     def _instance_power_action(self, instance, action, *args, **kwargs):
         inst_name = instance['name']
         if self._instance_exists(inst_name):
-            LOG.info(_("Power action %(action)s to instance %(inst_name)s"),
-                     action=action, inst_name=inst_name, instance=instance)
+            LOG.info(_("Power action %(action)s to instance %(inst_name)s") %
+                     {'action': action, 'inst_name': inst_name},
+                     instance=instance)
             self._reqh.call(action, inst_name)
         else:
             LOG.warning(_('Instance %s does not exist'), inst_name,
@@ -383,11 +384,11 @@ class ZVMDriver(driver.ComputeDriver):
     def power_off(self, instance, timeout=0, retry_interval=0):
         """Power off the specified instance."""
         if timeout >= 0 and retry_interval > 0:
-            self._instance_power_action(instance, 'guest_softoff',
+            self._instance_power_action(instance, 'guest_softstop',
                                         timeout=timeout,
                                         poll_interval=retry_interval)
         else:
-            self._instance_power_action(instance, 'guest_softoff')
+            self._instance_power_action(instance, 'guest_softstop')
 
     def power_on(self, context, instance, network_info,
                  block_device_info=None):
