@@ -15,6 +15,12 @@
 import copy
 import eventlet
 import mock
+import os
+import six
+if six.PY2:
+    import __builtin__ as builtins
+elif six.PY3:
+    import builtins
 
 from nova.compute import power_state
 from nova import context
@@ -25,8 +31,12 @@ from nova import test
 from nova.tests.unit import fake_instance
 from nova.tests import uuidsentinel
 
+from nova_zvm.virt.zvm import conf
+from nova_zvm.virt.zvm import const
 from nova_zvm.virt.zvm import driver as zvmdriver
 from nova_zvm.virt.zvm import utils as zvmutils
+
+CONF = conf.CONF
 
 
 class TestZVMDriver(test.NoDBTestCase):
@@ -116,6 +126,8 @@ class TestZVMDriver(test.NoDBTestCase):
         self._network_info = network_model.NetworkInfo([
                 network_model.VIF(**self._network_values)
         ])
+
+        self.mock_update_task_state = mock.Mock()
 
     def test_driver_init(self):
         self.assertEqual(self.driver._hypervisor_hostname, 'TESTHOST')
@@ -384,7 +396,7 @@ class TestZVMDriver(test.NoDBTestCase):
                     get_host, setup_network, wait_ready):
         _inst = copy.copy(self._instance)
         _bdi = copy.copy(self._block_device_info)
-        get_image_info.return_value = [['image_name']]
+        get_image_info.return_value = [{'imagename': 'image_name'}]
         gen_conf_file.return_value = 'transportfiles'
         set_disk_list.return_value = 'disk_list', 'eph_list'
         get_host.return_value = 'test@192.168.1.1'
@@ -479,3 +491,50 @@ class TestZVMDriver(test.NoDBTestCase):
         call.test_assert_called_once_with('guest_get_console_output',
                                           'test0001')
         self.assertEqual('console output', outputs)
+
+    @mock.patch.object(builtins, 'open')
+    @mock.patch('nova_zvm.virt.zvm.driver.ZVMDriver._get_host')
+    @mock.patch('nova.image.glance.get_remote_image_service', )
+    @mock.patch('nova_zvm.virt.zvm.utils.zVMConnectorRequestHandler.call')
+    def test_snapshot(self, call, get_image_service, get_host, mock_open):
+        image_service = mock.Mock()
+        image_id = 'e9ee1562-3ea1-4cb1-9f4c-f2033000eab1'
+        get_image_service.return_value = (image_service, image_id)
+        host_info = 'nova@192.168.99.1'
+        get_host.return_value = host_info
+        call_resp = ['', {"os_version": "rhel7.2",
+                          "dest_url": "file:///path/to/target"}, '']
+        call.side_effect = call_resp
+        new_image_meta = {
+            'is_public': False,
+            'status': 'active',
+            'properties': {
+                 'image_location': 'snapshot',
+                 'image_state': 'available',
+                 'owner_id': self._instance['project_id'],
+                 'os_distro': call_resp[1]['os_version'],
+                 'architecture': const.ARCHITECTURE,
+                 'hypervisor_type': const.HYPERVISOR_TYPE
+            },
+            'disk_format': 'raw',
+            'container_format': 'bare',
+        }
+        image_path = os.path.join(os.path.normpath(
+                            CONF.zvm_image_tmp_path), image_id)
+        dest_path = "file://" + image_path
+
+        self.driver.snapshot(self._context, self._instance, image_id,
+                             self.mock_update_task_state)
+        get_image_service.assert_called_with(self._context, image_id)
+
+        call.assert_any_call('guest_capture',
+                             self._instance['name'], image_id)
+        mock_open.assert_called_once_with(image_path, 'r')
+        image_service.update.assert_called_once_with(self._context,
+                                                     image_id,
+                                                     new_image_meta,
+        mock_open.return_value.__enter__.return_value,
+                                                     purge_props=False)
+        call.assert_any_call('image_export', image_id, dest_path,
+                             remote_host=host_info)
+        call.assert_any_call('image_delete', image_id)
