@@ -383,11 +383,11 @@ class ZVMDriver(driver.ComputeDriver):
     def power_off(self, instance, timeout=0, retry_interval=0):
         """Power off the specified instance."""
         if timeout >= 0 and retry_interval > 0:
-            self._instance_power_action(instance, 'guest_softoff',
+            self._instance_power_action(instance, 'guest_softstop',
                                         timeout=timeout,
                                         poll_interval=retry_interval)
         else:
-            self._instance_power_action(instance, 'guest_softoff')
+            self._instance_power_action(instance, 'guest_softstop')
 
     def power_on(self, context, instance, network_info,
                  block_device_info=None):

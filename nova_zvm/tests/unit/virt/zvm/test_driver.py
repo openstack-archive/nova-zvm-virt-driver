@@ -452,9 +452,9 @@ class TestZVMDriver(test.NoDBTestCase):
     @mock.patch('nova_zvm.virt.zvm.driver.ZVMDriver._instance_power_action')
     def test_power_off(self, ipa):
         self.driver.power_off(self._instance)
-        ipa.assert_called_once_with(self._instance, 'guest_softoff')
+        ipa.assert_called_once_with(self._instance, 'guest_softstop')
         self.driver.power_off(self._instance, 60, 10)
-        ipa.assert_any_call(self._instance, 'guest_softoff',
+        ipa.assert_any_call(self._instance, 'guest_softstop',
                             timeout=60, poll_interval=10)
 
     @mock.patch('nova_zvm.virt.zvm.driver.ZVMDriver._instance_power_action')
