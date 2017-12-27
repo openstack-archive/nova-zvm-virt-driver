@@ -384,7 +384,7 @@ class TestZVMDriver(test.NoDBTestCase):
                     get_host, setup_network, wait_ready):
         _inst = copy.copy(self._instance)
         _bdi = copy.copy(self._block_device_info)
-        get_image_info.return_value = [['image_name']]
+        get_image_info.return_value = [{'imagename': 'image_name'}]
         gen_conf_file.return_value = 'transportfiles'
         set_disk_list.return_value = 'disk_list', 'eph_list'
         get_host.return_value = 'test@192.168.1.1'
