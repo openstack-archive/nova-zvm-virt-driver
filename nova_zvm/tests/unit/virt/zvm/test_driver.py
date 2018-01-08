@@ -484,6 +484,18 @@ class TestZVMDriver(test.NoDBTestCase):
         self.driver.unpause(self._instance)
         ipa.assert_called_once_with(self._instance, 'guest_unpause')
 
+    @mock.patch('nova_zvm.virt.zvm.driver.ZVMDriver._instance_power_action')
+    def test_reboot_soft(self, ipa):
+        self.driver.reboot(self._context, self._instance, self._network_info,
+                           'SOFT')
+        ipa.assert_called_once_with(self._instance, 'guest_reboot')
+
+    @mock.patch('nova_zvm.virt.zvm.driver.ZVMDriver._instance_power_action')
+    def test_reboot_hard(self, ipa):
+        self.driver.reboot(self._context, self._instance, self._network_info,
+                           'HARD')
+        ipa.assert_called_once_with(self._instance, 'guest_reset')
+
     @mock.patch('nova_zvm.virt.zvm.utils.zVMConnectorRequestHandler.call')
     def test_get_console_output(self, call):
         call.return_value = 'console output'

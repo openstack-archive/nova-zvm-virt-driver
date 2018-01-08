@@ -405,6 +405,13 @@ class ZVMDriver(driver.ComputeDriver):
         """Unpause the z/VM instance."""
         self._instance_power_action(instance, 'guest_unpause')
 
+    def reboot(self, context, instance, network_info, reboot_type,
+               block_device_info=None, bad_volumes_callback=None):
+        if reboot_type == const.REBOOT_TYPE_SOFT:
+            self._instance_power_action(instance, 'guest_reboot')
+        else:
+            self._instance_power_action(instance, 'guest_reset')
+
     def get_console_output(self, context, instance):
         return self._reqh.call('guest_get_console_output', instance.name)
 

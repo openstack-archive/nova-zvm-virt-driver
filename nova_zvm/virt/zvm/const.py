@@ -25,3 +25,6 @@ ZVM_POWER_STAT = {
     'on': power_state.RUNNING,
     'off': power_state.SHUTDOWN,
     }
+
+REBOOT_TYPE_SOFT = 'SOFT'
+REBOOT_TYPE_HARD = 'HARD'
