@@ -50,6 +50,11 @@ Possible Values:
     A value of 0 is used for debug. In this case the underlying z/VM guest
     will not be deleted when the instance is marked in ERROR state.
 """),
+    cfg.StrOpt('zvm_token_path',
+               default=None,
+               help="""
+File path of admin token.
+"""),
     cfg.StrOpt('zvm_ca_file',
                default=None,
                help="""
