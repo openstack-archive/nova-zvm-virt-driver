@@ -210,13 +210,13 @@ class TestZVMDriver(test.NoDBTestCase):
 
     @mock.patch('nova_zvm.virt.zvm.driver.ZVMDriver.list_instances')
     def test_private_instance_exists_True(self, list_instances):
-        list_instances.return_value = ['vm1', 'vm2']
+        list_instances.return_value = ['VM1', 'VM2']
         res = self.driver._instance_exists('vm1')
         self.assertTrue(res)
 
     @mock.patch('nova_zvm.virt.zvm.driver.ZVMDriver.list_instances')
     def test_private_instance_exists_False(self, list_instances):
-        list_instances.return_value = ['vm1', 'vm2']
+        list_instances.return_value = ['VM1', 'VM2']
         res = self.driver._instance_exists('vm3')
         self.assertFalse(res)
 
@@ -450,7 +450,7 @@ class TestZVMDriver(test.NoDBTestCase):
 
     @mock.patch('nova_zvm.virt.zvm.utils.zVMConnectorRequestHandler.call')
     def test_instance_power_action(self, call):
-        call.side_effect = [['test0001', 'test0002'], None]
+        call.side_effect = [['TEST0001', 'TEST0002'], None]
         self.driver._instance_power_action(self._instance, 'guest_start')
         call.assert_any_call('guest_list')
         call.assert_any_call('guest_start', 'test0001')
