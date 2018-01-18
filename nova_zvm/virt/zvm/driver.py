@@ -160,7 +160,7 @@ class ZVMDriver(driver.ComputeDriver):
 
     def _instance_exists(self, instance_name):
         """Overwrite this to using instance name as input parameter."""
-        return instance_name in self.list_instances()
+        return instance_name.upper() in self.list_instances()
 
     def instance_exists(self, instance):
         """Overwrite this to using instance name as input parameter."""
