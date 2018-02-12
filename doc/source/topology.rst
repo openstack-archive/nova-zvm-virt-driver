@@ -65,10 +65,3 @@ zvm cloud connector.
             zvm.setupnet [label = "use zvm cp to setup network"]
         }
     }
-
-Compare with vmware openstack driver
-------------------------------------
-
-Here's architecture comparsion between z/VM and vmware enablement for openstack.
-
-.. image:: ./images/zvm_vmware.jpg
