@@ -1,4 +1,4 @@
-# Copyright 2013 IBM Corp.
+# Copyright 2017,2018 IBM Corp.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -11,7 +11,6 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
-
 
 import os
 import six
@@ -42,6 +41,11 @@ class ZVMConfigDriveBuilder(configdrive.ConfigDriveBuilder):
 
         """
         if CONF.config_drive_format in ['iso9660']:
+            # cloud-init only support iso9660 and vfat, but in z/VM
+            # implementation, can't link a disk to VM as iso9660 before it's
+            # boot ,so create a tgz file then send to the VM deployed, and
+            # during startup process, the tgz file will be extracted and
+            # mounted as iso9660 format then cloud-init is able to consume it
             self._make_tgz(path)
         else:
             raise exception.ConfigDriveUnknownFormat(
@@ -63,6 +67,6 @@ class ZVMConfigDriveBuilder(configdrive.ConfigDriveBuilder):
                 os.chdir(olddir)
             except Exception as e:
                 emsg = six.text_type(e)
-                LOG.debug('exception in _make_tgz %s', emsg)
+                LOG.debug('exception in chdir: %s', emsg)
 
             tar.close()
