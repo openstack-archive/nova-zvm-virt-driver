@@ -1,4 +1,4 @@
-# Copyright 2013 IBM Corp.
+# Copyright 2017,2018 IBM Corp.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -12,18 +12,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-"""A connection to an IBM z/VM Virtualization system.
-
-Generally, OpenStack z/VM virt driver will call xCat REST API to operate
-to z/VM hypervisors.xCat has a control point(a virtual machine) in z/VM
-system, which enables xCat management node to control the z/VM system.
-OpenStack z/VM driver will communicate with xCat management node through
-xCat REST API. Thus OpenStack can operate to z/VM system indirectly.
-
-"""
-
-
-from nova_zvm.virt.zvm import driver
-
+from nova.virt.zvm import driver
 
 ZVMDriver = driver.ZVMDriver
