@@ -44,5 +44,5 @@ The z/VM OpenStack support has been tested with cloud-init 0.7.4 and 0.7.5 for R
 cloud-init, you should change your specification of the indicated commands accordingly.
 
 During cloud-init installation, some dependency packages may be required. You can use zypper and
-python setuptools to easily resolve these dependencies. See https://pypi.python.org/pypi/setuptools for
+python setuptools to easily resolve these dependencies. See https://pypi.org/project/setuptools for
 more information.
