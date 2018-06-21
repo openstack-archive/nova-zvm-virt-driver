@@ -16,3 +16,4 @@ testtools>=1.4.0
 mock>=1.2
 mox>=0.5.3
 vine
+wsgi_intercept>=1.4.1 # MIT License
