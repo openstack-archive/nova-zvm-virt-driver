@@ -27,5 +27,4 @@ import nova_zvm.virt.zvm.driver as real_drv
 
 LOG = real_drv.LOG
 CONF = real_drv.CONF
-ZVMInstance = real_drv.ZVMInstance
 ZVMDriver = real_drv.ZVMDriver
