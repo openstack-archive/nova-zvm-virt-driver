@@ -27,6 +27,7 @@ from nova.objects import fields as obj_fields
 from nova.virt import driver
 from nova.virt import hardware
 from nova.virt import images
+from nova.volume import cinder
 from oslo_log import log as logging
 from oslo_serialization import jsonutils
 from oslo_service import loopingcall
@@ -59,6 +60,7 @@ class ZVMDriver(driver.ComputeDriver):
         self._vmutils = zvmutils.VMUtils()
         self._pathutils = zvmutils.PathUtils()
         self._imageop_semaphore = eventlet.semaphore.Semaphore(1)
+        self._volume_api = cinder.API()
 
         # get hypervisor host name
         res = self._reqh.call('host_get_info')
@@ -494,3 +496,135 @@ class ZVMDriver(driver.ComputeDriver):
             self._pathutils.clean_up_file(image_path)
             self._reqh.call('image_delete', image_id)
         LOG.debug("Snapshot image upload complete", instance=instance)
+
+    def get_volume_connector(self, instance):
+        """Get connector information for the instance for attaching to volumes.
+
+        Connector information is a dictionary representing the ip of the
+        machine that will be making the connection, the name of the iscsi
+        initiator and the hostname of the machine as follows::
+
+            {
+                'zvm_fcp': fcp
+                'wwpns': [wwpn]
+                'host': host
+            }
+        """
+        LOG.debug("Getting volume connector...")
+        if not instance:
+            errmsg = _("Instance must be provided.")
+            raise exception.NovaException(message=errmsg)
+
+        empty_connector = {'zvm_fcp': [], 'wwpns': [], 'host': ''}
+        try:
+            connector = self._reqh.call('get_volume_connector',
+                                        instance['name'])
+        except Exception:
+            errmsg = _("Get volume connector error.")
+            LOG.warning(errmsg)
+            return empty_connector
+
+        return connector
+
+    def _format_mountpoint(self, mountpoint):
+        """Change mountpoint from /dev/sdX to /dev/vdX.
+
+        When a SCSI device is pluged in, the system will create a file node
+        /dev/sdX for the SCSI device. If the file node exists already as a
+        link to another file, the link will be overlayed and the file node
+        will be seized by the SCSI device.
+
+        For example, if the first SCSI device is pluged in and the mountpoint
+        is specified as /dev/sdb, the SCSI device will be attached to /dev/sda
+        and /dev/sdb is created as a link to /dev/sda. Then the second SCSI
+        device is pluged in. It will be attached to /dev/sdb and the link will
+        no longer exist.
+
+        To avoid this case, if mountpoint is /dev/sdX, it will be changed to
+        /dev/vdX. Otherwize it will keep as it is.
+
+        When instance's root_device_name is /dev/dasdX, the mountpoint will be
+        changed to /dev/dX. That's not what is expected. Format mountpoint to
+        /dev/vdX in this case.
+
+        :param mountpoint: The file node name of the mountpoint.
+
+        """
+
+        mountpoint = mountpoint.lower()
+        mountpoint = mountpoint.replace('/dev/d', '/dev/sd')
+        return mountpoint.replace('/dev/s', '/dev/v')
+
+    def _get_pair_of_wwpn_lun(self, wwpn, lun):
+        """Find a suitable pair of WWPN and LUN in device pool based
+        on requested size.
+        """
+        target_lun = "%04x000000000000" % int(lun)
+        target_lun = '0x' + target_lun
+        # TODO(How to choose a WWPN? Use the first one for now)
+        target_wwpn = wwpn[0]
+        target_wwpn = '0x' + target_wwpn
+        return (target_wwpn, target_lun)
+
+    def _build_connection_info(self, context, connection_info, instance,
+                               mountpoint):
+        wwpn = connection_info['data']['target_wwn']
+        if not wwpn:
+            # TODO(exception)
+            pass
+        lun = connection_info['data']['target_lun']
+        fcp = connection_info['data']['zvm_fcp']
+        if not fcp:
+            # TODO(exception)
+            pass
+        zvm_fcp = fcp[0]
+
+        (target_wwpn, target_lun) = self._get_pair_of_wwpn_lun(wwpn, lun)
+
+        conn_info = {}
+        conn_info['target_wwpn'] = target_wwpn
+        conn_info['target_lun'] = target_lun
+        conn_info['mount_point'] = mountpoint
+        conn_info['assigner_id'] = instance['name']
+        conn_info['multipath'] = True
+        conn_info['os_version'] = instance.system_metadata['image_os_version']
+        conn_info['zvm_fcp'] = zvm_fcp
+        return conn_info
+
+    def _attach_volume_to_instance(self, context, connection_info, instance,
+                                  mountpoint):
+        conn_info = self._build_connection_info(context, connection_info,
+                                                instance, mountpoint)
+        res = self._reqh.call('volume_attach', conn_info)
+        return res
+
+    def _detach_volume_from_instance(self, context, connection_info, instance,
+                                    mountpoint):
+        conn_info = self._build_connection_info(context, connection_info,
+                                                instance, mountpoint)
+        res = self._reqh.call('volume_detach', conn_info)
+        return res
+
+    def attach_volume(self, context, connection_info, instance, mountpoint,
+                      disk_bus=None, device_type=None, encryption=None):
+        instance_info = self.get_info(instance)
+        if instance_info.state == power_state.PAUSED:
+            msg = _("Attaching to a paused instance is not supported.")
+            raise exception.NovaException(message=msg)
+        if mountpoint:
+            mountpoint = self._format_mountpoint(mountpoint)
+        if self.instance_exists(instance):
+            self._attach_volume_to_instance(context, connection_info, instance,
+                                            mountpoint)
+
+    def detach_volume(self, context, connection_info, instance, mountpoint,
+                      encryption=None):
+        instance_info = self.get_info(instance)
+        if instance_info.state == power_state.PAUSED:
+            msg = _("Attaching to a paused instance is not supported.")
+            raise exception.NovaException(message=msg)
+        if mountpoint:
+            mountpoint = self._format_mountpoint(mountpoint)
+        if self.instance_exists(instance):
+            self._detach_volume_from_instance(context, connection_info,
+                                              instance, mountpoint)
