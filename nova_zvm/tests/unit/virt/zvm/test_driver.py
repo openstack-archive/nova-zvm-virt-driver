@@ -29,7 +29,7 @@ from nova.network import model as network_model
 from nova import objects
 from nova import test
 from nova.tests.unit import fake_instance
-from nova.tests import uuidsentinel
+from oslo_utils.fixture import uuidsentinel
 
 from nova_zvm.virt.zvm import conf
 from nova_zvm.virt.zvm import const
